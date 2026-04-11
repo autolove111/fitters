@@ -1,0 +1,14 @@
+# Java
+backend/target/
+
+# Python
+ai-service/__pycache__/
+ai-service/.venv/
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Env
+.env.local

@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="card">
+    <view class="title">注册/更新用户信息</view>
+    <input class="input" placeholder="身高(cm)" type="number" value="{{height}}" bindinput="onHeight" />
+    <input class="input" placeholder="当前体重(kg)" type="number" value="{{weight}}" bindinput="onWeight" />
+    <input class="input" placeholder="目标体重(kg)" type="number" value="{{targetWeight}}" bindinput="onTargetWeight" />
+    <button class="btn" bindtap="saveProfile">保存</button>
+  </view>
+
+  <view class="card">
+    <view class="sub">{{result}}</view>
+  </view>
+</view>
