@@ -1,6 +1,12 @@
 server:
-  port: ${BACKEND_PORT:8080}
+  port: 8080
 
-app:
-  ai-service:
-    base-url: ${AI_SERVICE_BASE_URL:http://localhost:5000}
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/health_app}
+    username: ${SPRING_DATASOURCE_USERNAME:health_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:health_pass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false

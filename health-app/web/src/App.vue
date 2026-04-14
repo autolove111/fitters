@@ -1,192 +1,234 @@
 <script setup>
-import { ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
-const baseUrl = ref("http://127.0.0.1:18080");
-const userId = ref("demo-user");
+const apiBase = import.meta.env.VITE_API_BASE || "/api";
+const records = ref([]);
+const loading = ref(false);
+const error = ref("");
+const token = ref(localStorage.getItem("auth_token") || "");
+const username = ref(localStorage.getItem("auth_username") || "");
 
-const height = ref(170);
-const weight = ref(70);
-const targetWeight = ref(65);
+const authForm = reactive({
+  username: "demo",
+  password: "demo123",
+});
 
-const sportType = ref("running");
-const durationMin = ref(30);
-const sportCalories = ref(260);
+const form = reactive({
+  date: new Date().toISOString().slice(0, 10),
+  type: "跑步",
+  durationMinutes: 30,
+  calories: 200,
+});
 
-const sleepHours = ref(7.2);
-const deepSleepRatio = ref(0.3);
+const summary = computed(() => {
+  return records.value.reduce(
+    (acc, item) => {
+      acc.count += 1;
+      acc.totalMinutes += Number(item.durationMinutes || 0);
+      acc.totalCalories += Number(item.calories || 0);
+      return acc;
+    },
+    { count: 0, totalMinutes: 0, totalCalories: 0 },
+  );
+});
 
-const foodName = ref("salad");
-const dietCalories = ref(380);
+const isLoggedIn = computed(() => !!token.value);
 
-const output = ref("等待操作...");
-
-function setOutput(data) {
-  output.value = JSON.stringify(data, null, 2);
-}
-
-async function req(path, method, body) {
-  const resp = await fetch(baseUrl.value.trim() + path, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const json = await resp.json();
-  if (!resp.ok) {
-    throw new Error(JSON.stringify(json));
+function authHeaders() {
+  if (!token.value) {
+    return {};
   }
-  return json;
+  return { Authorization: `Bearer ${token.value}` };
 }
 
-function uid() {
-  return userId.value.trim() || "demo-user";
+function saveLogin(authToken, user) {
+  token.value = authToken;
+  username.value = user;
+  localStorage.setItem("auth_token", authToken);
+  localStorage.setItem("auth_username", user);
 }
 
-async function saveProfile() {
+function logout() {
+  token.value = "";
+  username.value = "";
+  records.value = [];
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("auth_username");
+}
+
+async function register() {
+  error.value = "";
   try {
-    const data = await req("/api/user/register", "POST", {
-      userId: uid(),
-      height: Number(height.value),
-      weight: Number(weight.value),
-      targetWeight: Number(targetWeight.value),
+    const response = await fetch(`${apiBase}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(authForm),
     });
-    setOutput(data);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "注册失败");
+    }
+    await login();
   } catch (e) {
-    setOutput({ error: String(e) });
+    error.value = e.message;
   }
 }
 
-async function recordSport() {
+async function login() {
+  error.value = "";
   try {
-    const data = await req("/api/sport/record", "POST", {
-      userId: uid(),
-      type: sportType.value,
-      durationMin: Number(durationMin.value),
-      caloriesBurned: Number(sportCalories.value),
+    const response = await fetch(`${apiBase}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(authForm),
     });
-    setOutput(data);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "登录失败");
+    }
+    saveLogin(data.token, data.username);
+    await fetchRecords();
   } catch (e) {
-    setOutput({ error: String(e) });
+    error.value = e.message;
   }
 }
 
-async function recordSleep() {
+async function fetchRecords() {
+  if (!token.value) {
+    return;
+  }
+  loading.value = true;
+  error.value = "";
   try {
-    const data = await req("/api/sleep/record", "POST", {
-      userId: uid(),
-      hours: Number(sleepHours.value),
-      deepSleepRatio: Number(deepSleepRatio.value),
+    const response = await fetch(`${apiBase}/workouts`, {
+      headers: authHeaders(),
     });
-    setOutput(data);
+    if (!response.ok) {
+      throw new Error("获取记录失败");
+    }
+    records.value = await response.json();
   } catch (e) {
-    setOutput({ error: String(e) });
+    error.value = e.message;
+  } finally {
+    loading.value = false;
   }
 }
 
-async function recordDiet() {
+async function addRecord() {
+  error.value = "";
   try {
-    const data = await req("/api/diet/record", "POST", {
-      userId: uid(),
-      foodName: foodName.value,
-      calories: Number(dietCalories.value),
+    const response = await fetch(`${apiBase}/workouts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(form),
     });
-    setOutput(data);
+    if (!response.ok) {
+      throw new Error("新增失败，请检查输入");
+    }
+    await fetchRecords();
   } catch (e) {
-    setOutput({ error: String(e) });
+    error.value = e.message;
   }
 }
 
-async function getRecommend() {
+async function removeRecord(id) {
+  error.value = "";
   try {
-    const data = await req(
-      "/api/diet/recommend?userId=" + encodeURIComponent(uid()),
-      "GET",
-    );
-    setOutput(data);
+    const response = await fetch(`${apiBase}/workouts/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("删除失败");
+    }
+    await fetchRecords();
   } catch (e) {
-    setOutput({ error: String(e) });
+    error.value = e.message;
   }
 }
 
-async function getReport() {
-  try {
-    const data = await req(
-      "/api/report/daily?userId=" + encodeURIComponent(uid()),
-      "GET",
-    );
-    setOutput(data);
-  } catch (e) {
-    setOutput({ error: String(e) });
-  }
-}
+onMounted(fetchRecords);
 </script>
 
 <template>
-  <main class="wrap">
-    <section class="card hero">
-      <h1>减脂助手 Vue 版</h1>
-      <p>浏览器直连后端，完成用户、记录、推荐、日报的最小闭环。</p>
-      <div class="row">
-        <label>后端地址</label>
-        <input v-model="baseUrl" />
-      </div>
-      <div class="row">
-        <label>用户ID</label>
-        <input v-model="userId" />
-      </div>
-    </section>
-
-    <section class="grid">
-      <article class="card">
-        <h2>用户信息</h2>
-        <input v-model="height" type="number" placeholder="身高 cm" />
-        <input v-model="weight" type="number" placeholder="体重 kg" />
-        <input v-model="targetWeight" type="number" placeholder="目标体重 kg" />
-        <button @click="saveProfile">保存用户</button>
-      </article>
-
-      <article class="card">
-        <h2>运动记录</h2>
-        <input v-model="sportType" placeholder="类型，例如 running" />
-        <input v-model="durationMin" type="number" placeholder="时长 分钟" />
-        <input v-model="sportCalories" type="number" placeholder="消耗 kcal" />
-        <button @click="recordSport">提交运动</button>
-      </article>
-
-      <article class="card">
-        <h2>睡眠记录</h2>
-        <input
-          v-model="sleepHours"
-          type="number"
-          step="0.1"
-          placeholder="睡眠小时"
-        />
-        <input
-          v-model="deepSleepRatio"
-          type="number"
-          step="0.1"
-          placeholder="深睡比例 0~1"
-        />
-        <button @click="recordSleep">提交睡眠</button>
-      </article>
-
-      <article class="card">
-        <h2>饮食记录</h2>
-        <input v-model="foodName" placeholder="食物名" />
-        <input v-model="dietCalories" type="number" placeholder="热量 kcal" />
-        <button @click="recordDiet">提交饮食</button>
-      </article>
-
-      <article class="card">
-        <h2>推荐与日报</h2>
-        <button @click="getRecommend">获取推荐</button>
-        <button @click="getReport">获取日报</button>
-      </article>
-    </section>
-
+  <main class="page">
     <section class="card">
-      <h2>响应结果</h2>
-      <pre>{{ output }}</pre>
+      <h1>运动记录软件</h1>
+      <p class="sub">最小可运行版本：PostgreSQL + 登录 + 运动记录</p>
+
+      <div v-if="!isLoggedIn" class="auth">
+        <input
+          v-model="authForm.username"
+          type="text"
+          placeholder="用户名（至少3位）"
+          required
+        />
+        <input
+          v-model="authForm.password"
+          type="password"
+          placeholder="密码（至少6位）"
+          required
+        />
+        <div class="auth-actions">
+          <button @click="login">登录</button>
+          <button class="secondary" @click="register">注册并登录</button>
+        </div>
+      </div>
+
+      <div v-else class="login-bar">
+        <span>当前用户：{{ username }}</span>
+        <button class="secondary" @click="logout">退出登录</button>
+      </div>
+
+      <template v-if="isLoggedIn">
+        <form class="form" @submit.prevent="addRecord">
+          <input v-model="form.date" type="date" required />
+          <input
+            v-model="form.type"
+            type="text"
+            placeholder="运动类型"
+            required
+          />
+          <input
+            v-model.number="form.durationMinutes"
+            type="number"
+            min="1"
+            placeholder="时长(分钟)"
+            required
+          />
+          <input
+            v-model.number="form.calories"
+            type="number"
+            min="0"
+            placeholder="消耗(kcal)"
+            required
+          />
+          <button type="submit">新增记录</button>
+        </form>
+
+        <div class="summary">
+          <span>次数：{{ summary.count }}</span>
+          <span>总时长：{{ summary.totalMinutes }} 分钟</span>
+          <span>总消耗：{{ summary.totalCalories }} kcal</span>
+        </div>
+      </template>
+
+      <p v-if="loading">加载中...</p>
+      <p v-if="error" class="error">{{ error }}</p>
+
+      <ul class="list" v-if="isLoggedIn && records.length">
+        <li v-for="item in records" :key="item.id">
+          <div>
+            <strong>{{ item.date }}</strong>
+            <span
+              >{{ item.type }} / {{ item.durationMinutes }} 分钟 /
+              {{ item.calories }} kcal</span
+            >
+          </div>
+          <button class="danger" @click="removeRecord(item.id)">删除</button>
+        </li>
+      </ul>
+      <p v-else-if="isLoggedIn">暂无记录，先添加一条吧。</p>
     </section>
   </main>
 </template>
