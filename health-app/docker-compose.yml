@@ -4,12 +4,24 @@ services:
       context: ./backend
     container_name: health-backend
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT:-18080}:8080"
     environment:
-      - BACKEND_PORT=8080
-      - AI_SERVICE_BASE_URL=http://ai-service:5000
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-health_app}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-health_user}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-health_pass}
     depends_on:
-      - ai-service
+      - postgres
+
+  web:
+    build:
+      context: ./web
+    container_name: health-web
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      - VITE_API_BASE=http://localhost:${BACKEND_PORT:-18080}/api
+    depends_on:
+      - backend
 
   ai-service:
     build:
@@ -17,5 +29,18 @@ services:
     container_name: health-ai-service
     ports:
       - "${AI_SERVICE_PORT:-5000}:5000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: health-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - AI_SERVICE_PORT=5000
+      - POSTGRES_DB=${POSTGRES_DB:-health_app}
+      - POSTGRES_USER=${POSTGRES_USER:-health_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-health_pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
