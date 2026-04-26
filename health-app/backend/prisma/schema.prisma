@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GoalType {
+  DAILY_WORKOUT_MINUTES
+}
+
+enum GoalPeriod {
+  DAILY
+}
+
+model User {
+  id           Int             @id @default(autoincrement())
+  account      String          @unique @db.VarChar(64)
+  passwordHash String          @map("password_hash") @db.VarChar(255)
+  nickname     String?         @db.VarChar(64)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  workouts     WorkoutRecord[]
+  goals        Goal[]
+
+  @@map("users")
+}
+
+model WorkoutRecord {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  type            String   @db.VarChar(64)
+  durationMinutes Int      @map("duration_min")
+  calories        Int      @default(0)
+  recordDate      DateTime @map("record_date") @db.Date
+  notes           String?  @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordDate], map: "idx_workout_records_user_record_date")
+  @@map("workout_records")
+}
+
+model Goal {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  goalType    GoalType   @map("goal_type")
+  targetValue Int        @map("target_value")
+  period      GoalPeriod @default(DAILY)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goalType, period], map: "uq_goals_user_type_period")
+  @@map("goals")
+}
