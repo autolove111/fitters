@@ -1,5 +1,6 @@
-# Java
-backend/target/
+# Node / TypeScript
+backend/node_modules/
+backend/dist/
 
 # Python
 ai-service/__pycache__/
@@ -12,3 +13,4 @@ Thumbs.db
 
 # Env
 .env.local
+backend/.env

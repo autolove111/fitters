@@ -1,5 +1,17 @@
-FROM eclipse-temurin:17-jre
+FROM node:20-alpine
 WORKDIR /app
-COPY target/backend-0.0.1-SNAPSHOT.jar app.jar
+
+RUN apk add --no-cache openssl
+
+COPY package*.json ./
+RUN npm ci
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

@@ -3,72 +3,87 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 const apiBase = import.meta.env.VITE_API_BASE || "/api";
 const records = ref([]);
+const todayStats = ref(null);
+const weeklyStats = ref([]);
+const totalStats = ref(null);
 const loading = ref(false);
 const error = ref("");
 const token = ref(localStorage.getItem("auth_token") || "");
 const username = ref(localStorage.getItem("auth_username") || "");
 
 const authForm = reactive({
-  username: "demo",
+  account: "demo",
   password: "demo123",
 });
 
-const form = reactive({
-  date: new Date().toISOString().slice(0, 10),
-  type: "跑步",
-  durationMinutes: 30,
+const workoutForm = reactive({
+  recordDate: new Date().toISOString().slice(0, 10),
+  type: "running",
+  durationMin: 30,
   calories: 200,
+  notes: "",
 });
 
-const summary = computed(() => {
-  return records.value.reduce(
-    (acc, item) => {
-      acc.count += 1;
-      acc.totalMinutes += Number(item.durationMinutes || 0);
-      acc.totalCalories += Number(item.calories || 0);
-      return acc;
-    },
-    { count: 0, totalMinutes: 0, totalCalories: 0 },
-  );
+const goalForm = reactive({
+  targetValue: 45,
 });
 
-const isLoggedIn = computed(() => !!token.value);
+const isLoggedIn = computed(() => Boolean(token.value));
+
+function unwrapApi(payload) {
+  if (payload && typeof payload === "object" && "code" in payload && "data" in payload) {
+    return payload.data;
+  }
+  return payload;
+}
 
 function authHeaders() {
-  if (!token.value) {
-    return {};
-  }
-  return { Authorization: `Bearer ${token.value}` };
+  return token.value ? { Authorization: `Bearer ${token.value}` } : {};
 }
 
 function saveLogin(authToken, user) {
   token.value = authToken;
-  username.value = user;
+  username.value = user.account || user.username;
   localStorage.setItem("auth_token", authToken);
-  localStorage.setItem("auth_username", user);
+  localStorage.setItem("auth_username", username.value);
 }
 
 function logout() {
   token.value = "";
   username.value = "";
   records.value = [];
+  todayStats.value = null;
+  weeklyStats.value = [];
+  totalStats.value = null;
   localStorage.removeItem("auth_token");
   localStorage.removeItem("auth_username");
+}
+
+async function apiFetch(path, options = {}) {
+  const response = await fetch(`${apiBase}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || "Request failed");
+  }
+  return unwrapApi(payload);
 }
 
 async function register() {
   error.value = "";
   try {
-    const response = await fetch(`${apiBase}/auth/register`, {
+    const auth = await apiFetch("/auth/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(authForm),
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "注册失败");
-    }
-    await login();
+    saveLogin(auth.token, auth.user);
+    await refreshDashboard();
   } catch (e) {
     error.value = e.message;
   }
@@ -77,36 +92,35 @@ async function register() {
 async function login() {
   error.value = "";
   try {
-    const response = await fetch(`${apiBase}/auth/login`, {
+    const auth = await apiFetch("/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(authForm),
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "登录失败");
-    }
-    saveLogin(data.token, data.username);
-    await fetchRecords();
+    saveLogin(auth.token, auth.user);
+    await refreshDashboard();
   } catch (e) {
     error.value = e.message;
   }
 }
 
-async function fetchRecords() {
+async function refreshDashboard() {
   if (!token.value) {
     return;
   }
+
   loading.value = true;
   error.value = "";
   try {
-    const response = await fetch(`${apiBase}/workouts`, {
-      headers: authHeaders(),
-    });
-    if (!response.ok) {
-      throw new Error("获取记录失败");
-    }
-    records.value = await response.json();
+    const [workouts, today, weekly, summary] = await Promise.all([
+      apiFetch("/workouts"),
+      apiFetch("/stats/today"),
+      apiFetch("/stats/workouts/weekly"),
+      apiFetch("/stats/summary"),
+    ]);
+    records.value = workouts;
+    todayStats.value = today;
+    weeklyStats.value = weekly;
+    totalStats.value = summary;
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -117,15 +131,24 @@ async function fetchRecords() {
 async function addRecord() {
   error.value = "";
   try {
-    const response = await fetch(`${apiBase}/workouts`, {
+    await apiFetch("/workouts", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify(form),
+      body: JSON.stringify(workoutForm),
     });
-    if (!response.ok) {
-      throw new Error("新增失败，请检查输入");
-    }
-    await fetchRecords();
+    await refreshDashboard();
+  } catch (e) {
+    error.value = e.message;
+  }
+}
+
+async function saveGoal() {
+  error.value = "";
+  try {
+    await apiFetch("/goals", {
+      method: "POST",
+      body: JSON.stringify({ targetValue: goalForm.targetValue }),
+    });
+    await refreshDashboard();
   } catch (e) {
     error.value = e.message;
   }
@@ -134,101 +157,76 @@ async function addRecord() {
 async function removeRecord(id) {
   error.value = "";
   try {
-    const response = await fetch(`${apiBase}/workouts/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
-    if (!response.ok) {
-      throw new Error("删除失败");
-    }
-    await fetchRecords();
+    await apiFetch(`/workouts/${id}`, { method: "DELETE" });
+    await refreshDashboard();
   } catch (e) {
     error.value = e.message;
   }
 }
 
-onMounted(fetchRecords);
+onMounted(refreshDashboard);
 </script>
 
 <template>
   <main class="page">
     <section class="card">
-      <h1>运动记录软件</h1>
-      <p class="sub">最小可运行版本：PostgreSQL + 登录 + 运动记录</p>
+      <h1>Fitters MVP</h1>
+      <p class="sub">PostgreSQL + Prisma + login + workout records + goals + stats</p>
 
       <div v-if="!isLoggedIn" class="auth">
-        <input
-          v-model="authForm.username"
-          type="text"
-          placeholder="用户名（至少3位）"
-          required
-        />
-        <input
-          v-model="authForm.password"
-          type="password"
-          placeholder="密码（至少6位）"
-          required
-        />
+        <input v-model="authForm.account" type="text" placeholder="Account" required />
+        <input v-model="authForm.password" type="password" placeholder="Password" required />
         <div class="auth-actions">
-          <button @click="login">登录</button>
-          <button class="secondary" @click="register">注册并登录</button>
+          <button @click="login">Login</button>
+          <button class="secondary" @click="register">Register</button>
         </div>
       </div>
 
       <div v-else class="login-bar">
-        <span>当前用户：{{ username }}</span>
-        <button class="secondary" @click="logout">退出登录</button>
+        <span>Current user: {{ username }}</span>
+        <button class="secondary" @click="logout">Logout</button>
       </div>
 
       <template v-if="isLoggedIn">
         <form class="form" @submit.prevent="addRecord">
-          <input v-model="form.date" type="date" required />
-          <input
-            v-model="form.type"
-            type="text"
-            placeholder="运动类型"
-            required
-          />
-          <input
-            v-model.number="form.durationMinutes"
-            type="number"
-            min="1"
-            placeholder="时长(分钟)"
-            required
-          />
-          <input
-            v-model.number="form.calories"
-            type="number"
-            min="0"
-            placeholder="消耗(kcal)"
-            required
-          />
-          <button type="submit">新增记录</button>
+          <input v-model="workoutForm.recordDate" type="date" required />
+          <input v-model="workoutForm.type" type="text" placeholder="Workout type" required />
+          <input v-model.number="workoutForm.durationMin" type="number" min="1" placeholder="Minutes" required />
+          <input v-model.number="workoutForm.calories" type="number" min="0" placeholder="Calories" required />
+          <button type="submit">Add Workout</button>
+        </form>
+
+        <form class="form goal-form" @submit.prevent="saveGoal">
+          <input v-model.number="goalForm.targetValue" type="number" min="1" placeholder="Daily target minutes" />
+          <button type="submit">Save Goal</button>
         </form>
 
         <div class="summary">
-          <span>次数：{{ summary.count }}</span>
-          <span>总时长：{{ summary.totalMinutes }} 分钟</span>
-          <span>总消耗：{{ summary.totalCalories }} kcal</span>
+          <span>Today: {{ todayStats?.completedMinutes || 0 }} / {{ todayStats?.targetMinutes || 0 }} min</span>
+          <span>Progress: {{ todayStats?.completionPercent || 0 }}%</span>
+          <span>Total workouts: {{ totalStats?.count || 0 }}</span>
+          <span>Total minutes: {{ totalStats?.totalMinutes || 0 }}</span>
+          <span>Total calories: {{ totalStats?.totalCalories || 0 }}</span>
+        </div>
+
+        <div class="summary">
+          <span v-for="item in weeklyStats" :key="item.date">{{ item.date }}: {{ item.minutes }} min</span>
         </div>
       </template>
 
-      <p v-if="loading">加载中...</p>
+      <p v-if="loading">Loading...</p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <ul class="list" v-if="isLoggedIn && records.length">
+      <ul v-if="isLoggedIn && records.length" class="list">
         <li v-for="item in records" :key="item.id">
           <div>
             <strong>{{ item.date }}</strong>
-            <span
-              >{{ item.type }} / {{ item.durationMinutes }} 分钟 /
-              {{ item.calories }} kcal</span
-            >
+            <span>{{ item.type }} / {{ item.durationMinutes }} min / {{ item.calories }} kcal</span>
           </div>
-          <button class="danger" @click="removeRecord(item.id)">删除</button>
+          <button class="danger" @click="removeRecord(item.id)">Delete</button>
         </li>
       </ul>
-      <p v-else-if="isLoggedIn">暂无记录，先添加一条吧。</p>
+      <p v-else-if="isLoggedIn">No workout records yet.</p>
     </section>
   </main>
 </template>
