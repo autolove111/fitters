@@ -1,0 +1,33 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "Fitters健康管家" }
+    },
+    {
+      "path": "pages/workout/add",
+      "style": { "navigationBarTitleText": "添加运动记录" }
+    },
+    {
+      "path": "pages/sleep/add",
+      "style": { "navigationBarTitleText": "添加睡眠记录" }
+    },
+    {
+      "path": "pages/diet/add",
+      "style": { "navigationBarTitleText": "添加饮食记录" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Fitters",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  }
+}
