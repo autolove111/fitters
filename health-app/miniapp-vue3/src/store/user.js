@@ -26,6 +26,7 @@ const clearUser = () => {
 }
 
 const isLoggedIn = computed(() => !!state.token)
+//const isLoggedIn = true
 
 export const useUserStore = () => {
   init()
