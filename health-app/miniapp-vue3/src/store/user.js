@@ -12,10 +12,16 @@ const init = () => {
 }
 
 const setUser = (token, username) => {
-  state.token = token
-  state.username = username
-  uni.setStorageSync('auth_token', token)
-  uni.setStorageSync('auth_username', username)
+  if (token && username) {
+    state.token = token
+    state.username = username
+    uni.setStorageSync('auth_token', token)
+    uni.setStorageSync('auth_username', username)
+  } else {
+    // 否则清除不完整的数据
+    uni.removeStorageSync('auth_token')
+    uni.removeStorageSync('auth_username')
+  }
 }
 
 const clearUser = () => {
