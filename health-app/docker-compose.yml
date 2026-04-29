@@ -23,6 +23,17 @@ services:
     depends_on:
       - backend
 
+  miniapp:
+    build:
+      context: ./miniapp-vue3
+    container_name: health-miniapp
+    ports:
+      - "${MINIAPP_PORT:-5174}:5174"
+    environment:
+      - VITE_API_BASE=http://localhost:${BACKEND_PORT:-18080}/api
+    depends_on:
+      - backend
+
   ai-service:
     build:
       context: ./ai-service
