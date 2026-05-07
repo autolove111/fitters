@@ -12,17 +12,6 @@ services:
       postgres:
         condition: service_healthy
 
-  web:
-    build:
-      context: ./web
-    container_name: health-web
-    ports:
-      - "${WEB_PORT:-5173}:5173"
-    environment:
-      - VITE_API_BASE=http://localhost:${BACKEND_PORT:-18080}/api
-    depends_on:
-      - backend
-
   miniapp:
     build:
       context: ./miniapp-vue3

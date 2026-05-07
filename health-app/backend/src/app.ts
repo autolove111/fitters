@@ -4,6 +4,8 @@ import { authRouter } from "./modules/auth/router.js";
 import { goalsRouter } from "./modules/goals/router.js";
 import { statsRouter } from "./modules/stats/router.js";
 import { workoutsRouter } from "./modules/workouts/router.js";
+import { sleepRouter } from "./modules/sleep/router.js";
+import { dietRouter } from "./modules/diet/router.js";
 import { errorHandler } from "./common/errors.js";
 
 export function createApp() {
@@ -20,6 +22,8 @@ export function createApp() {
   app.use("/api/workouts", workoutsRouter);
   app.use("/api/goals", goalsRouter);
   app.use("/api/stats", statsRouter);
+  app.use("/api/sleeps", sleepRouter);
+  app.use("/api/diets", dietRouter);
   app.use(errorHandler);
 
   return app;

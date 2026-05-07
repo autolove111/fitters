@@ -24,6 +24,8 @@ model User {
   updatedAt    DateTime        @updatedAt @map("updated_at")
   workouts     WorkoutRecord[]
   goals        Goal[]
+  sleeps       SleepRecord[]
+  diets        DietRecord[]
 
   @@map("users")
 }
@@ -55,4 +57,32 @@ model Goal {
 
   @@unique([userId, goalType, period], map: "uq_goals_user_type_period")
   @@map("goals")
+}
+
+model SleepRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  sleepTime   DateTime @map("sleep_time")
+  wakeTime    DateTime @map("wake_time")
+  quality     Int      @default(0)
+  notes       String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_sleep_records_user")
+  @@map("sleep_records")
+}
+
+model DietRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  type        String   @db.VarChar(64)
+  calories    Int      @default(0)
+  recordDate  DateTime @map("record_date") @db.Date
+  notes       String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordDate], map: "idx_diet_records_user_record_date")
+  @@map("diet_records")
 }
