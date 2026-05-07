@@ -13,6 +13,14 @@
       "style": { "navigationBarTitleText": "Fitters健康管家" }
     },
     {
+      "path": "pages/workout/workout",
+      "style": {
+        "navigationBarTitleText": "健身运动",
+        "navigationBarBackgroundColor": "#ffffff",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
       "path": "pages/workout/add",
       "style": { "navigationBarTitleText": "添加运动记录" }
     },
@@ -23,6 +31,12 @@
     {
       "path": "pages/diet/add",
       "style": { "navigationBarTitleText": "添加饮食记录" }
+    },
+    {
+      "path": "pages/work/work",
+      "style": {
+        "navigationBarTitleText": "工作健康助手"
+      }
     }
   ],
   "globalStyle": {
