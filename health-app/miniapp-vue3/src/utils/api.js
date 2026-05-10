@@ -60,7 +60,9 @@ export const dietApi = {
 export const statsApi = {
   today: () => request('/stats/today'),
   weekly: () => request('/stats/weekly'),
-  summary: () => request('/stats/summary')
+  summary: () => request('/stats/summary'),
+  getHistory: (params = { days: 30 }) => request('/stats/history', { data: params }),
+  generatePlan: (userData) => request('/ai/generate-plan', { method: 'POST', data: userData })
 }
 
 export const goalApi = {
