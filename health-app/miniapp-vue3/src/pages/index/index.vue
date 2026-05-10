@@ -2,10 +2,17 @@
   <view class="container">
     <!-- ========= 未登录：显示登录/注册表单 ========= -->
     <view v-if="!isLoggedIn" class="auth-card">
+      <!-- 新增 Logo 区域 -->
+      <view class="logo-area">
+        <text class="logo-icon">✨</text>
+        <text class="logo-title">Fitters 健康管家</text>
+        <text class="logo-sub">极致 · 平衡 · 生命力</text>
+      </view>
+
       <input 
         class="auth-input" 
         v-model="account" 
-        placeholder="账号" 
+        placeholder="账号 / 邮箱" 
         placeholder-class="input-placeholder"
       />
       <view class="password-wrapper">
@@ -17,7 +24,7 @@
           placeholder-class="input-placeholder"
         />
         <view class="toggle-pwd-btn" @click="togglePasswordVisibility">
-          <text>{{ showPassword ? '隐藏密码' : '显示密码' }}</text>
+          <text>{{ showPassword ? '隐藏' : '显示' }}</text>
         </view>
       </view>
       <view class="auth-actions">
@@ -30,8 +37,10 @@
     <!-- ========= 已登录：四个功能卡片（两行两列） ========= -->
     <view v-else class="dashboard">
       <view class="user-bar">
-        <text class="greeting">你好，{{ username }}</text>
-        <button class="logout-btn" @click="logout">退出登录</button>
+        <view class="greeting-box">
+          <text class="greeting">你好，{{ username }}</text>
+        </view>
+        <button class="logout-btn" @click="logout">退出</button>
       </view>
 
       <view class="menu-grid">
@@ -55,6 +64,11 @@
           <text class="card-title">工作</text>
           <text class="card-desc">效率与专注</text>
         </view>
+      </view>
+
+      <!-- 新增健康小贴士 -->
+      <view class="health-tip">
+        <text>🌿 今日微习惯：深呼吸三次，感受当下的平静</text>
       </view>
     </view>
   </view>
@@ -135,35 +149,77 @@ function goWork() {
 <style scoped>
 .container {
   padding: 30rpx;
-  background-color: #f5f7fa;
   min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(220, 240, 255, 0.5), rgba(235, 245, 255, 0.9));
 }
 
-/* 登录表单样式 */
+/* ========= 登录表单样式 - 高级毛玻璃 ========= */
 .auth-card {
-  margin-top: 120rpx;
-  padding: 50rpx 40rpx;
-  background: white;
-  border-radius: 32rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  margin-top: 80rpx;
+  padding: 50rpx 40rpx 60rpx;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  border-radius: 60rpx;
+  box-shadow: 0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.15), 0 0 0 1rpx rgba(255, 255, 255, 0.6) inset;
 }
+
+/* Logo 区域 */
+.logo-area {
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+.logo-icon {
+  font-size: 64rpx;
+  display: block;
+  background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12rpx;
+}
+.logo-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b, #2d3e5f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.5rpx;
+  display: block;
+}
+.logo-sub {
+  font-size: 24rpx;
+  color: #5b6e8c;
+  margin-top: 12rpx;
+  display: block;
+  letter-spacing: 2rpx;
+}
+
 .auth-input {
   width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
+  height: 96rpx;
+  padding: 0 28rpx;
   margin-bottom: 32rpx;
   font-size: 32rpx;
-  background-color: #f5f7fa;
-  border-radius: 16rpx;
-  border: 1px solid #e4e7ed;
+  background: #f8fafc;
+  border-radius: 48rpx;
+  border: 1.5px solid #e2e8f0;
   box-sizing: border-box;
+  transition: all 0.2s;
+  color: #1e293b;
 }
+.auth-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 6rpx rgba(59, 130, 246, 0.15);
+  background: #ffffff;
+}
+
 .password-wrapper {
   position: relative;
   width: 100%;
 }
 .password-input {
-  padding-right: 160rpx;
+  padding-right: 140rpx;
   margin-bottom: 0;
 }
 .toggle-pwd-btn {
@@ -171,115 +227,189 @@ function goWork() {
   right: 20rpx;
   top: 50%;
   transform: translateY(-50%);
-  background-color: #f0f2f5;
-  padding: 8rpx 20rpx;
-  border-radius: 48rpx;
+  background: #eef2ff;
+  padding: 10rpx 24rpx;
+  border-radius: 60rpx;
   font-size: 26rpx;
-  color: #409eff;
-  font-weight: 500;
+  color: #3b82f6;
+  font-weight: 600;
   transition: all 0.2s;
 }
 .toggle-pwd-btn:active {
-  background-color: #e4e7ed;
+  background: #d9e6ff;
   transform: translateY(-50%) scale(0.96);
 }
+
 .auth-actions {
   display: flex;
   gap: 24rpx;
-  margin-top: 40rpx;
+  margin-top: 48rpx;
 }
 .auth-btn {
   flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 48rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 60rpx;
   font-size: 32rpx;
-  font-weight: 500;
+  font-weight: 600;
   border: none;
+  transition: all 0.2s;
 }
 .auth-btn.primary {
-  background: linear-gradient(135deg, #409eff, #2c6ed1);
+  background: linear-gradient(105deg, #2563eb, #1e40af);
   color: white;
+  box-shadow: 0 12rpx 24rpx -10rpx rgba(37, 99, 235, 0.4);
+}
+.auth-btn.primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 6rpx 16rpx -8rpx rgba(37, 99, 235, 0.5);
 }
 .auth-btn.secondary {
-  background: #f0f2f5;
-  color: #606266;
-  border: 1px solid #dcdfe6;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+.auth-btn.secondary:active {
+  transform: scale(0.97);
+  background: #f1f5f9;
 }
 .error {
-  color: red;
-  font-size: 28rpx;
-  margin-top: 20rpx;
+  color: #ef4444;
+  font-size: 26rpx;
+  margin-top: 24rpx;
   display: block;
+  text-align: center;
+  font-weight: 500;
 }
 
-/* 已登录：功能菜单（两行两列） */
+/* ========= 已登录仪表板样式 ========= */
 .dashboard {
   display: flex;
   flex-direction: column;
   gap: 40rpx;
+  animation: fadeUp 0.4s ease;
 }
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .user-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+.greeting-box {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12rpx);
+  padding: 12rpx 32rpx;
+  border-radius: 60rpx;
+  border: 0.5px solid rgba(255, 255, 245, 0.8);
+}
 .greeting {
   font-size: 36rpx;
-  font-weight: bold;
-  color: #303133;
+  font-weight: 700;
+  background: linear-gradient(125deg, #0f2b3d, #1f4a6e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.3rpx;
 }
 .logout-btn {
-  background-color: #f56c6c;
-  color: white;
+  background: rgba(248, 113, 113, 0.9);
+  backdrop-filter: blur(8rpx);
   border: none;
-  border-radius: 40rpx;
-  padding: 8rpx 24rpx;
+  border-radius: 60rpx;
+  padding: 12rpx 32rpx;
   font-size: 28rpx;
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+.logout-btn:active {
+  transform: scale(0.96);
+  background: #ef4444;
 }
 
-/* 两行两列卡片网格 */
+/* 两行两列卡片网格 - 高级毛玻璃 */
 .menu-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30rpx;
-  padding: 20rpx 0;
+  padding: 10rpx 0;
 }
 
 .menu-card {
-  background: white;
-  border-radius: 40rpx;
-  padding: 50rpx 20rpx 40rpx;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20rpx);
+  border-radius: 52rpx;
+  padding: 56rpx 24rpx 44rpx;
   text-align: center;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.08);
-  transition: all 0.25s ease;
-  border: 1px solid rgba(255,255,255,0.3);
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.04);
 }
 
 .menu-card:active {
   transform: scale(0.96);
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 20rpx 36rpx -12rpx rgba(0, 0, 0, 0.12);
 }
 
 .card-icon {
-  font-size: 96rpx;
-  margin-bottom: 24rpx;
+  font-size: 100rpx;
+  margin-bottom: 28rpx;
   display: inline-block;
+  filter: drop-shadow(0 8rpx 12rpx rgba(0, 0, 0, 0.05));
 }
 
 .card-title {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 44rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e293b, #2c3e50);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   display: block;
-  margin-bottom: 12rpx;
-  letter-spacing: 2rpx;
+  margin-bottom: 16rpx;
+  letter-spacing: -0.5rpx;
 }
 
 .card-desc {
   font-size: 26rpx;
-  color: #7f8c8d;
-  display: block;
-  line-height: 1.4;
+  font-weight: 500;
+  color: #5b6e8c;
+  background: rgba(255, 255, 245, 0.7);
+  display: inline-block;
+  padding: 8rpx 20rpx;
+  border-radius: 60rpx;
+  backdrop-filter: blur(4rpx);
 }
-</style>
+
+/* 健康小贴士 */
+.health-tip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #5b6e8c;
+  background: rgba(255, 255, 245, 0.6);
+  padding: 20rpx 24rpx;
+  border-radius: 60rpx;
+  backdrop-filter: blur(12rpx);
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+/* 不同卡片图标微投影 */
+.menu-card:nth-child(1) .card-icon { text-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.2); }
+.menu-card:nth-child(2) .card-icon { text-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.2); }
+.menu-card:nth-child(3) .card-icon { text-shadow: 0 4rpx 12rpx rgba(139, 92, 246, 0.2); }
+.menu-card:nth-child(4) .card-icon { text-shadow: 0 4rpx 12rpx rgba(245, 158, 11, 0.2); }
+</style>           
