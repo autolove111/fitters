@@ -48,7 +48,7 @@ statsRouter.get(
 );
 
 statsRouter.get(
-  "/workouts/weekly",
+  "/weekly",
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const end = todayUtc();

@@ -3,13 +3,22 @@
     "autoscan": true,
     "custom": {
       "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
-      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+      "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
     }
   },
   "pages": [
     {
       "path": "pages/index/index",
       "style": { "navigationBarTitleText": "Fitters健康管家" }
+    },
+    {
+      "path": "pages/workout/workout",
+      "style": {
+        "navigationBarTitleText": "健身运动",
+        "navigationBarBackgroundColor": "#ffffff",
+        "enablePullDownRefresh": false
+      }
     },
     {
       "path": "pages/workout/add",
@@ -22,6 +31,12 @@
     {
       "path": "pages/diet/add",
       "style": { "navigationBarTitleText": "添加饮食记录" }
+    },
+    {
+      "path": "pages/work/work",
+      "style": {
+        "navigationBarTitleText": "工作健康助手"
+      }
     }
   ],
   "globalStyle": {

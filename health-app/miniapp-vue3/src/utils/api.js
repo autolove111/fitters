@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:18080'  // 开发环境后端地址
+const BASE_URL = 'http://localhost:18080/api'  // 开发环境后端地址
 
 // 获取存储的 token
 const getToken = () => uni.getStorageSync('auth_token') || ''
