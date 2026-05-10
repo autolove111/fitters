@@ -88,9 +88,9 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-health_app}
-      - POSTGRES_USER=${POSTGRES_USER:-health_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-health_pass}
+      - POSTGRES_DB=health_app
+      - POSTGRES_USER=health_user
+      - POSTGRES_PASSWORD=health_pass
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
