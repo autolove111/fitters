@@ -1,150 +1,164 @@
-# Fitters MVP Database Contract
+# Fitters MVP 数据库契约
 
-This document is the shared database reference for the MVP database layer.
+本文档是 Fitters MVP 阶段的数据库设计说明，用于统一后端、数据库和后续接口开发时对表结构的理解。
 
-## Technology Baseline
+## 技术基线
 
-- Runtime: Node.js 20 LTS
-- API: TypeScript + Express
-- Database: PostgreSQL 14+
-- ORM and migrations: Prisma + Prisma Migrate
-- Core response shape: `{ code, message, data }`
+- 运行环境：Node.js 20 LTS
+- API：TypeScript + Express
+- 数据库：PostgreSQL 14+
+- ORM 与迁移：Prisma + Prisma Migrate
+- 接口统一响应格式：`{ code, message, data }`
 
-## Design Scope
+## 设计范围
 
-The current database MVP keeps the existing user, workout, and goal tables, then adds sleep and diet persistence.
+当前数据库 MVP 保留已有的用户、运动记录和目标表，并补充睡眠和饮食数据的持久化结构。
 
-This change is database-only. It does not add or change frontend pages, backend routes, controllers, or stats behavior. API integration tasks are listed in the TODO section.
+本次变更只涉及数据库层，不新增或修改前端页面、后端路由、控制器和统计接口。需要后续接口配合的内容统一写在本文档的 TODO 小节中。
 
-The modeling rule is: use relational tables for core query fields, and use JSONB only for optional extension data.
+建模原则是：核心查询字段使用关系型表和普通列保存，扩展信息才使用 JSONB 字段。
 
-## Tables
+## 数据表
 
 ### users
 
-| Field | Type | Required | Rule |
+用户账号表，保存登录账号、密码哈希和展示昵称。
+
+| 字段 | 类型 | 必填 | 规则 |
 | --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| account | varchar(64) | yes | Unique login account |
-| password_hash | varchar(255) | yes | bcrypt hash only; never store raw password |
-| nickname | varchar(64) | no | Display name |
-| created_at | timestamp | yes | Created by database |
-| updated_at | timestamp | yes | Updated by Prisma |
+| id | serial integer | 是 | 主键 |
+| account | varchar(64) | 是 | 登录账号，唯一 |
+| password_hash | varchar(255) | 是 | 只保存 bcrypt 哈希，禁止保存明文密码 |
+| nickname | varchar(64) | 否 | 展示昵称 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+| updated_at | timestamp | 是 | Prisma 自动更新时间 |
 
 ### workout_records
 
-| Field | Type | Required | Rule |
-| --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| user_id | integer | yes | Foreign key to `users.id`; cascade delete |
-| type | varchar(64) | yes | Workout type |
-| duration_min | integer | yes | Positive minutes |
-| calories | integer | yes | Non-negative kcal |
-| record_date | date | yes | Workout date |
-| notes | varchar(255) | no | Optional note |
-| created_at | timestamp | yes | Created by database |
+运动记录表，保存用户每次运动的类型、时长、热量和日期。
 
-Index: `idx_workout_records_user_record_date` on `(user_id, record_date)`.
+| 字段 | 类型 | 必填 | 规则 |
+| --- | --- | --- | --- |
+| id | serial integer | 是 | 主键 |
+| user_id | integer | 是 | 外键关联 `users.id`，用户删除时级联删除 |
+| type | varchar(64) | 是 | 运动类型 |
+| duration_min | integer | 是 | 运动分钟数，必须为正数 |
+| calories | integer | 是 | 消耗热量，不能为负数 |
+| record_date | date | 是 | 运动日期 |
+| notes | varchar(255) | 否 | 备注 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+
+索引：`idx_workout_records_user_record_date`，字段为 `(user_id, record_date)`。
 
 ### sleep_records
 
-| Field | Type | Required | Rule |
-| --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| user_id | integer | yes | Foreign key to `users.id`; cascade delete |
-| record_date | date | yes | Sleep record date; defaults to current date |
-| duration_hours | decimal(4,2) | no | Positive when present |
-| deep_hours | decimal(4,2) | no | Non-negative and not greater than `duration_hours` when both are present |
-| bed_time | timestamp | yes | Sleep start time; mapped to Prisma `sleepTime` for current route compatibility |
-| wake_time | timestamp | yes | Wake time |
-| quality_score | integer | yes | 0 to 100; mapped to Prisma `quality` |
-| notes | varchar(255) | no | Optional note |
-| metadata | jsonb | no | Optional extension payload |
-| created_at | timestamp | yes | Created by database |
+睡眠记录表，保存每日睡眠日期、总睡眠时长、深睡时长、入睡时间、醒来时间和睡眠质量。
 
-Index: `idx_sleep_records_user_record_date` on `(user_id, record_date)`.
+| 字段 | 类型 | 必填 | 规则 |
+| --- | --- | --- | --- |
+| id | serial integer | 是 | 主键 |
+| user_id | integer | 是 | 外键关联 `users.id`，用户删除时级联删除 |
+| record_date | date | 是 | 睡眠记录日期，默认当前日期 |
+| duration_hours | decimal(4,2) | 否 | 总睡眠小时数；填写时必须大于 0 |
+| deep_hours | decimal(4,2) | 否 | 深睡小时数；填写时不能为负，且不能大于总睡眠时长 |
+| bed_time | timestamp | 是 | 入睡时间；在 Prisma 中映射为 `sleepTime`，兼容当前路由 |
+| wake_time | timestamp | 是 | 醒来时间 |
+| quality_score | integer | 是 | 睡眠质量分，范围 0 到 100；在 Prisma 中映射为 `quality` |
+| notes | varchar(255) | 否 | 备注 |
+| metadata | jsonb | 否 | 扩展信息，例如设备来源、睡眠阶段明细等 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+
+索引：`idx_sleep_records_user_record_date`，字段为 `(user_id, record_date)`。
 
 ### diet_records
 
-`diet_records` is retained as a compatibility table for the existing `/api/diets` route already present on `main`. The structured diet MVP tables are `foods`, `meals`, and `meal_items`.
+饮食汇总记录表，保留用于兼容当前 `main` 分支中已经存在的 `/api/diets` 路由。结构化饮食 MVP 的主表是 `foods`、`meals` 和 `meal_items`。
 
-| Field | Type | Required | Rule |
+| 字段 | 类型 | 必填 | 规则 |
 | --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| user_id | integer | yes | Foreign key to `users.id`; cascade delete |
-| type | varchar(64) | yes | Simple diet type or label |
-| calories | integer | yes | Non-negative kcal |
-| record_date | date | yes | Diet record date |
-| notes | varchar(255) | no | Optional note |
-| created_at | timestamp | yes | Created by database |
+| id | serial integer | 是 | 主键 |
+| user_id | integer | 是 | 外键关联 `users.id`，用户删除时级联删除 |
+| type | varchar(64) | 是 | 简单饮食类型或标签 |
+| calories | integer | 是 | 摄入热量，不能为负数 |
+| record_date | date | 是 | 饮食记录日期 |
+| notes | varchar(255) | 否 | 备注 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
 
-Index: `idx_diet_records_user_record_date` on `(user_id, record_date)`.
+索引：`idx_diet_records_user_record_date`，字段为 `(user_id, record_date)`。
 
 ### foods
 
-| Field | Type | Required | Rule |
-| --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| name | varchar(128) | yes | Unique food name |
-| calories_kcal | integer | yes | Non-negative kcal per serving reference |
-| protein_grams | decimal(6,2) | no | Non-negative when present |
-| fat_grams | decimal(6,2) | no | Non-negative when present |
-| carb_grams | decimal(6,2) | no | Non-negative when present |
-| serving_grams | decimal(6,2) | no | Positive when present |
-| metadata | jsonb | no | Optional food extension data |
-| created_at | timestamp | yes | Created by database |
+食物库表，保存常用食物的基础营养信息，供餐次明细引用。
 
-Unique key: `foods_name_key` on `name`.
+| 字段 | 类型 | 必填 | 规则 |
+| --- | --- | --- | --- |
+| id | serial integer | 是 | 主键 |
+| name | varchar(128) | 是 | 食物名称，唯一 |
+| calories_kcal | integer | 是 | 参考热量，不能为负数 |
+| protein_grams | decimal(6,2) | 否 | 蛋白质克数；填写时不能为负数 |
+| fat_grams | decimal(6,2) | 否 | 脂肪克数；填写时不能为负数 |
+| carb_grams | decimal(6,2) | 否 | 碳水克数；填写时不能为负数 |
+| serving_grams | decimal(6,2) | 否 | 参考份量克数；填写时必须大于 0 |
+| metadata | jsonb | 否 | 扩展食物信息 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+
+唯一索引：`foods_name_key`，字段为 `name`。
 
 ### meals
 
-| Field | Type | Required | Rule |
-| --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| user_id | integer | yes | Foreign key to `users.id`; cascade delete |
-| meal_date | date | yes | Meal date |
-| meal_type | varchar(32) | yes | Example: breakfast, lunch, dinner, snack |
-| notes | varchar(255) | no | Optional note |
-| created_at | timestamp | yes | Created by database |
+餐次表，保存用户某一天的一餐，例如早餐、午餐、晚餐或加餐。
 
-Index: `idx_meals_user_meal_date` on `(user_id, meal_date)`.
+| 字段 | 类型 | 必填 | 规则 |
+| --- | --- | --- | --- |
+| id | serial integer | 是 | 主键 |
+| user_id | integer | 是 | 外键关联 `users.id`，用户删除时级联删除 |
+| meal_date | date | 是 | 餐次日期 |
+| meal_type | varchar(32) | 是 | 餐次类型，例如 breakfast、lunch、dinner、snack |
+| notes | varchar(255) | 否 | 备注 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+
+索引：`idx_meals_user_meal_date`，字段为 `(user_id, meal_date)`。
 
 ### meal_items
 
-| Field | Type | Required | Rule |
+餐次明细表，保存一餐中具体吃了哪些食物和对应营养数据。
+
+| 字段 | 类型 | 必填 | 规则 |
 | --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| meal_id | integer | yes | Foreign key to `meals.id`; cascade delete |
-| food_id | integer | no | Optional foreign key to `foods.id`; set null on food delete |
-| food_name | varchar(128) | yes | Denormalized food name for historical display |
-| quantity_grams | decimal(8,2) | no | Positive when present |
-| calories | integer | yes | Non-negative kcal |
-| protein_grams | decimal(6,2) | no | Non-negative when present |
-| fat_grams | decimal(6,2) | no | Non-negative when present |
-| carb_grams | decimal(6,2) | no | Non-negative when present |
-| metadata | jsonb | no | Optional meal item extension data |
-| created_at | timestamp | yes | Created by database |
+| id | serial integer | 是 | 主键 |
+| meal_id | integer | 是 | 外键关联 `meals.id`，餐次删除时级联删除 |
+| food_id | integer | 否 | 可选外键关联 `foods.id`；食物删除时设为空 |
+| food_name | varchar(128) | 是 | 冗余保存食物名称，便于历史展示 |
+| quantity_grams | decimal(8,2) | 否 | 摄入克数；填写时必须大于 0 |
+| calories | integer | 是 | 摄入热量，不能为负数 |
+| protein_grams | decimal(6,2) | 否 | 蛋白质克数；填写时不能为负数 |
+| fat_grams | decimal(6,2) | 否 | 脂肪克数；填写时不能为负数 |
+| carb_grams | decimal(6,2) | 否 | 碳水克数；填写时不能为负数 |
+| metadata | jsonb | 否 | 扩展明细信息 |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
 
-Indexes:
+索引：
 
-- `idx_meal_items_meal_id` on `(meal_id)`
-- `idx_meal_items_food_id` on `(food_id)`
+- `idx_meal_items_meal_id`，字段为 `(meal_id)`
+- `idx_meal_items_food_id`，字段为 `(food_id)`
 
 ### goals
 
-| Field | Type | Required | Rule |
+健康目标表，保存用户每日运动、睡眠和饮食目标。
+
+| 字段 | 类型 | 必填 | 规则 |
 | --- | --- | --- | --- |
-| id | serial integer | yes | Primary key |
-| user_id | integer | yes | Foreign key to `users.id`; cascade delete |
-| goal_type | enum | yes | `DAILY_WORKOUT_MINUTES`, `DAILY_SLEEP_HOURS`, `DAILY_DIET_CALORIES` |
-| target_value | integer | yes | Positive target value |
-| period | enum | yes | MVP uses `DAILY` |
-| created_at | timestamp | yes | Created by database |
-| updated_at | timestamp | yes | Updated by Prisma |
+| id | serial integer | 是 | 主键 |
+| user_id | integer | 是 | 外键关联 `users.id`，用户删除时级联删除 |
+| goal_type | enum | 是 | `DAILY_WORKOUT_MINUTES`、`DAILY_SLEEP_HOURS`、`DAILY_DIET_CALORIES` |
+| target_value | integer | 是 | 目标值，必须为正数 |
+| period | enum | 是 | MVP 阶段使用 `DAILY` |
+| created_at | timestamp | 是 | 数据库生成创建时间 |
+| updated_at | timestamp | 是 | Prisma 自动更新时间 |
 
-Unique key: `(user_id, goal_type, period)`.
+唯一约束：`(user_id, goal_type, period)`，保证同一用户同一周期同一目标类型只有一条当前目标。
 
-## ER Relationship
+## ER 关系
 
 ```mermaid
 erDiagram
@@ -157,9 +171,9 @@ erDiagram
     USERS ||--o{ GOALS : sets
 ```
 
-## API Coverage
+## 当前接口覆盖
 
-Current protected APIs derive `user_id` from JWT and never accept user ownership from request bodies.
+当前受保护接口都从 JWT 中解析 `user_id`，不从请求体接收数据归属。
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
@@ -171,9 +185,9 @@ Current protected APIs derive `user_id` from JWT and never accept user ownership
 - `GET /api/stats/weekly`
 - `GET /api/stats/summary`
 
-## TODO For API Integration
+## 后续接口 TODO
 
-- Implement or align `/api/sleeps` to persist `record_date`, `duration_hours`, `deep_hours`, `bed_time`, `wake_time`, `quality_score`, `notes`, and `metadata`.
-- Implement or align `/api/diets` to write structured `meals` and `meal_items`, while keeping `diet_records` only as a compatibility summary table if needed.
-- Update `/api/stats/today` to aggregate workout minutes, sleep hours, and diet calories against the three daily goal types.
-- Add report, suggestion, reminder, device raw data, and audit tables in a later phase. They are intentionally not part of this MVP database change.
+- 对齐 `/api/sleeps`，使其写入 `record_date`、`duration_hours`、`deep_hours`、`bed_time`、`wake_time`、`quality_score`、`notes` 和 `metadata`。
+- 对齐 `/api/diets`，后续应写入结构化的 `meals` 和 `meal_items`；`diet_records` 只作为兼容或汇总表保留。
+- 更新 `/api/stats/today`，按运动、睡眠、饮食三类每日目标聚合统计数据。
+- 健康报告、智能建议、提醒、设备原始数据和审计日志表留到下一阶段，本次 MVP 数据库变更不包含这些表。
