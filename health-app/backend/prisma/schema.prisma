@@ -9,6 +9,8 @@ datasource db {
 
 enum GoalType {
   DAILY_WORKOUT_MINUTES
+  DAILY_SLEEP_HOURS
+  DAILY_DIET_CALORIES
 }
 
 enum GoalPeriod {
@@ -26,6 +28,7 @@ model User {
   goals        Goal[]
   sleeps       SleepRecord[]
   diets        DietRecord[]
+  meals        Meal[]
 
   @@map("users")
 }
@@ -60,16 +63,20 @@ model Goal {
 }
 
 model SleepRecord {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  sleepTime   DateTime @map("sleep_time")
-  wakeTime    DateTime @map("wake_time")
-  quality     Int      @default(0)
-  notes       String?  @db.VarChar(255)
-  createdAt   DateTime @default(now()) @map("created_at")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  recordDate    DateTime @default(now()) @map("record_date") @db.Date
+  durationHours Decimal? @map("duration_hours") @db.Decimal(4, 2)
+  deepHours     Decimal? @map("deep_hours") @db.Decimal(4, 2)
+  sleepTime     DateTime @map("bed_time")
+  wakeTime      DateTime @map("wake_time")
+  quality       Int      @default(0) @map("quality_score")
+  notes         String?  @db.VarChar(255)
+  metadata      Json?    @db.JsonB
+  createdAt     DateTime @default(now()) @map("created_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId], map: "idx_sleep_records_user")
+  @@index([userId, recordDate], map: "idx_sleep_records_user_record_date")
   @@map("sleep_records")
 }
 
@@ -85,4 +92,53 @@ model DietRecord {
 
   @@index([userId, recordDate], map: "idx_diet_records_user_record_date")
   @@map("diet_records")
+}
+
+model Food {
+  id            Int        @id @default(autoincrement())
+  name          String     @unique @db.VarChar(128)
+  caloriesKcal  Int        @default(0) @map("calories_kcal")
+  proteinGrams  Decimal?   @map("protein_grams") @db.Decimal(6, 2)
+  fatGrams      Decimal?   @map("fat_grams") @db.Decimal(6, 2)
+  carbGrams     Decimal?   @map("carb_grams") @db.Decimal(6, 2)
+  servingGrams  Decimal?   @map("serving_grams") @db.Decimal(6, 2)
+  metadata      Json?      @db.JsonB
+  createdAt     DateTime   @default(now()) @map("created_at")
+  mealItems     MealItem[]
+
+  @@map("foods")
+}
+
+model Meal {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @map("user_id")
+  mealDate  DateTime   @map("meal_date") @db.Date
+  mealType  String     @map("meal_type") @db.VarChar(32)
+  notes     String?    @db.VarChar(255)
+  createdAt DateTime   @default(now()) @map("created_at")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     MealItem[]
+
+  @@index([userId, mealDate], map: "idx_meals_user_meal_date")
+  @@map("meals")
+}
+
+model MealItem {
+  id             Int      @id @default(autoincrement())
+  mealId         Int      @map("meal_id")
+  foodId         Int?     @map("food_id")
+  foodName       String   @map("food_name") @db.VarChar(128)
+  quantityGrams  Decimal? @map("quantity_grams") @db.Decimal(8, 2)
+  calories       Int      @default(0)
+  proteinGrams   Decimal? @map("protein_grams") @db.Decimal(6, 2)
+  fatGrams       Decimal? @map("fat_grams") @db.Decimal(6, 2)
+  carbGrams      Decimal? @map("carb_grams") @db.Decimal(6, 2)
+  metadata       Json?    @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at")
+  meal           Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  food           Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([mealId], map: "idx_meal_items_meal_id")
+  @@index([foodId], map: "idx_meal_items_food_id")
+  @@map("meal_items")
 }
