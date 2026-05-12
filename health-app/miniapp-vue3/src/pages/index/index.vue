@@ -173,21 +173,21 @@ async function handleLogin() {
 
 // 注册
 async function handleRegister() {
-  authError.value = ''
-  try {
-    const res = await auth.register(account.value, password.value)
-    setUser(res.token, res.user.account)
-    uni.showToast({ title: '注册成功', icon: 'success' })
-  } catch (e) {
-    authError.value = e.message
-    uni.showToast({ title: e.message, icon: 'none' })
-  }
+  uni.navigateTo({ url: '/pages/register/register' })
 }
 
 // 退出登录
 function logout() {
-  clearUser()
-  uni.showToast({ title: '已退出', icon: 'none' })
+  uni.showModal({
+    title: '提示',
+    content: '确定要退出登录吗？',
+    success: (res) => {
+      if (res.confirm) {
+        clearUser()
+        uni.showToast({ title: '已退出', icon: 'none' })
+      }
+    }
+  })
 }
 
 // 功能跳转
@@ -200,7 +200,7 @@ function goWeightLoss() {
 }
 
 function goWellness() {
-  uni.showToast({ title: '养生功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/wellness/wellness' })
 }
 
 function goWork() {
