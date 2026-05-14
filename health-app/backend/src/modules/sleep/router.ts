@@ -14,14 +14,7 @@ const sleepSchema = z.object({
   notes: z.string().trim().max(255).optional(),
 });
 
-function serializeSleep(record: {
-  id: number;
-  sleepTime: Date;
-  wakeTime: Date;
-  quality: number;
-  notes: string | null;
-  createdAt: Date;
-}) {
+function serializeSleep(record: any) {
   return {
     id: record.id,
     sleepTime: record.sleepTime.toISOString(),
@@ -38,11 +31,44 @@ sleepRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
+    const { date } = req.query;
+    
+    const where: any = { userId };
+    if (date) {
+      where.recordDate = {
+        gte: new Date(String(date)),
+        lt: new Date(new Date(String(date)).getTime() + 24 * 60 * 60 * 1000),
+      };
+    }
+    
     const records = await prisma.sleepRecord.findMany({
-      where: { userId },
+      where,
       orderBy: [{ createdAt: "desc" }],
     });
     ok(res, records.map(serializeSleep));
+  }),
+);
+
+sleepRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const id = Number(req.params.id);
+    
+    if (!Number.isInteger(id)) {
+      throw new HttpError(400, "invalid sleep record id");
+    }
+    
+    const record = await prisma.sleepRecord.findUnique({ where: { id } });
+    if (!record) {
+      throw new HttpError(404, "sleep record not found");
+    }
+    
+    if (record.userId !== userId) {
+      throw new HttpError(403, "cannot access another user's sleep record");
+    }
+    
+    ok(res, serializeSleep(record));
   }),
 );
 
@@ -62,5 +88,73 @@ sleepRouter.post(
       },
     });
     ok(res, serializeSleep(record), "created");
+  }),
+);
+
+sleepRouter.put(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const id = Number(req.params.id);
+    
+    if (!Number.isInteger(id)) {
+      throw new HttpError(400, "invalid sleep record id");
+    }
+    
+    const record = await prisma.sleepRecord.findUnique({ where: { id } });
+    if (!record) {
+      throw new HttpError(404, "sleep record not found");
+    }
+    
+    if (record.userId !== userId) {
+      throw new HttpError(403, "cannot modify another user's sleep record");
+    }
+    
+    const body = sleepSchema.partial().parse(req.body);
+    
+    const data: any = {};
+    if (body.sleepTime) {
+      data.sleepTime = new Date(body.sleepTime);
+    }
+    if (body.wakeTime) {
+      data.wakeTime = new Date(body.wakeTime);
+    }
+    if (body.quality !== undefined) {
+      data.quality = body.quality;
+    }
+    if (body.notes !== undefined) {
+      data.notes = body.notes;
+    }
+    
+    const updatedRecord = await prisma.sleepRecord.update({
+      where: { id },
+      data,
+    });
+    
+    ok(res, serializeSleep(updatedRecord), "updated");
+  }),
+);
+
+sleepRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const id = Number(req.params.id);
+    
+    if (!Number.isInteger(id)) {
+      throw new HttpError(400, "invalid sleep record id");
+    }
+    
+    const record = await prisma.sleepRecord.findUnique({ where: { id } });
+    if (!record) {
+      throw new HttpError(404, "sleep record not found");
+    }
+    
+    if (record.userId !== userId) {
+      throw new HttpError(403, "cannot delete another user's sleep record");
+    }
+    
+    await prisma.sleepRecord.delete({ where: { id } });
+    ok(res, null, "deleted");
   }),
 );

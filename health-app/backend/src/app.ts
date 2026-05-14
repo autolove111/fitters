@@ -6,6 +6,9 @@ import { statsRouter } from "./modules/stats/router.js";
 import { workoutsRouter } from "./modules/workouts/router.js";
 import { sleepRouter } from "./modules/sleep/router.js";
 import { dietRouter } from "./modules/diet/router.js";
+import { foodRouter } from "./modules/food/router.js";
+import { mealRouter } from "./modules/meal/router.js";
+import { usersRouter } from "./modules/users/router.js";
 import { errorHandler } from "./common/errors.js";
 
 export function createApp() {
@@ -19,11 +22,14 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/users", usersRouter);
   app.use("/api/workouts", workoutsRouter);
   app.use("/api/goals", goalsRouter);
   app.use("/api/stats", statsRouter);
   app.use("/api/sleeps", sleepRouter);
   app.use("/api/diets", dietRouter);
+  app.use("/api/foods", foodRouter);
+  app.use("/api/meals", mealRouter);
   app.use(errorHandler);
 
   return app;
