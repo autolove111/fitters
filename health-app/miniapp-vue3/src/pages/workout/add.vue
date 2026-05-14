@@ -34,6 +34,9 @@ async function submit() {
   try {
     await workoutApi.add(form)
     uni.showToast({ title: '添加成功' })
+    if (uni && typeof uni.$emit === 'function') {
+      uni.$emit('historyRefresh')
+    }
     setTimeout(() => uni.navigateBack(), 1500)
   } catch (e) {
     uni.showToast({ title: e.message, icon: 'error' })
