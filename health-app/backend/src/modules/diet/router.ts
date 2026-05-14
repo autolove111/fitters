@@ -9,7 +9,8 @@ import { dateOnly, formatDate } from "../../utils/dates.js";
 export const dietRouter = Router();
 
 const dietSchema = z.object({
-  type: z.string().trim().min(1).max(64),
+  type: z.string().trim().min(1).max(64).optional(),
+  foodName: z.string().trim().min(1).max(64).optional(),
   calories: z.number().int().min(0).default(0),
   recordDate: z.string().optional(),
   date: z.string().optional(),
@@ -87,10 +88,15 @@ dietRouter.post(
       throw new HttpError(400, "recordDate is required");
     }
 
+    const type = body.type || body.foodName;
+    if (!type) {
+      throw new HttpError(400, "type or foodName is required");
+    }
+
     const record = await prisma.dietRecord.create({
       data: {
         userId,
-        type: body.type,
+        type,
         calories: body.calories,
         recordDate: dateOnly(recordDate),
         notes: body.notes,

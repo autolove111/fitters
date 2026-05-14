@@ -8,8 +8,10 @@ import { prisma } from "../../prisma.js";
 export const sleepRouter = Router();
 
 const sleepSchema = z.object({
-  sleepTime: z.string().datetime(),
-  wakeTime: z.string().datetime(),
+  sleepTime: z.string().datetime().optional(),
+  wakeTime: z.string().datetime().optional(),
+  date: z.string().optional(),
+  durationHours: z.number().positive().optional(),
   quality: z.number().int().min(0).max(10).default(0),
   notes: z.string().trim().max(255).optional(),
 });
@@ -78,11 +80,29 @@ sleepRouter.post(
     const userId = (req as AuthenticatedRequest).userId;
     const body = sleepSchema.parse(req.body);
 
+    let sleepTime: Date;
+    let wakeTime: Date;
+    let durationHours: number;
+
+    if (body.sleepTime && body.wakeTime) {
+      sleepTime = new Date(body.sleepTime);
+      wakeTime = new Date(body.wakeTime);
+      durationHours = (wakeTime.getTime() - sleepTime.getTime()) / (1000 * 60 * 60);
+    } else if (body.date && body.durationHours) {
+      const dateStr = body.date;
+      sleepTime = new Date(`${dateStr}T22:00:00.000Z`);
+      wakeTime = new Date(sleepTime.getTime() + body.durationHours * 60 * 60 * 1000);
+      durationHours = body.durationHours;
+    } else {
+      throw new HttpError(400, "invalid request parameters: need sleepTime/wakeTime or date/durationHours");
+    }
+
     const record = await prisma.sleepRecord.create({
       data: {
         userId,
-        sleepTime: new Date(body.sleepTime),
-        wakeTime: new Date(body.wakeTime),
+        sleepTime,
+        wakeTime,
+        durationHours,
         quality: body.quality,
         notes: body.notes,
       },
