@@ -268,3 +268,65 @@ statsRouter.get(
     });
   }),
 );
+
+statsRouter.get(
+  "/history",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const days = parseInt((req as any).query.days) || 30;
+    
+    const end = todayUtc();
+    const start = addDays(end, -days + 1);
+
+    const [workoutRecords, sleepRecords, mealItems] = await Promise.all([
+      prisma.workoutRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
+        select: { recordDate: true, durationMinutes: true },
+      }),
+      prisma.sleepRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
+        select: { recordDate: true, durationHours: true },
+      }),
+      prisma.mealItem.findMany({
+        where: { meal: { userId, mealDate: { gte: start, lt: addDays(end, 1) } } },
+        select: { meal: { select: { mealDate: true } }, calories: true },
+      }),
+    ]);
+
+    const workoutMinutesByDate = new Map<string, number>();
+    const sleepHoursByDate = new Map<string, number>();
+    const mealCaloriesByDate = new Map<string, number>();
+
+    for (const record of workoutRecords) {
+      const date = formatDate(record.recordDate);
+      workoutMinutesByDate.set(date, (workoutMinutesByDate.get(date) || 0) + record.durationMinutes);
+    }
+
+    for (const record of sleepRecords) {
+      const date = formatDate(record.recordDate);
+      sleepHoursByDate.set(date, (sleepHoursByDate.get(date) || 0) + (toNumber(record.durationHours) ?? 0));
+    }
+
+    for (const item of mealItems) {
+      const date = formatDate(item.meal.mealDate);
+      mealCaloriesByDate.set(date, (mealCaloriesByDate.get(date) || 0) + item.calories);
+    }
+
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const date = addDays(start, i);
+      const dateStr = formatDate(date);
+      result.push({
+        date: dateStr,
+        workoutMinutes: workoutMinutesByDate.get(dateStr) || 0,
+        sleepHours: sleepHoursByDate.get(dateStr) || 0,
+        dietCalories: mealCaloriesByDate.get(dateStr) || 0,
+        workoutTarget: 30,
+        sleepTarget: 8,
+        dietTarget: 2000,
+      });
+    }
+
+    ok(res, result);
+  }),
+);
