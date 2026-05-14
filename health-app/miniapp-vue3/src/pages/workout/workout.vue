@@ -340,6 +340,9 @@ onMounted(() => {
     uni.reLaunch({ url: '/pages/index/index' })
   } else {
     loadDashboard()
+    if (uni && typeof uni.$on === 'function') {
+      uni.$on('historyRefresh', loadDashboard)
+    }
   }
 })
 </script>

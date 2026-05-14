@@ -130,6 +130,102 @@ statsRouter.get(
 );
 
 statsRouter.get(
+  "/history",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const requestedDays = Number(req.query.days ?? 30);
+    const days = Math.min(Math.max(requestedDays, 1), 90);
+    const end = todayUtc();
+    const start = addDays(end, -(days - 1));
+
+    const [workoutGoal, sleepGoal, dietGoal, workoutRecords, sleepRecords, dietRecords] = await Promise.all([
+      prisma.goal.findUnique({
+        where: {
+          userId_goalType_period: {
+            userId,
+            goalType: GoalType.DAILY_WORKOUT_MINUTES,
+            period: GoalPeriod.DAILY,
+          },
+        },
+      }),
+      prisma.goal.findUnique({
+        where: {
+          userId_goalType_period: {
+            userId,
+            goalType: GoalType.DAILY_SLEEP_HOURS,
+            period: GoalPeriod.DAILY,
+          },
+        },
+      }),
+      prisma.goal.findUnique({
+        where: {
+          userId_goalType_period: {
+            userId,
+            goalType: GoalType.DAILY_DIET_CALORIES,
+            period: GoalPeriod.DAILY,
+          },
+        },
+      }),
+      prisma.workoutRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
+        select: { recordDate: true, durationMinutes: true, calories: true },
+      }),
+      prisma.sleepRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
+        select: { recordDate: true, durationHours: true },
+      }),
+      prisma.dietRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
+        select: { recordDate: true, calories: true },
+      }),
+    ]);
+
+    const workoutByDate = new Map<string, { minutes: number; calories: number }>();
+    const sleepByDate = new Map<string, number>();
+    const dietByDate = new Map<string, number>();
+
+    for (const record of workoutRecords) {
+      const date = formatDate(record.recordDate);
+      const current = workoutByDate.get(date) || { minutes: 0, calories: 0 };
+      workoutByDate.set(date, {
+        minutes: current.minutes + record.durationMinutes,
+        calories: current.calories + record.calories,
+      });
+    }
+
+    for (const record of sleepRecords) {
+      const date = formatDate(record.recordDate);
+      sleepByDate.set(date, (sleepByDate.get(date) || 0) + (toNumber(record.durationHours) || 0));
+    }
+
+    for (const record of dietRecords) {
+      const date = formatDate(record.recordDate);
+      dietByDate.set(date, (dietByDate.get(date) || 0) + record.calories);
+    }
+
+    const workoutTarget = workoutGoal?.targetValue ?? 30;
+    const sleepTarget = sleepGoal?.targetValue ?? 8;
+    const dietTarget = dietGoal?.targetValue ?? 2000;
+
+    const daysList = Array.from({ length: days }, (_, index) => {
+      const date = formatDate(addDays(start, index));
+      return {
+        date,
+        workoutMinutes: workoutByDate.get(date)?.minutes ?? 0,
+        workoutCalories: workoutByDate.get(date)?.calories ?? 0,
+        sleepHours: sleepByDate.get(date) ?? 0,
+        dietCalories: dietByDate.get(date) ?? 0,
+        workoutTarget,
+        sleepTarget,
+        dietTarget,
+      };
+    });
+
+    ok(res, daysList);
+  }),
+);
+
+statsRouter.get(
   "/summary",
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
