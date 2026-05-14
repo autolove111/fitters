@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
+import type { ZodError } from "zod";
 
 export class HttpError extends Error {
   constructor(
@@ -24,7 +25,20 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   }
 
   if (error?.name === "ZodError") {
-    res.status(400).json({ code: 400, message: "Invalid request parameters", data: error.errors });
+    const zodError = error as ZodError;
+    const errorMessages = zodError.errors.map(err => {
+      const field = err.path.join('.');
+      let message = err.message;
+      if (err.code === 'too_small') {
+        message = `${field}至少需要${err.minimum}个字符`;
+      } else if (err.code === 'too_big') {
+        message = `${field}最多允许${err.maximum}个字符`;
+      } else if (err.code === 'invalid_type') {
+        message = `${field}类型不正确`;
+      }
+      return message;
+    });
+    res.status(400).json({ code: 400, message: errorMessages.join(', '), data: zodError.errors });
     return;
   }
 
