@@ -51,24 +51,39 @@
     <!-- 过去30天统计卡片 -->
     <view class="history-card">
       <view class="card-header">
-        <text class="card-title">📊 过去30天统计</text>
-        <text class="card-subtitle">基于历史数据</text>
+        <view class="header-left">
+          <text class="card-title">📊 过去30天统计</text>
+          <text class="card-subtitle">基于历史数据</text>
+        </view>
+        <view class="header-decoration"></view>
       </view>
+      
+      <!-- 统计网格 -->
       <view class="history-stats-grid">
         <view v-for="(stat, index) in statsList" :key="index" class="history-stat-item">
           <view class="stat-label-row">
-            <text class="history-stat-label">{{ stat.label }}</text>
+            <view class="label-with-icon">
+              <text class="stat-icon-small">{{ getStatIcon(stat.label) }}</text>
+              <text class="history-stat-label">{{ stat.label }}</text>
+            </view>
             <text class="info-icon" @click.stop="showStatInfo(stat.info)">ⓘ</text>
           </view>
           <text class="history-stat-value">{{ stat.value }}</text>
         </view>
       </view>
-      <!-- 最近7天趋势简图 -->
+      
+      <!-- 最近7天运动趋势 -->
       <view class="trend-section">
-        <text class="trend-title">最近7天运动趋势</text>
+        <view class="trend-header">
+          <text class="trend-title">🏋️ 最近7天运动趋势</text>
+          <text class="trend-unit">分钟</text>
+        </view>
         <view class="bars-container">
           <view v-for="(item, index) in weeklyTrend" :key="index" class="bar-item">
-            <view class="bar" :style="{ height: item.height + 'px' }"></view>
+            <text class="bar-value">{{ item.minutes }}分</text>
+            <view class="bar-wrapper">
+              <view class="bar" :style="{ height: item.height + 'px' }"></view>
+            </view>
             <text class="bar-label">{{ item.dayLabel }}</text>
           </view>
         </view>
@@ -187,6 +202,19 @@ const statsList = computed(() => [
     info: '过去30天中，睡眠时长达到或超过目标（默认8小时）的天数。帮助评估睡眠充足程度。' 
   }
 ])
+
+// 为统计项添加图标映射
+const getStatIcon = (label) => {
+  const iconMap = {
+    '总运动': '🏃‍♂️',
+    '日均运动': '📈',
+    '平均睡眠': '😴',
+    '日均摄入': '🍽️',
+    '运动达标天数': '🎯',
+    '睡眠达标天数': '⭐'
+  }
+  return iconMap[label] || '📊'
+}
 
 // 显示统计项说明
 const showStatInfo = (infoText) => {
@@ -567,97 +595,201 @@ onMounted(() => {
   transition: width 0.3s;
 }
 
-/* 历史卡片 */
+/* ========== 过去30天统计卡片（美化区域） ========== */
 .history-card {
-  background: white;
-  border-radius: 24rpx;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 32rpx;
   padding: 30rpx;
   margin-bottom: 30rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
 }
+
+/* 卡片头部美化 */
 .card-header {
-  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  position: relative;
+}
+.header-left {
+  flex: 1;
 }
 .card-title {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: bold;
-  color: #303133;
+  background: linear-gradient(135deg, #2c6ed1, #409eff);
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1rpx;
 }
 .card-subtitle {
   font-size: 24rpx;
   color: #909399;
-  margin-left: 10rpx;
+  margin-left: 12rpx;
+  background: #f0f2f5;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
 }
+.header-decoration {
+  width: 6rpx;
+  height: 40rpx;
+  background: linear-gradient(135deg, #409eff, #2c6ed1);
+  border-radius: 4rpx;
+  opacity: 0.6;
+}
+
+/* 统计网格布局增强 */
 .history-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
-  margin-bottom: 30rpx;
+  margin-bottom: 36rpx;
 }
 .history-stat-item {
-  background: #f5f7fa;
-  padding: 16rpx;
-  border-radius: 16rpx;
-  text-align: left;
+  background: linear-gradient(145deg, #fff5f7, #ffeef4);
+  padding: 20rpx 16rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02), 0 2rpx 4rpx rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1rpx solid rgba(64, 158, 255, 0.08);
+}
+.history-stat-item:active {
+  transform: scale(0.98);
+  background: #ffffff;
 }
 .stat-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8rpx;
+  margin-bottom: 12rpx;
+}
+.label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.stat-icon-small {
+  font-size: 28rpx;
+  filter: drop-shadow(0 2rpx 2rpx rgba(0,0,0,0.05));
 }
 .history-stat-label {
-  font-size: 24rpx;
-  color: #606266;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #4a5568;
+  letter-spacing: 0.5rpx;
 }
 .info-icon {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #909399;
-  padding: 4rpx 8rpx;
-  background-color: rgba(0,0,0,0.05);
-  border-radius: 30rpx;
-  line-height: 1;
-  margin-left: 10rpx;
+  background: rgba(0, 0, 0, 0.04);
+  width: 40rpx;
+  height: 40rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 40rpx;
+  transition: background 0.2s;
+}
+.info-icon:active {
+  background: rgba(0, 0, 0, 0.1);
 }
 .history-stat-value {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #303133;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1e293b;
   display: block;
+  line-height: 1.3;
+  padding-left: 8rpx;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  background-clip: text;
+  color: transparent;
 }
+
+/* 趋势区域美化 */
 .trend-section {
   margin-top: 20rpx;
+  background: #fafcff;
+  border-radius: 28rpx;
+  padding: 20rpx 12rpx 16rpx;
+  box-shadow: inset 0 1rpx 2rpx rgba(0,0,0,0.02), 0 2rpx 6rpx rgba(0,0,0,0.02);
+}
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24rpx;
+  padding: 0 12rpx;
 }
 .trend-title {
-  font-size: 26rpx;
-  color: #606266;
-  display: block;
-  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  background: linear-gradient(135deg, #409eff40 0%, #eef2ff 100%);
+  padding: 6rpx 20rpx;
+  border-radius: 40rpx;
+  letter-spacing: 1rpx;
+}
+.trend-unit {
+  font-size: 22rpx;
+  color: #a0abb8;
+  background: #f0f2f5;
+  padding: 4rpx 12rpx;
+  border-radius: 24rpx;
 }
 .bars-container {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  height: 120rpx;
+  height: 170rpx;
+  gap: 12rpx;
+  padding: 10rpx 0;
 }
 .bar-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
+  min-width: 0;
+}
+.bar-value {
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #409eff;
+  background: #ecf5ff;
+  padding: 4rpx 8rpx;
+  border-radius: 20rpx;
+  margin-bottom: 8rpx;
+  white-space: nowrap;
+}
+.bar-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+  border-radius: 20rpx;
+  height: 80rpx;
+  align-items: flex-end;
+  overflow: hidden;
 }
 .bar {
-  width: 30rpx;
-  background: linear-gradient(135deg, #409eff, #2c6ed1);
-  border-radius: 8rpx 8rpx 0 0;
-  transition: height 0.3s ease;
-  min-height: 4rpx;
+  width: 44rpx;
+  background: linear-gradient(0deg, #409eff, #66b1ff);
+  border-radius: 20rpx 20rpx 8rpx 8rpx;
+  transition: height 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  box-shadow: 0 -2rpx 6rpx rgba(64, 158, 255, 0.2);
 }
 .bar-label {
-  font-size: 20rpx;
-  color: #909399;
-  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #7e8c9e;
+  margin-top: 12rpx;
+  font-weight: 500;
+  background: #f8fafc;
+  padding: 4rpx 10rpx;
+  border-radius: 20rpx;
 }
+/* ========== 美化区域结束 ========== */
 
 /* 建议卡片 */
 .advice-card {
