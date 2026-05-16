@@ -115,12 +115,6 @@
       <button class="action-btn warning" @click="navigateTo('diet/add')">🍽️ 饮食</button>
     </view>
 
-    <!-- 底部导航 -->
-    <view class="bottom-nav">
-      <button class="nav-btn" @click="navigateTo('history/index')">历史统计</button>
-      <button class="nav-btn" @click="navigateTo('profile/index')">个人中心</button>
-    </view>
-
     <!-- 加载遮罩 -->
     <view v-if="loading" class="loading-mask">
       <view class="loading-content">加载中...</view>
