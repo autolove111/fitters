@@ -55,29 +55,12 @@
         <text class="card-subtitle">基于历史数据</text>
       </view>
       <view class="history-stats-grid">
-        <view class="history-stat-item">
-          <text class="history-stat-label">总运动</text>
-          <text class="history-stat-value">{{ historyStats.totalWorkout }}分钟</text>
-        </view>
-        <view class="history-stat-item">
-          <text class="history-stat-label">日均运动</text>
-          <text class="history-stat-value">{{ historyStats.avgWorkout }}分钟/天</text>
-        </view>
-        <view class="history-stat-item">
-          <text class="history-stat-label">平均睡眠</text>
-          <text class="history-stat-value">{{ historyStats.avgSleep }}小时/天</text>
-        </view>
-        <view class="history-stat-item">
-          <text class="history-stat-label">日均摄入</text>
-          <text class="history-stat-value">{{ historyStats.avgDiet }}千卡</text>
-        </view>
-        <view class="history-stat-item">
-          <text class="history-stat-label">运动达标天数</text>
-          <text class="history-stat-value">{{ historyStats.workoutGoalDays }}天</text>
-        </view>
-        <view class="history-stat-item">
-          <text class="history-stat-label">睡眠达标天数</text>
-          <text class="history-stat-value">{{ historyStats.sleepGoalDays }}天</text>
+        <view v-for="(stat, index) in statsList" :key="index" class="history-stat-item">
+          <view class="stat-label-row">
+            <text class="history-stat-label">{{ stat.label }}</text>
+            <text class="info-icon" @click.stop="showStatInfo(stat.info)">ⓘ</text>
+          </view>
+          <text class="history-stat-value">{{ stat.value }}</text>
         </view>
       </view>
       <!-- 最近7天趋势简图 -->
@@ -143,7 +126,7 @@ const loading = ref(false)
 const generatingPlan = ref(false)
 const trainingPlan = ref('')
 
-// 今日数据
+// 今日数据（将从后端接口填充）
 const todayStats = ref({
   workoutMinutes: 0,
   workoutTarget: 30,
@@ -164,55 +147,194 @@ const historyStats = ref({
   workoutGoalDays: 0,
   sleepGoalDays: 0
 })
-const weeklyTrend = ref([]) // 最近7天趋势 { height, dayLabel }
+const weeklyTrend = ref([])
 
 // 百分比计算
 const workoutPercent = computed(() => Math.min(100, (todayStats.value.workoutMinutes / todayStats.value.workoutTarget) * 100))
 const sleepPercent = computed(() => Math.min(100, (todayStats.value.sleepHours / todayStats.value.sleepTarget) * 100))
-const dietPercent = computed(() => {
-  const consumed = todayStats.value.dietCalories
-  const target = todayStats.value.dietTarget
-  return consumed >= target ? 100 : (consumed / target) * 100
-})
+const dietPercent = computed(() => Math.min(100, (todayStats.value.dietCalories / todayStats.value.dietTarget) * 100))
 
-// ---------- 业务逻辑 ----------
+// 统计数据列表（用于历史卡片）
+const statsList = computed(() => [
+  { 
+    label: '总运动', 
+    value: `${historyStats.value.totalWorkout}分钟`, 
+    info: '过去30天内所有运动时长的总和，单位：分钟。帮助您了解整体运动量。' 
+  },
+  { 
+    label: '日均运动', 
+    value: `${historyStats.value.avgWorkout}分钟/天`, 
+    info: '过去30天平均每天的运动时长，反映您的日常运动习惯。' 
+  },
+  { 
+    label: '平均睡眠', 
+    value: `${historyStats.value.avgSleep}小时/天`, 
+    info: '过去30天平均每天的睡眠时长，单位：小时。有助于评估睡眠规律性。' 
+  },
+  { 
+    label: '日均摄入', 
+    value: `${historyStats.value.avgDiet}千卡`, 
+    info: '过去30天平均每天从饮食中摄入的热量，单位：千卡。用于监控能量平衡。' 
+  },
+  { 
+    label: '运动达标天数', 
+    value: `${historyStats.value.workoutGoalDays}天`, 
+    info: '过去30天中，运动时长达到或超过目标（默认30分钟）的天数。反映运动计划的执行情况。' 
+  },
+  { 
+    label: '睡眠达标天数', 
+    value: `${historyStats.value.sleepGoalDays}天`, 
+    info: '过去30天中，睡眠时长达到或超过目标（默认8小时）的天数。帮助评估睡眠充足程度。' 
+  }
+])
+
+// 显示统计项说明
+const showStatInfo = (infoText) => {
+  uni.showModal({
+    title: '数据说明',
+    content: infoText,
+    showCancel: false,
+    confirmText: '知道了'
+  })
+}
+
+// ---------- 数据加载 ----------
 async function loadDashboard() {
   if (!isLoggedIn.value) return
   loading.value = true
   try {
-    // 获取今日数据
-    const today = await statsApi.today()
-    todayStats.value = {
-      workoutMinutes: today.workoutMinutes || 0,
-      workoutTarget: today.workoutTarget || 30,
-      sleepHours: today.sleepHours || 0,
-      sleepTarget: today.sleepTarget || 8,
-      dietCalories: today.dietCalories || 0,
-      dietTarget: today.dietTarget || 2000
+    // 并行请求今日运动、睡眠、饮食数据
+    const [todayData, sleepTodayData, dietTodayData] = await Promise.all([
+      statsApi.today(),
+      statsApi.sleepToday(),
+      statsApi.dietToday()
+    ])
+
+    // 1. 运动数据
+    const workoutTarget = todayData.targetMinutes ?? 30
+    const workoutMinutes = todayData.completedMinutes ?? 0
+    // 2. 睡眠数据
+    const sleepTarget = sleepTodayData.targetHours ?? 8
+    // 计算总睡眠时长（多条记录累加 durationHours）
+    let sleepHours = 0
+    if (sleepTodayData.records && Array.isArray(sleepTodayData.records)) {
+      sleepHours = sleepTodayData.records.reduce((sum, r) => sum + (r.durationHours || 0), 0)
     }
+    // 3. 饮食数据
+    const dietTarget = dietTodayData.targetCalories ?? 2000
+    const dietCalories = dietTodayData.totalCalories ?? 0
+
+    todayStats.value = {
+      workoutMinutes,
+      workoutTarget,
+      sleepHours,
+      sleepTarget,
+      dietCalories,
+      dietTarget
+    }
+
+    // 计算今日健康指数（基于完成百分比）
+    const workoutScore = Math.min(100, (workoutMinutes / workoutTarget) * 100)
+    const sleepScore = Math.min(100, (sleepHours / sleepTarget) * 100)
+    // 饮食得分：越接近目标越高，使用偏差率计算（100 - 偏差百分比）
+    const dietDiffPercent = Math.abs(dietCalories - dietTarget) / dietTarget * 100
+    const dietScore = Math.max(0, 100 - dietDiffPercent)
+    const totalScore = Math.round((workoutScore + sleepScore + dietScore) / 3)
+    dailyReport.value.score = totalScore
+
+    // 生成建议
     generateReportAndAdvice()
 
-    // 获取过去30天历史数据
+    // 加载历史数据
     await loadHistoryStats()
   } catch (e) {
-    uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    console.error('加载仪表盘数据失败', e)
+    uni.showToast({ title: e.message || '加载失败，请检查网络', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-function resetHistoryStatsToZero() {
-  historyStats.value = {
-    totalWorkout: 0,
-    avgWorkout: 0,
-    avgSleep: 0,
-    avgDiet: 0,
-    workoutGoalDays: 0,
-    sleepGoalDays: 0
+// 生成智能健康建议
+function generateReportAndAdvice() {
+  const w = todayStats.value.workoutMinutes
+  const wTarget = todayStats.value.workoutTarget
+  const s = todayStats.value.sleepHours
+  const sTarget = todayStats.value.sleepTarget
+  const d = todayStats.value.dietCalories
+  const dTarget = todayStats.value.dietTarget
+  
+  const adviceList = []
+  
+  // 1. 睡眠分析
+  if (s === 0) {
+    adviceList.push('⚠️ 今日无睡眠记录，睡眠对健康至关重要，请保证充足休息。')
+  } else if (s < 6) {
+    adviceList.push('😴 睡眠严重不足（<6小时），长期缺觉会影响免疫力和记忆力，建议今晚提前1小时入睡。')
+  } else if (s < 7) {
+    adviceList.push('😌 睡眠偏少（6-7小时），建议适当增加睡眠时间，理想目标是8小时。')
+  } else if (s >= 9) {
+    adviceList.push('🛌 睡眠时间过长（>9小时），可能影响精力，建议保持规律作息。')
+  } else if (s >= sTarget - 0.5 && s <= sTarget + 0.5) {
+    adviceList.push('🎯 睡眠时长理想，继续保持！')
   }
-  weeklyTrend.value = []  // 清空趋势图
+  
+  // 2. 运动分析
+  if (w === 0) {
+    adviceList.push('🏃 今日未运动，建议进行30分钟中等强度活动，如快走、慢跑。')
+  } else if (w < wTarget * 0.5) {
+    adviceList.push('📉 运动量不足，未达到目标的一半，建议增加运动频率或时长。')
+  } else if (w < wTarget) {
+    adviceList.push('💪 运动量接近目标，再坚持一下就能达标！')
+  } else if (w >= wTarget && w < wTarget * 1.2) {
+    adviceList.push('✅ 运动达标！继续保持这个好习惯。')
+  } else if (w >= wTarget * 1.5) {
+    adviceList.push('🏋️ 运动量较大，注意适当休息，避免过度训练导致受伤。')
+  }
+  
+  // 3. 饮食分析
+  const dietRatio = d / dTarget
+  if (d === 0) {
+    adviceList.push('🍽️ 今日无饮食记录，合理饮食是健康的基础，请记录三餐。')
+  } else if (dietRatio < 0.6) {
+    adviceList.push('⚠️ 热量摄入严重不足（低于目标60%），可能导致营养不良。')
+  } else if (dietRatio < 0.9) {
+    adviceList.push('🥗 热量摄入略低，可适当增加健康食物，确保能量充足。')
+  } else if (dietRatio >= 1.1 && dietRatio <= 1.3) {
+    adviceList.push('🍚 热量摄入略高，建议下一餐选择清淡食物。')
+  } else if (dietRatio > 1.3) {
+    adviceList.push('🔥 热量摄入超标较多，建议增加运动消耗，控制高热量食物。')
+  } else if (dietRatio >= 0.95 && dietRatio <= 1.05) {
+    adviceList.push('🎯 热量摄入精准达标，饮食控制得很好！')
+  }
+  
+  // 4. 综合交叉分析
+  if (w > wTarget * 1.2 && s < 7) {
+    adviceList.push('⚠️ 运动量大但睡眠不足，身体恢复会受影响，今晚请早睡。')
+  }
+  
+  if (s < 7 && d > dTarget) {
+    adviceList.push('⚠️ 睡眠不足加上热量超标，容易导致体重增加，建议调整作息和饮食。')
+  }
+  
+  if (w < wTarget * 0.5 && d > dTarget) {
+    adviceList.push('⚠️ 运动不足且热量超标，体重管理面临挑战，建议增加运动。')
+  }
+  
+  if (s >= 8 && w >= wTarget && dietRatio >= 0.9 && dietRatio <= 1.1) {
+    adviceList.unshift('🌟 三项指标全部达标！今日表现完美，继续保持！')
+  }
+  
+  // 5. 鼓励性建议
+  if (adviceList.length === 0) {
+    adviceList.push('👍 各项指标良好，继续保持健康生活方式！')
+  }
+  
+  // 合并建议，用换行分隔
+  advice.value = adviceList.join('\n')
 }
 
+// 加载历史统计数据
 async function loadHistoryStats() {
   try {
     const history = await statsApi.getHistory({ days: 30 })
@@ -227,7 +349,18 @@ async function loadHistoryStats() {
   }
 }
 
-// 处理真实历史数据
+function resetHistoryStatsToZero() {
+  historyStats.value = {
+    totalWorkout: 0,
+    avgWorkout: 0,
+    avgSleep: 0,
+    avgDiet: 0,
+    workoutGoalDays: 0,
+    sleepGoalDays: 0
+  }
+  weeklyTrend.value = []
+}
+
 function processHistoryData(history) {
   // 计算汇总
   const totalWorkout = history.reduce((sum, day) => sum + (day.workoutMinutes || 0), 0)
@@ -237,8 +370,11 @@ function processHistoryData(history) {
   const totalDiet = history.reduce((sum, day) => sum + (day.dietCalories || 0), 0)
   const avgDiet = Math.round(totalDiet / history.length)
 
-  const workoutGoalDays = history.filter(day => (day.workoutMinutes || 0) >= (day.workoutTarget || 30)).length
-  const sleepGoalDays = history.filter(day => (day.sleepHours || 0) >= (day.sleepTarget || 8)).length
+  // 使用历史数据中的目标值（后端返回的 workoutTarget / sleepTarget / dietTarget）
+  const workoutTarget = history[0]?.workoutTarget ?? 30
+  const sleepTarget = history[0]?.sleepTarget ?? 8
+  const workoutGoalDays = history.filter(day => (day.workoutMinutes || 0) >= workoutTarget).length
+  const sleepGoalDays = history.filter(day => (day.sleepHours || 0) >= sleepTarget).length
 
   historyStats.value = {
     totalWorkout,
@@ -249,50 +385,25 @@ function processHistoryData(history) {
     sleepGoalDays
   }
 
-  // 计算最近7天趋势（取最后7条，按日期升序）
+  // 计算最近7天运动趋势
   const last7 = history.slice(-7).reverse()
   const maxWorkout = Math.max(...last7.map(d => d.workoutMinutes || 0), 1)
   weeklyTrend.value = last7.map(day => {
     const minutes = day.workoutMinutes || 0
     const height = (minutes / maxWorkout) * 60
-    // 格式化日期显示
     const date = new Date(day.date)
     const dayLabel = `${date.getMonth()+1}/${date.getDate()}`
     return { height: Math.max(4, height), dayLabel, minutes }
   })
 }
 
-// 生成当日报告和建议（基于今日数据）
-function generateReportAndAdvice() {
-  const w = todayStats.value.workoutMinutes
-  const wTarget = todayStats.value.workoutTarget
-  const s = todayStats.value.sleepHours
-  const sTarget = todayStats.value.sleepTarget
-  const d = todayStats.value.dietCalories
-  const dTarget = todayStats.value.dietTarget
-
-  const workoutScore = Math.min(100, (w / wTarget) * 100)
-  const sleepScore = Math.min(100, (s / sTarget) * 100)
-  const dietScore = Math.min(100, (dTarget - Math.abs(d - dTarget)) / dTarget * 100)
-  const totalScore = Math.round((workoutScore + sleepScore + dietScore) / 3)
-  dailyReport.value.score = totalScore
-
-  let adviceText = ''
-  if (s < 6) adviceText += '睡眠严重不足，建议今晚提前休息。'
-  if (w > wTarget * 1.5 && s < 7) adviceText += '运动过量且睡眠不足，请降低强度。'
-  if (d > dTarget) adviceText += '今日热量超标，下一餐宜清淡。'
-  if (!adviceText) adviceText = '各项指标良好，继续保持！'
-  advice.value = adviceText
-}
-
-// 调用 statsApi.generatePlan 生成训练计划
+// 生成训练计划（依赖今日数据和历史数据）
 async function generateTrainingPlan() {
   if (generatingPlan.value) return
   generatingPlan.value = true
   trainingPlan.value = ''
 
   try {
-    // 准备要发送的数据（与大模型交互所需）
     const requestData = {
       todayStats: {
         workoutMinutes: todayStats.value.workoutMinutes,
@@ -312,10 +423,7 @@ async function generateTrainingPlan() {
       },
       advice: advice.value
     }
-
-    // 调用后端大模型代理接口
     const res = await statsApi.generatePlan(requestData)
-    // 后端返回格式 { plan: "生成的计划文本" }
     trainingPlan.value = res.plan || '计划生成成功，但未返回具体内容。'
   } catch (error) {
     console.error('调用后端接口失败', error)
@@ -490,18 +598,32 @@ onMounted(() => {
   background: #f5f7fa;
   padding: 16rpx;
   border-radius: 16rpx;
-  text-align: center;
+  text-align: left;
+}
+.stat-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
 }
 .history-stat-label {
   font-size: 24rpx;
   color: #606266;
-  display: block;
-  margin-bottom: 8rpx;
+}
+.info-icon {
+  font-size: 26rpx;
+  color: #909399;
+  padding: 4rpx 8rpx;
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 30rpx;
+  line-height: 1;
+  margin-left: 10rpx;
 }
 .history-stat-value {
   font-size: 32rpx;
   font-weight: bold;
   color: #303133;
+  display: block;
 }
 .trend-section {
   margin-top: 20rpx;

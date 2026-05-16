@@ -61,6 +61,8 @@ export const statsApi = {
   today: () => request('/stats/today'),
   weekly: () => request('/stats/weekly'),
   summary: () => request('/stats/summary'),
+  sleepToday: () => request('/stats/sleep/today'), 
+  dietToday: () => request('/stats/diet/today'),  
   getHistory: (params = { days: 30 }) => request('/stats/history', { data: params }),
   generatePlan: (userData) => request('/ai/generate-plan', { method: 'POST', data: userData })
 }
