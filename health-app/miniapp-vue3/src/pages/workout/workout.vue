@@ -19,7 +19,7 @@
       <view class="stat-card">
         <view class="stat-header">
           <text class="stat-icon">🏃</text>
-          <text class="stat-title">运动</text>
+          <text class="stat-title">今日运动</text>
         </view>
         <text class="stat-value">{{ todayStats.workoutMinutes }} / {{ todayStats.workoutTarget }} 分钟</text>
         <view class="progress-bar">
@@ -29,7 +29,7 @@
       <view class="stat-card">
         <view class="stat-header">
           <text class="stat-icon">😴</text>
-          <text class="stat-title">睡眠</text>
+          <text class="stat-title">今日睡眠</text>
         </view>
         <text class="stat-value">{{ todayStats.sleepHours }} / {{ todayStats.sleepTarget }} 小时</text>
         <view class="progress-bar">
@@ -39,7 +39,7 @@
       <view class="stat-card">
         <view class="stat-header">
           <text class="stat-icon">🍚</text>
-          <text class="stat-title">饮食</text>
+          <text class="stat-title">今日饮食</text>
         </view>
         <text class="stat-value">{{ todayStats.dietCalories }} / {{ todayStats.dietTarget }} 千卡</text>
         <view class="progress-bar">
