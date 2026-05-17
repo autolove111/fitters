@@ -315,17 +315,26 @@ async function generateTrainingPlan() {
 
     // 调用后端大模型代理接口
     const res = await statsApi.generatePlan(requestData)
-    // 后端返回格式 { plan: "生成的计划文本" }
-    trainingPlan.value = res.plan || '计划生成成功，但未返回具体内容。'
+    const lines = []
+    if (res.summary) lines.push(res.summary)
+    if (Array.isArray(res.items) && res.items.length) {
+      lines.push('')
+      res.items.forEach((item, index) => {
+        lines.push(`${index + 1}. ${item.stage}：${item.activity} ${item.minutes}分钟（${item.intensity}）`)
+        if (item.notes) lines.push(`   ${item.notes}`)
+      })
+    }
+    if (Array.isArray(res.tips) && res.tips.length) {
+      lines.push('', '小提示：')
+      res.tips.forEach((tip, index) => {
+        lines.push(`${index + 1}. ${tip}`)
+      })
+    }
+    trainingPlan.value = lines.join('\n') || '今日训练计划已生成，但暂无可展示内容。'
   } catch (error) {
     console.error('调用后端接口失败', error)
-    trainingPlan.value = `🏋️ 今日训练计划建议（本地生成）：
-1. 热身5分钟
-2. 力量训练20分钟（俯卧撑、深蹲）
-3. 有氧运动15分钟
-4. 拉伸放松5分钟
-根据身体感受调整，保持健康！`
-    uni.showToast({ title: '调用后端接口失败，使用本地计划', icon: 'none' })
+    trainingPlan.value = ''
+    uni.showToast({ title: error.message || '生成计划失败', icon: 'none' })
   } finally {
     generatingPlan.value = false
   }

@@ -8,6 +8,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-health_user}:${POSTGRES_PASSWORD:-health_pass}@postgres:5432/${POSTGRES_DB:-health_app}?schema=public
       - JWT_SECRET=${JWT_SECRET:-fitters-dev-secret}
+      - AI_SERVICE_URL=http://health-ai-service:5000
+      - AI_SERVICE_SECRET=${AI_SERVICE_SECRET:-fitters-ai-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,6 +31,12 @@ services:
     container_name: health-ai-service
     ports:
       - "${AI_SERVICE_PORT:-5000}:5000"
+    environment:
+      - BACKEND_INTERNAL_URL=http://health-backend:8080
+      - AI_SERVICE_SECRET=${AI_SERVICE_SECRET:-fitters-ai-internal-secret}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
 
   postgres:
     image: postgres:16-alpine
