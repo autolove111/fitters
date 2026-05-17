@@ -28,6 +28,13 @@
       }
     },
     {
+      "path": "pages/weightloss/weightloss",
+      "style": {
+        "navigationBarTitleText": "减肥助手",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
       "path": "pages/wellness/wellness",
       "style": {
         "navigationBarTitleText": "养生"

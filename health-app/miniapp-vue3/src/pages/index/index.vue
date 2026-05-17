@@ -196,7 +196,7 @@ function goFitness() {
 }
 
 function goWeightLoss() {
-  uni.showToast({ title: '减肥功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/weightloss/weightloss' })
 }
 
 function goWellness() {
