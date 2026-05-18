@@ -9,6 +9,7 @@ import { dietRouter } from "./modules/diet/router.js";
 import { foodRouter } from "./modules/food/router.js";
 import { mealRouter } from "./modules/meal/router.js";
 import { usersRouter } from "./modules/users/router.js";
+import { plansRouter } from "./modules/plans/router.js";
 import { errorHandler } from "./common/errors.js";
 
 export function createApp() {
@@ -30,6 +31,7 @@ export function createApp() {
   app.use("/api/diets", dietRouter);
   app.use("/api/foods", foodRouter);
   app.use("/api/meals", mealRouter);
+  app.use("/api/plans", plansRouter);
   app.use(errorHandler);
 
   return app;
