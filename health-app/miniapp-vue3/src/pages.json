@@ -41,6 +41,13 @@
       }
     },
     {
+      "path": "pages/wellness/checkin-report",
+      "style": {
+        "navigationBarTitleText": "月度养生报告",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/workout/add",
       "style": { "navigationBarTitleText": "添加运动记录" }
     },

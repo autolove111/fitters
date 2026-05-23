@@ -70,3 +70,7 @@ export const statsApi = {
 export const goalApi = {
   set: (targetValue) => request('/goals', { method: 'POST', data: { targetValue } })
 }
+
+export const wellnessApi = {
+  getAdvice: (data) => request('/wellness/advice', { method: 'POST', data })
+}
