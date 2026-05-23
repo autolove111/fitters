@@ -103,6 +103,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '@/store/user'
+import { wellnessApi } from '@/utils/api'
 
 const userStore = useUserStore()
 const username = userStore.state.username || 'guest'
@@ -129,104 +130,115 @@ const scoreLevelClass = computed(() => {
   return 'level-need'
 })
 
-function loadMonthlyReport() {
-  const key = `checkin_${username}`
-  const data = uni.getStorageSync(key) || {}
+async function loadMonthlyReport() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
   currentYearMonth.value = `${currentYear}年${currentMonth}月`
+  const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`
 
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
-  
-  let checkinDays = 0
-  let taskCount = { water: 0, footbath: 0, earlySleep: 0, walk: 0 }
-  let totalTasksCompleted = 0
-  
-  let currentStreak = 0
-  let maxStreak = 0
-  let previousDayWasCheckin = false
-  
-  let firstHalf = 0
-  let secondHalf = 0
+  try {
+    const res = await wellnessApi.getMonthlyCheckin(yearMonth)
+    const checkins = res.checkins || []
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dayStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-    const dayData = data[dayStr]
-    const hasCheckin = dayData && Object.values(dayData.tasks || {}).some(v => v === true)
-    
-    if (hasCheckin) {
-      checkinDays++
-      if (day <= 15) firstHalf++
-      else secondHalf++
-      
-      if (previousDayWasCheckin) {
-        currentStreak++
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
+    let checkinDays = 0
+    let taskCount = { water: 0, footbath: 0, earlySleep: 0, walk: 0 }
+    let totalTasksCompleted = 0
+
+    let currentStreak = 0
+    let maxStreak = 0
+    let previousDayWasCheckin = false
+
+    let firstHalf = 0
+    let secondHalf = 0
+
+    // 将数据按日期映射
+    const checkinMap = {}
+    checkins.forEach(item => {
+      checkinMap[item.date] = item.tasks
+    })
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+      const tasks = checkinMap[dayStr] || {}
+      const hasCheckin = Object.values(tasks).some(v => v === true)
+
+      if (hasCheckin) {
+        checkinDays++
+        if (day <= 15) firstHalf++
+        else secondHalf++
+
+        if (previousDayWasCheckin) {
+          currentStreak++
+        } else {
+          currentStreak = 1
+        }
+        if (currentStreak > maxStreak) maxStreak = currentStreak
+        previousDayWasCheckin = true
+
+        for (const taskId of Object.keys(taskCount)) {
+          if (tasks[taskId]) taskCount[taskId]++
+        }
+        totalTasksCompleted += Object.values(tasks).filter(v => v === true).length
       } else {
-        currentStreak = 1
+        previousDayWasCheckin = false
+        currentStreak = 0
       }
-      if (currentStreak > maxStreak) maxStreak = currentStreak
-      previousDayWasCheckin = true
-      
-      const tasks = dayData.tasks || {}
-      for (const taskId of Object.keys(taskCount)) {
-        if (tasks[taskId]) taskCount[taskId]++
-      }
-      totalTasksCompleted += Object.values(tasks).filter(v => v === true).length
-    } else {
-      previousDayWasCheckin = false
-      currentStreak = 0
     }
-  }
-  
-  totalCheckinDays.value = checkinDays
-  bestStreak.value = maxStreak
-  firstHalfDays.value = firstHalf
-  secondHalfDays.value = secondHalf
-  
-  const totalPossibleTasks = daysInMonth * Object.keys(taskCount).length
-  const completion = (totalTasksCompleted / totalPossibleTasks) * 100
-  completionRate.value = Math.round(completion)
-  
-  const daysScore = (checkinDays / daysInMonth) * 60
-  const taskScore = (completion / 100) * 40
-  let score = Math.round(daysScore + taskScore)
-  healthScore.value = score
-  if (score >= 90) healthLevel.value = '优秀'
-  else if (score >= 70) healthLevel.value = '良好'
-  else if (score >= 50) healthLevel.value = '及格'
-  else healthLevel.value = '需努力'
-  
-  const taskNames = { water: '喝水', footbath: '泡脚', earlySleep: '早睡', walk: '散步' }
-  const ranking = []
-  for (const [id, count] of Object.entries(taskCount)) {
-    const percent = checkinDays === 0 ? 0 : (count / checkinDays) * 100
-    ranking.push({ name: taskNames[id], count, percent: Math.round(percent) })
-  }
-  ranking.sort((a, b) => b.count - a.count)
-  taskRanking.value = ranking
-  bestTask.value = ranking[0]?.name || '无'
-  
-  if (firstHalf > secondHalf + 3) {
-    periodAdvice.value = '上半月打卡更积极，下半月略有松懈。建议设置下半月提醒，保持均衡。'
-  } else if (secondHalf > firstHalf + 3) {
-    periodAdvice.value = '下半月打卡明显提升，后劲十足！继续保持。'
-  } else {
-    periodAdvice.value = '打卡分布较均衡，习惯养成得很好。'
-  }
-  
-  if (score >= 80) {
-    trendText.value = '🎉 非常优秀！您几乎每天都在坚持养生打卡，健康状态持续向好。'
-    adviceText.value = '继续保持，可以尝试增加新的养生习惯，如冥想或拉伸。'
-  } else if (score >= 60) {
-    trendText.value = '👍 不错哦，超过一半的时间在坚持，健康改善明显。'
-    adviceText.value = '建议固定每天打卡时间，形成生物钟。'
-  } else if (score >= 40) {
-    trendText.value = '🌱 有进步，但还需要更多坚持，健康提升需要日积月累。'
-    adviceText.value = '可以从“喝水”和“散步”这种简单任务开始，逐步增加。'
-  } else {
-    trendText.value = '🍃 本月打卡较少，下周开始尝试每天完成一个小任务吧！'
-    adviceText.value = '设定手机提醒，加入养生社群互相激励。'
+
+    totalCheckinDays.value = checkinDays
+    bestStreak.value = maxStreak
+    firstHalfDays.value = firstHalf
+    secondHalfDays.value = secondHalf
+
+    const totalPossibleTasks = daysInMonth * Object.keys(taskCount).length
+    const completion = (totalTasksCompleted / totalPossibleTasks) * 100
+    completionRate.value = Math.round(completion)
+
+    const daysScore = (checkinDays / daysInMonth) * 60
+    const taskScore = (completion / 100) * 40
+    let score = Math.round(daysScore + taskScore)
+    healthScore.value = score
+    if (score >= 90) healthLevel.value = '优秀'
+    else if (score >= 70) healthLevel.value = '良好'
+    else if (score >= 50) healthLevel.value = '及格'
+    else healthLevel.value = '需努力'
+
+    const taskNames = { water: '喝水', footbath: '泡脚', earlySleep: '早睡', walk: '散步' }
+    const ranking = []
+    for (const [id, count] of Object.entries(taskCount)) {
+      const percent = checkinDays === 0 ? 0 : (count / checkinDays) * 100
+      ranking.push({ name: taskNames[id], count, percent: Math.round(percent) })
+    }
+    ranking.sort((a, b) => b.count - a.count)
+    taskRanking.value = ranking
+    bestTask.value = ranking[0]?.name || '无'
+
+    if (firstHalf > secondHalf + 3) {
+      periodAdvice.value = '上半月打卡更积极，下半月略有松懈。建议设置下半月提醒，保持均衡。'
+    } else if (secondHalf > firstHalf + 3) {
+      periodAdvice.value = '下半月打卡明显提升，后劲十足！继续保持。'
+    } else {
+      periodAdvice.value = '打卡分布较均衡，习惯养成得很好。'
+    }
+
+    if (score >= 80) {
+      trendText.value = '🎉 非常优秀！您几乎每天都在坚持养生打卡，健康状态持续向好。'
+      adviceText.value = '继续保持，可以尝试增加新的养生习惯，如冥想或拉伸。'
+    } else if (score >= 60) {
+      trendText.value = '👍 不错哦，超过一半的时间在坚持，健康改善明显。'
+      adviceText.value = '建议固定每天打卡时间，形成生物钟。'
+    } else if (score >= 40) {
+      trendText.value = '🌱 有进步，但还需要更多坚持，健康提升需要日积月累。'
+      adviceText.value = '可以从“喝水”和“散步”这种简单任务开始，逐步增加。'
+    } else {
+      trendText.value = '🍃 本月打卡较少，下周开始尝试每天完成一个小任务吧！'
+      adviceText.value = '设定手机提醒，加入养生社群互相激励。'
+    }
+  } catch (error) {
+    console.error('加载月度报告失败', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
   }
 }
 
@@ -491,7 +503,7 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-/* 返回按钮（保留暖色以作对比） */
+/* 返回按钮 */
 .back-btn {
   background: linear-gradient(135deg, #43a047, #2e7d32);
   color: white;

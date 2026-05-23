@@ -89,7 +89,7 @@
         </button>
       </view>
 
-      <!-- ========== 新增：养生打卡与成就系统 ========== -->
+      <!-- ========== 养生打卡与成就系统 ========== -->
       <view class="checkin-card" v-if="isLoggedIn">
         <view class="checkin-header">
           <text class="checkin-title">📅 每日养生打卡</text>
@@ -175,7 +175,7 @@ const commonDiseases = [
   '关节炎', '骨质疏松', '失眠', '消化不良'
 ]
 
-// ========== 打卡系统 ==========
+// ========== 打卡系统（后端接口版） ==========
 const tasks = ref([
   { id: 'water', name: '喝水', target: '8杯', earlyBird: false },
   { id: 'footbath', name: '泡脚', target: '20分钟', earlyBird: false },
@@ -197,45 +197,59 @@ function getTodayStr() {
   return `${year}-${month}-${day}`
 }
 
-function loadCheckinData() {
-  const key = `checkin_${username.value}`
-  const data = uni.getStorageSync(key) || {}
-  const today = getTodayStr()
-  if (data[today]) {
-    todayCheckin.value = data[today].tasks || {}
-  } else {
-    todayCheckin.value = {}
+async function loadCheckinData() {
+  if (!isLoggedIn.value) return
+  try {
+    // 获取今日打卡数据
+    const res = await wellnessApi.getTodayCheckin()
+    if (res && res.tasks) {
+      todayCheckin.value = res.tasks
+    } else {
+      todayCheckin.value = {}
+    }
+    // 获取所有历史记录用于计算连续天数和徽章
+    const historyRes = await wellnessApi.getAllCheckinHistory()
+    if (historyRes && historyRes.checkins) {
+      const checkins = historyRes.checkins
+      // 计算连续打卡天数
+      let streak = 0
+      let currentDate = new Date()
+      // 将历史记录转为 map 便于查找
+      const checkinMap = {}
+      checkins.forEach(item => {
+        checkinMap[item.date] = item.tasks
+      })
+      while (true) {
+        const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}`
+        const dayTasks = checkinMap[dateStr]
+        const hasCheckin = dayTasks && Object.values(dayTasks).some(v => v === true)
+        if (hasCheckin) {
+          streak++
+          currentDate.setDate(currentDate.getDate() - 1)
+        } else {
+          break
+        }
+      }
+      streakDays.value = streak
+      // 加载徽章
+      loadBadges(checkinMap)
+    }
+  } catch (error) {
+    console.error('加载打卡数据失败', error)
+    uni.showToast({ title: '加载打卡数据失败', icon: 'none' })
   }
-  streakDays.value = data.streakDays || 0
-  loadBadges(data)
 }
 
-function saveCheckinData() {
-  const key = `checkin_${username.value}`
-  const existing = uni.getStorageSync(key) || {}
-  const today = getTodayStr()
-  existing[today] = { tasks: todayCheckin.value, date: today }
-  
-  const hasAnyTask = Object.values(todayCheckin.value).some(v => v === true)
-  if (hasAnyTask) {
-    const lastDate = existing.lastCheckinDate
-    const todayDate = new Date(today)
-    if (lastDate) {
-      const last = new Date(lastDate)
-      const diffDays = Math.floor((todayDate - last) / (1000 * 60 * 60 * 24))
-      if (diffDays === 1) {
-        existing.streakDays = (existing.streakDays || 0) + 1
-      } else if (diffDays > 1) {
-        existing.streakDays = 1
-      }
-    } else {
-      existing.streakDays = 1
-    }
-    existing.lastCheckinDate = today
+async function saveCheckinData() {
+  if (!isLoggedIn.value) return
+  try {
+    await wellnessApi.saveTodayCheckin(todayCheckin.value)
+    // 重新加载所有数据以更新连续天数和徽章
+    await loadCheckinData()
+  } catch (error) {
+    console.error('保存打卡数据失败', error)
+    uni.showToast({ title: '保存失败', icon: 'none' })
   }
-  streakDays.value = existing.streakDays || 0
-  uni.setStorageSync(key, existing)
-  loadBadges(existing)
 }
 
 function toggleTask(taskId) {
@@ -248,18 +262,42 @@ function toggleTask(taskId) {
   saveCheckinData()
 }
 
-function loadBadges(data) {
+function loadBadges(checkinMap) {
   const newBadges = []
-  const streak = data.streakDays || 0
-  if (streak >= 7) newBadges.push({ name: '养生新手', icon: '🌱' })
-  if (streak >= 30) newBadges.push({ name: '养生大师', icon: '🏆' })
-  if (streak >= 100) newBadges.push({ name: '终极养生王', icon: '👑' })
-  
+  // 计算最大连续打卡天数
+  let maxStreak = 0
+  let currentStreak = 0
+  const dates = Object.keys(checkinMap).sort()
+  let prevDate = null
+  for (let dateStr of dates) {
+    const tasks = checkinMap[dateStr]
+    const hasCheckin = tasks && Object.values(tasks).some(v => v === true)
+    if (hasCheckin) {
+      if (prevDate) {
+        const diff = (new Date(dateStr) - new Date(prevDate)) / (1000*60*60*24)
+        if (diff === 1) {
+          currentStreak++
+        } else {
+          currentStreak = 1
+        }
+      } else {
+        currentStreak = 1
+      }
+      if (currentStreak > maxStreak) maxStreak = currentStreak
+      prevDate = dateStr
+    } else {
+      currentStreak = 0
+    }
+  }
+  if (maxStreak >= 7) newBadges.push({ name: '养生新手', icon: '🌱' })
+  if (maxStreak >= 30) newBadges.push({ name: '养生大师', icon: '🏆' })
+  if (maxStreak >= 100) newBadges.push({ name: '终极养生王', icon: '👑' })
+
+  // 计算早睡累计次数
   let earlySleepCount = 0
-  for (const dayKey in data) {
-    if (dayKey === 'streakDays' || dayKey === 'lastCheckinDate') continue
-    const dayTasks = data[dayKey].tasks
-    if (dayTasks && dayTasks.earlySleep === true) earlySleepCount++
+  for (const dateStr in checkinMap) {
+    const tasks = checkinMap[dateStr]
+    if (tasks && tasks.earlySleep === true) earlySleepCount++
   }
   if (earlySleepCount >= 14) {
     newBadges.push({ name: '早睡达人', icon: '🌙' })
@@ -275,7 +313,7 @@ function showMonthlyReport() {
   uni.navigateTo({ url: '/pages/wellness/checkin-report' })
 }
 
-// ========== 节气系统（已修正） ==========
+// ========== 节气系统（保持不变） ==========
 const solarTermsData = [
   { name: '立春', start: '2-3', end: '2-17', tip: '养肝护阳，防风御寒', icon: '🌱' },
   { name: '雨水', start: '2-18', end: '3-4', tip: '健脾祛湿，春捂保暖', icon: '💧' },
@@ -827,7 +865,7 @@ onMounted(() => {
   background: transparent;
 }
 
-/* ========== 新增打卡与成就系统样式（不影响原有样式） ========== */
+/* ========== 新增打卡与成就系统样式 ========== */
 .checkin-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -925,7 +963,7 @@ onMounted(() => {
   margin-top: 20rpx;
   border: none;
 }
-.report-btn:active {
+.report-btn:active {       
   transform: scale(0.98);
 }
 </style>
