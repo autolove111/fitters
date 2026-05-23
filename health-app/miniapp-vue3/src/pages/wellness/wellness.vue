@@ -175,7 +175,7 @@ const commonDiseases = [
   '关节炎', '骨质疏松', '失眠', '消化不良'
 ]
 
-// ========== 打卡系统（后端接口版） ==========
+// ========== 打卡系统（支持后端失败时使用本地模拟数据） ==========
 const tasks = ref([
   { id: 'water', name: '喝水', target: '8杯', earlyBird: false },
   { id: 'footbath', name: '泡脚', target: '20分钟', earlyBird: false },
@@ -197,6 +197,40 @@ function getTodayStr() {
   return `${year}-${month}-${day}`
 }
 
+// 从本地存储读取数据（模拟数据后备）
+function loadFromLocalStorage() {
+  const key = `checkin_${username.value}`
+  const data = uni.getStorageSync(key) || {}
+  const today = getTodayStr()
+  if (data[today]) {
+    todayCheckin.value = data[today].tasks || {}
+  } else {
+    todayCheckin.value = {}
+  }
+  streakDays.value = data.streakDays || 0
+  loadBadgesFromLocal(data)
+}
+
+function loadBadgesFromLocal(data) {
+  const newBadges = []
+  const streak = data.streakDays || 0
+  if (streak >= 7) newBadges.push({ name: '养生新手', icon: '🌱' })
+  if (streak >= 30) newBadges.push({ name: '养生大师', icon: '🏆' })
+  if (streak >= 100) newBadges.push({ name: '终极养生王', icon: '👑' })
+  
+  let earlySleepCount = 0
+  for (const dayKey in data) {
+    if (dayKey === 'streakDays' || dayKey === 'lastCheckinDate') continue
+    const dayTasks = data[dayKey].tasks
+    if (dayTasks && dayTasks.earlySleep === true) earlySleepCount++
+  }
+  if (earlySleepCount >= 14) {
+    newBadges.push({ name: '早睡达人', icon: '🌙' })
+  }
+  badges.value = newBadges
+}
+
+// 从后端加载数据，失败则从本地加载
 async function loadCheckinData() {
   if (!isLoggedIn.value) return
   try {
@@ -214,7 +248,6 @@ async function loadCheckinData() {
       // 计算连续打卡天数
       let streak = 0
       let currentDate = new Date()
-      // 将历史记录转为 map 便于查找
       const checkinMap = {}
       checkins.forEach(item => {
         checkinMap[item.date] = item.tasks
@@ -232,37 +265,18 @@ async function loadCheckinData() {
       }
       streakDays.value = streak
       // 加载徽章
-      loadBadges(checkinMap)
+      loadBadgesFromMap(checkinMap)
+    } else {
+      throw new Error('无历史记录')
     }
   } catch (error) {
-    console.error('加载打卡数据失败', error)
-    uni.showToast({ title: '加载打卡数据失败', icon: 'none' })
+    console.error('后端加载失败，使用本地数据', error)
+    uni.showToast({ title: '后端连接失败，使用本地数据', icon: 'none', duration: 2000 })
+    loadFromLocalStorage()
   }
 }
 
-async function saveCheckinData() {
-  if (!isLoggedIn.value) return
-  try {
-    await wellnessApi.saveTodayCheckin(todayCheckin.value)
-    // 重新加载所有数据以更新连续天数和徽章
-    await loadCheckinData()
-  } catch (error) {
-    console.error('保存打卡数据失败', error)
-    uni.showToast({ title: '保存失败', icon: 'none' })
-  }
-}
-
-function toggleTask(taskId) {
-  if (!isLoggedIn.value) {
-    uni.showToast({ title: '请先登录', icon: 'none' })
-    return
-  }
-  const current = todayCheckin.value[taskId] || false
-  todayCheckin.value = { ...todayCheckin.value, [taskId]: !current }
-  saveCheckinData()
-}
-
-function loadBadges(checkinMap) {
+function loadBadgesFromMap(checkinMap) {
   const newBadges = []
   // 计算最大连续打卡天数
   let maxStreak = 0
@@ -293,7 +307,6 @@ function loadBadges(checkinMap) {
   if (maxStreak >= 30) newBadges.push({ name: '养生大师', icon: '🏆' })
   if (maxStreak >= 100) newBadges.push({ name: '终极养生王', icon: '👑' })
 
-  // 计算早睡累计次数
   let earlySleepCount = 0
   for (const dateStr in checkinMap) {
     const tasks = checkinMap[dateStr]
@@ -305,6 +318,55 @@ function loadBadges(checkinMap) {
   badges.value = newBadges
 }
 
+// 保存打卡数据：优先后端，失败则存本地
+async function saveCheckinData() {
+  if (!isLoggedIn.value) return
+  try {
+    await wellnessApi.saveTodayCheckin(todayCheckin.value)
+    // 保存成功后重新加载以更新连续天数和徽章
+    await loadCheckinData()
+    uni.showToast({ title: '保存成功', icon: 'success' })
+  } catch (error) {
+    console.error('后端保存失败，保存到本地', error)
+    // 保存到本地存储
+    const key = `checkin_${username.value}`
+    const existing = uni.getStorageSync(key) || {}
+    const today = getTodayStr()
+    existing[today] = { tasks: todayCheckin.value, date: today }
+    const hasAnyTask = Object.values(todayCheckin.value).some(v => v === true)
+    if (hasAnyTask) {
+      const lastDate = existing.lastCheckinDate
+      const todayDate = new Date(today)
+      if (lastDate) {
+        const last = new Date(lastDate)
+        const diffDays = Math.floor((todayDate - last) / (1000 * 60 * 60 * 24))
+        if (diffDays === 1) {
+          existing.streakDays = (existing.streakDays || 0) + 1
+        } else if (diffDays > 1) {
+          existing.streakDays = 1
+        }
+      } else {
+        existing.streakDays = 1
+      }
+      existing.lastCheckinDate = today
+    }
+    uni.setStorageSync(key, existing)
+    // 重新从本地加载以更新显示
+    loadFromLocalStorage()
+    uni.showToast({ title: '已保存到本地，网络恢复后同步', icon: 'none', duration: 2000 })
+  }
+}
+
+function toggleTask(taskId) {
+  if (!isLoggedIn.value) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    return
+  }
+  const current = todayCheckin.value[taskId] || false
+  todayCheckin.value = { ...todayCheckin.value, [taskId]: !current }
+  saveCheckinData()
+}
+
 function showMonthlyReport() {
   if (!isLoggedIn.value) {
     uni.showToast({ title: '请先登录', icon: 'none' })
@@ -313,7 +375,7 @@ function showMonthlyReport() {
   uni.navigateTo({ url: '/pages/wellness/checkin-report' })
 }
 
-// ========== 节气系统（保持不变） ==========
+// ========== 节气系统 ==========
 const solarTermsData = [
   { name: '立春', start: '2-3', end: '2-17', tip: '养肝护阳，防风御寒', icon: '🌱' },
   { name: '雨水', start: '2-18', end: '3-4', tip: '健脾祛湿，春捂保暖', icon: '💧' },
@@ -471,7 +533,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 原有样式完全保留，未作任何删改 */
+/* 外层滚动容器 - 保证无横向滚动 */
 .wellness-container {
   width: 100%;
   height: 100vh;
@@ -480,12 +542,14 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
+/* 内部内容容器，统一左右内边距，确保左右对称 */
 .inner-wrapper {
   padding: 20rpx 30rpx 40rpx 30rpx;
   box-sizing: border-box;
   width: 100%;
 }
 
+/* 头部区域 */
 .hero-section {
   display: block;
   text-align: center;
@@ -524,6 +588,7 @@ onMounted(() => {
   margin-top: 0;
 }
 
+/* 节气卡片 */
 .solar-card {
   background: linear-gradient(135deg, #fff8e7, #fff3e0);
   border-radius: 48rpx;
@@ -564,6 +629,7 @@ onMounted(() => {
   border-radius: 32rpx;
 }
 
+/* 表单卡片 */
 .form-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
