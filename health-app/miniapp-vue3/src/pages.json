@@ -64,6 +64,19 @@
       "style": {
         "navigationBarTitleText": "工作健康助手"
       }
+    },
+    {
+      "path": "pages/work/exercise-detail",
+      "style": {
+        "navigationBarTitleText": "微运动详情"
+      }
+    },
+    {
+      "path": "pages/work/occupation-select",
+      "style": {
+        "navigationBarTitleText": "选择职业",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
     }
   ],
   "globalStyle": {
