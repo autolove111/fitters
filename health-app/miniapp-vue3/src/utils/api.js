@@ -64,9 +64,20 @@ export const statsApi = {
   sleepToday: () => request('/stats/sleep/today'), 
   dietToday: () => request('/stats/diet/today'),  
   getHistory: (params = { days: 30 }) => request('/stats/history', { data: params }),
-  generatePlan: (userData) => request('/ai/generate-plan', { method: 'POST', data: userData })
+  generatePlan: (userData) => request('/plans/today-workout', { method: 'POST', data: userData })
 }
 
 export const goalApi = {
   set: (targetValue) => request('/goals', { method: 'POST', data: { targetValue } })
+}
+
+export const wellnessApi = {
+  getAdvice: (data) => request('/wellness/advice', { method: 'POST', data }),
+  getTodayCheckin: () => request('/checkin/today', { method: 'GET' }),
+  // 保存今日打卡数据（提交任务完成状态）
+  saveTodayCheckin: (tasks) => request('/checkin/today', { method: 'POST', data: { tasks } }),
+  // 获取指定月份的打卡记录列表（用于月度报告）
+  getMonthlyCheckin: (yearMonth) => request(`/checkin/monthly/${yearMonth}`, { method: 'GET' }),
+  // 获取所有打卡历史（用于徽章计算，可选）
+  getAllCheckinHistory: () => request('/checkin/history', { method: 'GET' })
 }
