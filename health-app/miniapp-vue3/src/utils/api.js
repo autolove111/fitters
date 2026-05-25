@@ -81,3 +81,29 @@ export const wellnessApi = {
   // 获取所有打卡历史（用于徽章计算，可选）
   getAllCheckinHistory: () => request('/checkin/history', { method: 'GET' })
 }
+
+// ========== 工作模块 API ==========
+export const workApi = {
+  // 获取用户工作设置（包含职业、番茄钟时长、久坐提醒开关等）
+  getSettings: () => request('/work/settings', { method: 'GET' }),
+  // 更新用户工作设置
+  updateSettings: (data) => request('/work/settings', { method: 'PUT', data }),
+  // 开始一个工作会话（番茄钟）
+  startSession: (type) => request('/work/session/start', { method: 'POST', data: { type, startTime: new Date().toISOString() } }),
+  // 结束工作会话
+  endSession: (sessionId, endTime, duration) => request('/work/session/end', { method: 'PUT', data: { sessionId, endTime, duration } }),
+  // 获取今日统计数据
+  getTodayStats: () => request('/work/stats/daily', { method: 'GET' }),
+  // 获取本周趋势数据
+  getWeeklyStats: () => request('/work/stats/weekly', { method: 'GET' }),
+  // 记录用户响应久坐提醒
+  respondSedentary: () => request('/work/sedentary/respond', { method: 'POST', data: { timestamp: new Date().toISOString() } }),
+  // 获取职业推荐微运动列表
+  getRecommendedExercises: (occupation) => request(`/work/exercises/recommended?occupation=${occupation}`, { method: 'GET' }),
+  // 获取所有微运动列表（用于详情页）
+  getAllExercises: () => request('/work/exercises', { method: 'GET' }),
+    // 获取用户健康数据（职业专属指标）
+  getHealthData: (occupation) => request(`/work/health-data?occupation=${occupation}`, { method: 'GET' }),
+  // 更新单个健康指标
+  updateHealthMetric: (data) => request('/work/health-data/metric', { method: 'POST', data }),
+}
