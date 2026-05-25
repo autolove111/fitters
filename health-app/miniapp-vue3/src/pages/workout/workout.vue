@@ -16,7 +16,7 @@
 
     <!-- 今日三项指标 -->
     <view class="stats-grid">
-      <view class="stat-card">
+      <view class="stat-card" @click="openHistory('workout')">
         <view class="stat-header">
           <text class="stat-icon">🏃</text>
           <text class="stat-title">今日运动</text>
@@ -26,7 +26,7 @@
           <view class="progress-fill" :style="{ width: workoutPercent + '%', backgroundColor: '#409eff' }"></view>
         </view>
       </view>
-      <view class="stat-card">
+      <view class="stat-card" @click="openHistory('sleep')">
         <view class="stat-header">
           <text class="stat-icon">😴</text>
           <text class="stat-title">今日睡眠</text>
@@ -36,7 +36,7 @@
           <view class="progress-fill" :style="{ width: sleepPercent + '%', backgroundColor: '#67c23a' }"></view>
         </view>
       </view>
-      <view class="stat-card">
+      <view class="stat-card" @click="openHistory('diet')">
         <view class="stat-header">
           <text class="stat-icon">🍚</text>
           <text class="stat-title">今日饮食</text>
@@ -46,55 +46,23 @@
           <view class="progress-fill" :style="{ width: dietPercent + '%', backgroundColor: '#e6a23c' }"></view>
         </view>
       </view>
-    </view>
-
-    <!-- 过去30天统计卡片 -->
-    <view class="history-card">
-      <view class="card-header">
-        <view class="header-left">
-          <text class="card-title">📊 过去30天统计</text>
-          <text class="card-subtitle">基于历史数据</text>
+      <view class="stat-card" @click="openHistory('steps')">
+        <view class="stat-header">
+          <text class="stat-icon">👟</text>
+          <text class="stat-title">今日步数</text>
         </view>
-        <view class="header-decoration"></view>
-      </view>
-      
-      <!-- 统计网格 -->
-      <view class="history-stats-grid">
-        <view v-for="(stat, index) in statsList" :key="index" class="history-stat-item">
-          <view class="stat-label-row">
-            <view class="label-with-icon">
-              <text class="stat-icon-small">{{ getStatIcon(stat.label) }}</text>
-              <text class="history-stat-label">{{ stat.label }}</text>
-            </view>
-            <text class="info-icon" @click.stop="showStatInfo(stat.info)">ⓘ</text>
-          </view>
-          <text class="history-stat-value">{{ stat.value }}</text>
-        </view>
-      </view>
-      
-      <!-- 最近7天运动趋势 -->
-      <view class="trend-section">
-        <view class="trend-header">
-          <text class="trend-title">🏋️ 最近7天运动趋势</text>
-          <text class="trend-unit">分钟</text>
-        </view>
-        <view class="bars-container">
-          <view v-for="(item, index) in weeklyTrend" :key="index" class="bar-item">
-            <text class="bar-value">{{ item.minutes }}分</text>
-            <view class="bar-wrapper">
-              <view class="bar" :style="{ height: item.height + 'px' }"></view>
-            </view>
-            <text class="bar-label">{{ item.dayLabel }}</text>
-          </view>
+        <text class="stat-value">{{ todayStats.stepsCount }} / {{ todayStats.stepsTarget }} 步</text>
+        <view class="progress-bar">
+          <view class="progress-fill" :style="{ width: stepsPercent + '%', backgroundColor: '#f56c6c' }"></view>
         </view>
       </view>
     </view>
 
     <!-- 智能建议 -->
-    <view class="advice-card">
+    <!-- <view class="advice-card">
       <text class="advice-icon">💡</text>
       <text class="advice-text">{{ advice }}</text>
-    </view>
+    </view> -->
 
     <!-- 生成今日训练计划按钮+展示区 -->
     <view class="plan-section">
@@ -142,7 +110,9 @@ const todayStats = ref({
   sleepHours: 0,
   sleepTarget: 8,
   dietCalories: 0,
-  dietTarget: 2000
+  dietTarget: 2000,
+  stepsCount: 0,
+  stepsTarget: 10000
 })
 const dailyReport = ref({ score: 0 })
 const advice = ref('')
@@ -154,7 +124,9 @@ const historyStats = ref({
   avgSleep: 0,
   avgDiet: 0,
   workoutGoalDays: 0,
-  sleepGoalDays: 0
+  sleepGoalDays: 0,
+  totalSteps: 0,
+  avgSteps: 0
 })
 const weeklyTrend = ref([])
 
@@ -162,6 +134,7 @@ const weeklyTrend = ref([])
 const workoutPercent = computed(() => Math.min(100, (todayStats.value.workoutMinutes / todayStats.value.workoutTarget) * 100))
 const sleepPercent = computed(() => Math.min(100, (todayStats.value.sleepHours / todayStats.value.sleepTarget) * 100))
 const dietPercent = computed(() => Math.min(100, (todayStats.value.dietCalories / todayStats.value.dietTarget) * 100))
+const stepsPercent = computed(() => Math.min(100, (todayStats.value.stepsCount / todayStats.value.stepsTarget) * 100))
 
 // 统计数据列表（用于历史卡片）
 const statsList = computed(() => [
@@ -186,6 +159,16 @@ const statsList = computed(() => [
     info: '过去30天平均每天从饮食中摄入的热量，单位：千卡。用于监控能量平衡。' 
   },
   { 
+    label: '总步数', 
+    value: `${historyStats.value.totalSteps || 0}步`, 
+    info: '过去30天内所有步数的总和。帮助您了解每日活动量。' 
+  },
+  { 
+    label: '日均步数', 
+    value: `${historyStats.value.avgSteps || 0}步`, 
+    info: '过去30天平均每天的步数。用于判断日常步行水平。' 
+  },
+  { 
     label: '运动达标天数', 
     value: `${historyStats.value.workoutGoalDays}天`, 
     info: '过去30天中，运动时长达到或超过目标（默认30分钟）的天数。反映运动计划的执行情况。' 
@@ -204,6 +187,8 @@ const getStatIcon = (label) => {
     '日均运动': '📈',
     '平均睡眠': '😴',
     '日均摄入': '🍽️',
+    '总步数': '👟',
+    '日均步数': '🚶',
     '运动达标天数': '🎯',
     '睡眠达标天数': '⭐'
   }
@@ -245,6 +230,8 @@ async function loadDashboard() {
     // 3. 饮食数据
     const dietTarget = dietTodayData.targetCalories ?? 2000
     const dietCalories = dietTodayData.totalCalories ?? 0
+    const stepsTarget = todayData.stepsTarget ?? 10000
+    const stepsCount = todayData.steps ?? 0
 
     todayStats.value = {
       workoutMinutes,
@@ -252,7 +239,9 @@ async function loadDashboard() {
       sleepHours,
       sleepTarget,
       dietCalories,
-      dietTarget
+      dietTarget,
+      stepsCount,
+      stepsTarget
     }
 
     // 计算今日健康指数（基于完成百分比）
@@ -261,7 +250,8 @@ async function loadDashboard() {
     // 饮食得分：越接近目标越高，使用偏差率计算（100 - 偏差百分比）
     const dietDiffPercent = Math.abs(dietCalories - dietTarget) / dietTarget * 100
     const dietScore = Math.max(0, 100 - dietDiffPercent)
-    const totalScore = Math.round((workoutScore + sleepScore + dietScore) / 3)
+    const stepsScore = Math.min(100, (stepsCount / stepsTarget) * 100)
+    const totalScore = Math.round((workoutScore + sleepScore + dietScore + stepsScore) / 4)
     dailyReport.value.score = totalScore
 
     // 生成建议
@@ -391,6 +381,8 @@ function processHistoryData(history) {
   const avgSleep = (totalSleep / history.length).toFixed(1)
   const totalDiet = history.reduce((sum, day) => sum + (day.dietCalories || 0), 0)
   const avgDiet = Math.round(totalDiet / history.length)
+  const totalSteps = history.reduce((sum, day) => sum + (day.steps || day.stepsCount || 0), 0)
+  const avgSteps = history.length ? Math.round(totalSteps / history.length) : 0
 
   // 使用历史数据中的目标值（后端返回的 workoutTarget / sleepTarget / dietTarget）
   const workoutTarget = history[0]?.workoutTarget ?? 30
@@ -404,7 +396,9 @@ function processHistoryData(history) {
     avgSleep,
     avgDiet,
     workoutGoalDays,
-    sleepGoalDays
+    sleepGoalDays,
+    totalSteps,
+    avgSteps
   }
 
   // 计算最近7天运动趋势
@@ -469,6 +463,10 @@ async function generateTrainingPlan() {
   } finally {
     generatingPlan.value = false
   }
+}
+
+function openHistory(metric) {
+  uni.navigateTo({ url: `/pages/workout/history?metric=${metric}` })
 }
 
 function navigateTo(page) {
@@ -555,8 +553,8 @@ onMounted(() => {
 
 /* 指标卡片 */
 .stats-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
   margin-bottom: 30rpx;
 }
@@ -599,201 +597,7 @@ onMounted(() => {
   transition: width 0.3s;
 }
 
-/* ========== 过去30天统计卡片（美化区域） ========== */
-.history-card {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-radius: 32rpx;
-  padding: 30rpx;
-  margin-bottom: 30rpx;
-  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-}
-
-/* 卡片头部美化 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30rpx;
-  position: relative;
-}
-.header-left {
-  flex: 1;
-}
-.card-title {
-  font-size: 34rpx;
-  font-weight: bold;
-  background: linear-gradient(135deg, #2c6ed1, #409eff);
-  background-clip: text;
-  color: transparent;
-  letter-spacing: 1rpx;
-}
-.card-subtitle {
-  font-size: 24rpx;
-  color: #909399;
-  margin-left: 12rpx;
-  background: #f0f2f5;
-  padding: 4rpx 12rpx;
-  border-radius: 20rpx;
-}
-.header-decoration {
-  width: 6rpx;
-  height: 40rpx;
-  background: linear-gradient(135deg, #409eff, #2c6ed1);
-  border-radius: 4rpx;
-  opacity: 0.6;
-}
-
-/* 统计网格布局增强 */
-.history-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
-  margin-bottom: 36rpx;
-}
-.history-stat-item {
-  background: linear-gradient(145deg, #fff5f7, #ffeef4);
-  padding: 20rpx 16rpx;
-  border-radius: 24rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02), 0 2rpx 4rpx rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1rpx solid rgba(64, 158, 255, 0.08);
-}
-.history-stat-item:active {
-  transform: scale(0.98);
-  background: #ffffff;
-}
-.stat-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12rpx;
-}
-.label-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-.stat-icon-small {
-  font-size: 28rpx;
-  filter: drop-shadow(0 2rpx 2rpx rgba(0,0,0,0.05));
-}
-.history-stat-label {
-  font-size: 26rpx;
-  font-weight: 500;
-  color: #4a5568;
-  letter-spacing: 0.5rpx;
-}
-.info-icon {
-  font-size: 28rpx;
-  color: #909399;
-  background: rgba(0, 0, 0, 0.04);
-  width: 40rpx;
-  height: 40rpx;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 40rpx;
-  transition: background 0.2s;
-}
-.info-icon:active {
-  background: rgba(0, 0, 0, 0.1);
-}
-.history-stat-value {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #1e293b;
-  display: block;
-  line-height: 1.3;
-  padding-left: 8rpx;
-  background: linear-gradient(135deg, #1e293b, #334155);
-  background-clip: text;
-  color: transparent;
-}
-
-/* 趋势区域美化 */
-.trend-section {
-  margin-top: 20rpx;
-  background: #fafcff;
-  border-radius: 28rpx;
-  padding: 20rpx 12rpx 16rpx;
-  box-shadow: inset 0 1rpx 2rpx rgba(0,0,0,0.02), 0 2rpx 6rpx rgba(0,0,0,0.02);
-}
-.trend-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 24rpx;
-  padding: 0 12rpx;
-}
-.trend-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2c3e50;
-  background: linear-gradient(135deg, #409eff40 0%, #eef2ff 100%);
-  padding: 6rpx 20rpx;
-  border-radius: 40rpx;
-  letter-spacing: 1rpx;
-}
-.trend-unit {
-  font-size: 22rpx;
-  color: #a0abb8;
-  background: #f0f2f5;
-  padding: 4rpx 12rpx;
-  border-radius: 24rpx;
-}
-.bars-container {
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  height: 170rpx;
-  gap: 12rpx;
-  padding: 10rpx 0;
-}
-.bar-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-.bar-value {
-  font-size: 20rpx;
-  font-weight: 500;
-  color: #409eff;
-  background: #ecf5ff;
-  padding: 4rpx 8rpx;
-  border-radius: 20rpx;
-  margin-bottom: 8rpx;
-  white-space: nowrap;
-}
-.bar-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background: transparent;
-  border-radius: 20rpx;
-  height: 80rpx;
-  align-items: flex-end;
-  overflow: hidden;
-}
-.bar {
-  width: 44rpx;
-  background: linear-gradient(0deg, #409eff, #66b1ff);
-  border-radius: 20rpx 20rpx 8rpx 8rpx;
-  transition: height 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  box-shadow: 0 -2rpx 6rpx rgba(64, 158, 255, 0.2);
-}
-.bar-label {
-  font-size: 22rpx;
-  color: #7e8c9e;
-  margin-top: 12rpx;
-  font-weight: 500;
-  background: #f8fafc;
-  padding: 4rpx 10rpx;
-  border-radius: 20rpx;
-}
-/* ========== 美化区域结束 ========== */
+/* 过去30天统计相关样式已删除 */
 
 /* 建议卡片 */
 .advice-card {

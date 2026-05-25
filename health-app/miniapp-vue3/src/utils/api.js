@@ -107,3 +107,14 @@ export const workApi = {
   // 更新单个健康指标
   updateHealthMetric: (data) => request('/work/health-data/metric', { method: 'POST', data }),
 }
+
+// ========== 个人知识助手（学习页使用） ==========
+export const studyApi = {
+  list: () => request('/study/plans'),
+  add: (data) => request('/study/plans', { method: 'POST', data })
+}
+
+export const assistantApi = {
+  // 将用户输入发送到后端知识助手接口，后端负责返回 AI 回复
+  chat: (payload) => request('/assistant/chat', { method: 'POST', data: payload })
+}

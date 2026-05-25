@@ -22,9 +22,16 @@
     {
       "path": "pages/workout/workout",
       "style": {
-        "navigationBarTitleText": "健身运动",
+        "navigationBarTitleText": "健康",
         "navigationBarBackgroundColor": "#ffffff",
         "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/workout/history",
+      "style": {
+        "navigationBarTitleText": "健康指标历史",
+        "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
@@ -75,6 +82,28 @@
       "path": "pages/work/occupation-select",
       "style": {
         "navigationBarTitleText": "选择职业",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    }
+    ,
+    {
+      "path": "pages/study/index",
+      "style": {
+        "navigationBarTitleText": "学习计划",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/chat",
+      "style": {
+        "navigationBarTitleText": "个人知识助手",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/add",
+      "style": {
+        "navigationBarTitleText": "添加学习计划",
         "navigationBarBackgroundColor": "#ffffff"
       }
     }
