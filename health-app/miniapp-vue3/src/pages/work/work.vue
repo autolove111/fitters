@@ -4,28 +4,38 @@
       <!-- 顶部职业栏 -->
       <view class="greeting-card">
         <text class="greeting-icon">{{ currentOccupationIcon }}</text>
-        <text class="greeting-text">{{ currentOccupationLabel }} 专属方案</text>
+        <text class="greeting-text">身份：{{ currentOccupationDisplay }}</text>
         <text class="change-occupation" @click="goToOccupationSelect">更换职业</text>
       </view>
 
-      <!-- 番茄钟主卡片 -->
-      <view class="pomodoro-card">
-        <view class="timer-display">
-          <text class="timer-minutes">{{ formattedTime.minutes }}</text>
-          <text class="timer-colon">:</text>
-          <text class="timer-seconds">{{ formattedTime.seconds }}</text>
+      <!-- 今日工作时长 -->
+      <view class="duration-card">
+        <text class="card-title">⏱️ 今日工作时长</text>
+        <text class="duration-value">{{ formattedWorkDuration }}</text>
+        <text class="duration-note">从后端获取并展示今日累计工作时间</text>
+      </view>
+
+      <!-- 今日 TODO -->
+      <view class="todo-card">
+        <text class="card-title">📝 今日 TODO</text>
+        <view class="todo-input-row">
+          <input class="todo-input" v-model="newTodoText" placeholder="添加新的今日任务" placeholder-class="placeholder" />
+          <button class="add-todo-btn" @click="addTodo">添加</button>
         </view>
-        <view class="timer-status">
-          <text class="status-text">{{ isWorking ? '专注中' : '休息中' }}</text>
+        <view class="todo-list">
+          <view v-for="todo in todoList" :key="todo.id" class="todo-item">
+            <text class="todo-text">{{ todo.content }}</text>
+            <button class="todo-complete-btn" @click="completeTodo(todo.id)">完成</button>
+          </view>
+          <text v-if="todoList.length === 0" class="todo-empty">暂无今日TODO，赶紧添加一条吧！</text>
         </view>
-        <view class="timer-controls">
-          <button v-if="!isTimerRunning" class="timer-btn start" @click="startTimer">开始专注</button>
-          <button v-if="isTimerRunning" class="timer-btn pause" @click="pauseTimer">暂停</button>
-          <button v-if="isTimerRunning" class="timer-btn reset" @click="resetTimer">重置</button>
-        </view>
-        <view class="pomodoro-stats">
-          <text>今日已完成 {{ todayPomodoros }} 个番茄钟</text>
-        </view>
+      </view>
+
+      <!-- 番茄钟入口卡片 -->
+      <view class="pomodoro-entry-card">
+        <text class="card-title">🍅 番茄钟</text>
+        <text class="pomodoro-entry-desc">跳转到专属番茄钟页面进行专注计时，开始你的高效工作节奏。</text>
+        <button class="pomodoro-open-btn" @click="goToPomodoro">打开番茄钟</button>
       </view>
 
       <!-- 久坐提醒卡片 -->
@@ -232,7 +242,29 @@ const occupations = [
 
 const currentOccupation = ref('general')
 const currentOccupationLabel = computed(() => occupations.find(o => o.value === currentOccupation.value)?.label || '通用')
+const currentOccupationDisplay = computed(() => {
+  const map = {
+    it: '精益求精的程序员',
+    teacher: '教书育人的老师',
+    driver: '一路护航的司机',
+    student: '勤奋好学的学生',
+    medical: '温柔有爱的医护人员',
+    admin: '细心负责的文员',
+    sales: '朝气蓬勃的销售达人',
+    general: '元气满满的你'
+  }
+  return map[currentOccupation.value] || '超级棒的朋友'
+})
 const currentOccupationIcon = computed(() => occupations.find(o => o.value === currentOccupation.value)?.icon || '🌟')
+const formattedWorkDuration = computed(() => {
+  const minutes = todayWorkDuration.value || 0
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0) {
+    return `${hours}小时${mins}分钟`
+  }
+  return `${mins}分钟`
+})
 
 // 番茄钟
 const WORK_DURATION = 25 * 60
@@ -245,6 +277,9 @@ let currentSessionId = null
 const todayPomodoros = ref(0)
 const todayFocusMinutes = ref(0)
 const todaySessions = ref(0)
+const todayWorkDuration = ref(0)
+const todoList = ref([])
+const newTodoText = ref('')
 
 // 久坐提醒
 const sedentaryEnabled = ref(true)
@@ -333,6 +368,12 @@ const loadAllData = async () => {
       todaySessions.value = todayStats.sessions || 0
       todayPomodoros.value = todayStats.sessions || 0
     }
+
+    // 2.1 加载今日工作时长
+    await loadTodayWorkDuration()
+
+    // 2.2 加载今日 TODO
+    await loadTodayTodos()
     
     // 3. 加载本周趋势
     const weeklyData = await workApi.getWeeklyStats()
@@ -399,6 +440,69 @@ const loadCareerHealthData = async () => {
     }
   } catch (error) {
     console.error('加载职业健康数据失败', error)
+  }
+}
+
+const loadTodayWorkDuration = async () => {
+  try {
+    const duration = await workApi.getTodayWorkDuration()
+    todayWorkDuration.value = duration?.durationMinutes ?? duration?.workDuration ?? 0
+  } catch (error) {
+    console.warn('加载今日工作时长失败', error)
+    todayWorkDuration.value = 0
+  }
+}
+
+const loadTodayTodos = async () => {
+  try {
+    const todos = await workApi.getTodayTodos()
+    if (Array.isArray(todos)) {
+      todoList.value = todos.map(item => ({ id: item.id, content: item.content || item.title || '' }))
+    } else if (todos?.data && Array.isArray(todos.data)) {
+      todoList.value = todos.data.map(item => ({ id: item.id, content: item.content || item.title || '' }))
+    } else {
+      todoList.value = []
+    }
+  } catch (error) {
+    console.warn('加载今日TODO失败', error)
+    todoList.value = []
+  }
+}
+
+const addTodo = async () => {
+  const content = newTodoText.value.trim()
+  if (!content) {
+    uni.showToast({ title: '请输入待办内容', icon: 'none' })
+    return
+  }
+  try {
+    const result = await workApi.addTodayTodo(content)
+    const newItem = result?.data || result || {}
+    const todo = {
+      id: newItem.id ?? Date.now(),
+      content: newItem.content || newItem.title || content
+    }
+    todoList.value.unshift(todo)
+    newTodoText.value = ''
+    uni.showToast({ title: '添加成功', icon: 'success' })
+  } catch (error) {
+    console.warn('添加TODO失败，使用本地暂存', error)
+    const todo = { id: Date.now(), content }
+    todoList.value.unshift(todo)
+    newTodoText.value = ''
+    uni.showToast({ title: '已添加到本地', icon: 'none' })
+  }
+}
+
+const completeTodo = async (id) => {
+  try {
+    await workApi.completeTodo(id)
+    todoList.value = todoList.value.filter(item => item.id !== id)
+    uni.showToast({ title: '已完成', icon: 'success' })
+  } catch (error) {
+    console.warn('完成TODO失败，仍从页面移除', error)
+    todoList.value = todoList.value.filter(item => item.id !== id)
+    uni.showToast({ title: '已标记完成', icon: 'success' })
   }
 }
 
@@ -662,6 +766,10 @@ const updateSedentaryInterval = async () => {
   }
 }
 
+const goToPomodoro = () => {
+  uni.navigateTo({ url: '/pages/work/pomodoro' })
+}
+
 // 职业切换
 const goToOccupationSelect = () => {
   uni.navigateTo({
@@ -766,6 +874,108 @@ onUnmounted(() => {
 .greeting-icon { font-size: 48rpx; }
 .greeting-text { font-size: 30rpx; font-weight: 600; color: #2e7d32; flex:1; margin-left: 16rpx; }
 .change-occupation { font-size: 26rpx; color: #558b2f; text-decoration: underline; }
+
+.pomodoro-entry-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 48rpx;
+  padding: 28rpx;
+  margin-bottom: 30rpx;
+  border: 1rpx solid rgba(14, 165, 233, 0.16);
+  box-shadow: 0 8rpx 18rpx rgba(14, 165, 233, 0.08);
+}
+.pomodoro-entry-desc {
+  font-size: 28rpx;
+  color: #2563eb;
+  line-height: 1.8;
+  margin: 20rpx 0;
+}
+.pomodoro-open-btn {
+  width: 100%;
+  height: 88rpx;
+  border-radius: 48rpx;
+  border: none;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.duration-card, .todo-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 48rpx;
+  padding: 28rpx;
+  margin-bottom: 30rpx;
+  border: 1rpx solid rgba(132, 204, 22, 0.18);
+  box-shadow: 0 8rpx 18rpx rgba(34, 197, 94, 0.08);
+}
+.duration-value {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #15803d;
+}
+.duration-note {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #4b5563;
+}
+.todo-input-row {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 24rpx;
+  align-items: center;
+}
+.todo-input {
+  flex: 1;
+  height: 82rpx;
+  border-radius: 42rpx;
+  border: 1rpx solid #d1fae5;
+  background: #f7fdf7;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+.add-todo-btn {
+  min-width: 180rpx;
+  height: 82rpx;
+  border-radius: 42rpx;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.todo-list {
+  margin-top: 24rpx;
+}
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #ecfdf5;
+}
+.todo-text {
+  font-size: 28rpx;
+  color: #0f172a;
+  flex: 1;
+}
+.todo-complete-btn {
+  min-width: 170rpx;
+  height: 70rpx;
+  border-radius: 36rpx;
+  border: none;
+  background: #34d399;
+  color: white;
+  font-size: 26rpx;
+}
+.todo-empty {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  color: #6b7280;
+}
 
 /* ========== 番茄钟卡片美化（仅样式，不改结构） ========== */
 .pomodoro-card {

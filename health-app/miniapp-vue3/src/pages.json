@@ -84,8 +84,13 @@
         "navigationBarTitleText": "选择职业",
         "navigationBarBackgroundColor": "#ffffff"
       }
-    }
-    ,
+    },
+    {
+      "path": "pages/work/pomodoro",
+      "style": {
+        "navigationBarTitleText": "番茄钟"
+      }
+    },
     {
       "path": "pages/study/index",
       "style": {
