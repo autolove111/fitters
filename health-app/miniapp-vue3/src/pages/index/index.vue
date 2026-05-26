@@ -54,35 +54,43 @@
       <view class="menu-grid">
         <view class="menu-card card-fitness" @click="goFitness">
           <view class="card-glow"></view>
-          <view class="card-icon-wrapper">
-            <text class="card-icon">💪</text>
-          </view>
-          <text class="card-title">健身</text>
-          <text class="card-desc">运动·睡眠·饮食</text>
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">❤️</text>
+          </view> -->
+          <text class="card-title">健康</text>
+          <text class="card-desc">综合健康管理</text>
         </view>
-        <view class="menu-card card-weightloss" @click="goWeightLoss">
-          <view class="card-glow"></view>
-          <view class="card-icon-wrapper">
+        <!-- <view class="menu-card card-weightloss" @click="goWeightLoss">
+          <view class="card-glow"></view> -->
+          <!-- <view class="card-icon-wrapper">
             <text class="card-icon">🥗</text>
-          </view>
-          <text class="card-title">减肥</text>
+          </view> -->
+          <!-- <text class="card-title">减肥</text>
           <text class="card-desc">科学减脂计划</text>
         </view>
         <view class="menu-card card-wellness" @click="goWellness">
-          <view class="card-glow"></view>
-          <view class="card-icon-wrapper">
+          <view class="card-glow"></view> -->
+          <!-- <view class="card-icon-wrapper">
             <text class="card-icon">🧘</text>
-          </view>
-          <text class="card-title">养生</text>
+          </view> -->
+          <!-- <text class="card-title">养生</text>
           <text class="card-desc">调养身心</text>
-        </view>
+        </view> -->
         <view class="menu-card card-work" @click="goWork">
           <view class="card-glow"></view>
-          <view class="card-icon-wrapper">
+          <!-- <view class="card-icon-wrapper">
             <text class="card-icon">💼</text>
-          </view>
+          </view> -->
           <text class="card-title">工作</text>
           <text class="card-desc">效率与专注</text>
+        </view>
+        <view class="menu-card card-study" @click="goStudy">
+          <view class="card-glow"></view>
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">📚</text>
+          </view> -->
+          <text class="card-title">学习</text>
+          <text class="card-desc">学习计划与个人助手</text>
         </view>
       </view>
 
@@ -205,6 +213,10 @@ function goWellness() {
 
 function goWork() {
   uni.navigateTo({ url: '/pages/work/work' })
+}
+
+function goStudy() {
+  uni.navigateTo({ url: '/pages/study/index' })
 }
 </script>
 
@@ -444,7 +456,7 @@ function goWork() {
 /* 功能卡片网格 */
 .menu-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 32rpx;
   margin: 8rpx 0;
 }

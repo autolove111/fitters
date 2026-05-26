@@ -102,8 +102,25 @@ export const workApi = {
   getRecommendedExercises: (occupation) => request(`/work/exercises/recommended?occupation=${occupation}`, { method: 'GET' }),
   // 获取所有微运动列表（用于详情页）
   getAllExercises: () => request('/work/exercises', { method: 'GET' }),
-    // 获取用户健康数据（职业专属指标）
+  // 获取今日工作时长
+  getTodayWorkDuration: () => request('/work/today-duration', { method: 'GET' }),
+  // 今日TODO
+  getTodayTodos: () => request('/work/todos/today', { method: 'GET' }),
+  addTodayTodo: (content) => request('/work/todos', { method: 'POST', data: { content } }),
+  completeTodo: (todoId) => request(`/work/todos/${todoId}`, { method: 'DELETE' }),
+  // 获取用户健康数据（职业专属指标）
   getHealthData: (occupation) => request(`/work/health-data?occupation=${occupation}`, { method: 'GET' }),
   // 更新单个健康指标
   updateHealthMetric: (data) => request('/work/health-data/metric', { method: 'POST', data }),
+}
+
+// ========== 学习模块API ==========
+export const studyApi = {
+  list: () => request('/study/plans'),
+  add: (data) => request('/study/plans', { method: 'POST', data })
+}
+
+export const assistantApi = {
+  // 将用户输入发送到后端知识助手接口，后端负责返回 AI 回复
+  chat: (payload) => request('/assistant/chat', { method: 'POST', data: payload })
 }
