@@ -22,9 +22,16 @@
     {
       "path": "pages/workout/workout",
       "style": {
-        "navigationBarTitleText": "健身运动",
+        "navigationBarTitleText": "健康",
         "navigationBarBackgroundColor": "#ffffff",
         "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/workout/history",
+      "style": {
+        "navigationBarTitleText": "健康指标历史",
+        "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
@@ -38,6 +45,13 @@
       "path": "pages/wellness/wellness",
       "style": {
         "navigationBarTitleText": "养生"
+      }
+    },
+    {
+      "path": "pages/wellness/checkin-report",
+      "style": {
+        "navigationBarTitleText": "月度养生报告",
+        "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
@@ -56,6 +70,46 @@
       "path": "pages/work/work",
       "style": {
         "navigationBarTitleText": "工作健康助手"
+      }
+    },
+    {
+      "path": "pages/work/exercise-detail",
+      "style": {
+        "navigationBarTitleText": "微运动详情"
+      }
+    },
+    {
+      "path": "pages/work/occupation-select",
+      "style": {
+        "navigationBarTitleText": "选择职业",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/work/pomodoro",
+      "style": {
+        "navigationBarTitleText": "番茄钟"
+      }
+    },
+    {
+      "path": "pages/study/index",
+      "style": {
+        "navigationBarTitleText": "学习计划",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/chat",
+      "style": {
+        "navigationBarTitleText": "个人知识助手",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/add",
+      "style": {
+        "navigationBarTitleText": "添加学习计划",
+        "navigationBarBackgroundColor": "#ffffff"
       }
     }
   ],

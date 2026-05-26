@@ -76,34 +76,40 @@
         </view>
       </view>
 
-      <view class="function-grid">
-        <view v-for="item in cards" :key="item.id" class="func-card" :class="'card-theme-' + item.id" @click="goTo(item.route)" hover-class="card-lift">
-          <view class="card-inner-glow"></view>
-          <view class="card-icon-box">
-            <text class="card-icon-main">{{ item.icon }}</text>
-            <view class="icon-bg-blur"></view>
+      <!-- 四色功能卡片网格 -->
+      <view class="menu-grid">
+        <view class="menu-card card-fitness" @click="goFitness">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
+            <text class="card-icon">💪</text>
           </view>
-          <text class="card-name">{{ item.title }}</text>
-          <text class="card-sub">{{ item.sub }}</text>
-          <view class="card-decoration"></view>
+          <text class="card-title">健身</text>
+          <text class="card-desc">运动·睡眠·饮食</text>
         </view>
-      </view>
-
-      <view class="insight-card">
-        <view class="insight-header">
-          <text class="insight-label">今日微习惯</text>
-          <text class="insight-meta">DAILY RITUAL</text>
+        <view class="menu-card card-weightloss" @click="goWeightLoss">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
+            <text class="card-icon">🥗</text>
+          </view>
+          <text class="card-title">减肥</text>
+          <text class="card-desc">科学减脂计划</text>
         </view>
-        <view class="insight-content">
-          <text class="insight-quote">“</text>
-          <text class="insight-text">{{ dailyTip }}</text>
-          <text class="insight-quote right">”</text>
+        <view class="menu-card card-wellness" @click="goWellness">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
+            <text class="card-icon">🧘</text>
+          </view>
+          <text class="card-title">养生</text>
+          <text class="card-desc">调养身心</text>
         </view>
-        <view class="insight-progress">
-          <view class="progress-track"></view>
-          <view class="progress-fill" :style="{ width: habitProgress + '%' }"></view>
+        <view class="menu-card card-work" @click="goWork">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
+            <text class="card-icon">💼</text>
+          </view>
+          <text class="card-title">工作</text>
+          <text class="card-desc">效率与专注</text>
         </view>
-        <text class="insight-footer">今日践行率 {{ habitProgress }}%</text>
       </view>
 
       <view class="dashboard-atmosphere"></view>
@@ -213,6 +219,10 @@ function logout() {
 
 function goTo(url) {
   uni.navigateTo({ url })
+}
+
+function goStudy() {
+  uni.navigateTo({ url: '/pages/study/index' })
 }
 </script>
 
@@ -538,7 +548,7 @@ function goTo(url) {
 }
 .function-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 32rpx;
 }
 .func-card {
