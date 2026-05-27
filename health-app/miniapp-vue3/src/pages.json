@@ -10,7 +10,7 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "Fitters健康管家" }
+      "style": { "navigationBarTitleText": "Fitters" }
     },
     {
       "path": "pages/register/register",
@@ -22,7 +22,7 @@
     {
       "path": "pages/workout/workout",
       "style": {
-        "navigationBarTitleText": "健康",
+        "navigationBarTitleText": "健康管理",
         "navigationBarBackgroundColor": "#ffffff",
         "enablePullDownRefresh": false
       }
@@ -30,27 +30,27 @@
     {
       "path": "pages/workout/history",
       "style": {
-        "navigationBarTitleText": "健康指标历史",
+        "navigationBarTitleText": "历史统计",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/weightloss/weightloss",
       "style": {
-        "navigationBarTitleText": "减肥助手",
+        "navigationBarTitleText": "Weight Loss",
         "enablePullDownRefresh": false
       }
     },
     {
       "path": "pages/wellness/wellness",
       "style": {
-        "navigationBarTitleText": "养生"
+        "navigationBarTitleText": "Wellness"
       }
     },
     {
       "path": "pages/wellness/checkin-report",
       "style": {
-        "navigationBarTitleText": "月度养生报告",
+        "navigationBarTitleText": "Check-in Report",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
@@ -60,7 +60,7 @@
     },
     {
       "path": "pages/sleep/add",
-      "style": { "navigationBarTitleText": "添加睡眠记录" }
+      "style": { "navigationBarTitleText": "添加睡眠时长" }
     },
     {
       "path": "pages/diet/add",
@@ -75,7 +75,7 @@
     {
       "path": "pages/work/exercise-detail",
       "style": {
-        "navigationBarTitleText": "微运动详情"
+        "navigationBarTitleText": "微运动"
       }
     },
     {
@@ -88,7 +88,7 @@
     {
       "path": "pages/work/pomodoro",
       "style": {
-        "navigationBarTitleText": "番茄钟"
+        "navigationBarTitleText": "专注模式"
       }
     },
     {
@@ -101,7 +101,7 @@
     {
       "path": "pages/study/chat",
       "style": {
-        "navigationBarTitleText": "个人知识助手",
+        "navigationBarTitleText": "学习助手",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
@@ -111,6 +111,99 @@
         "navigationBarTitleText": "添加学习计划",
         "navigationBarBackgroundColor": "#ffffff"
       }
+    },
+    {
+      "path": "pages/study/deeptutor/index/index",
+      "style": {
+        "navigationBarTitleText": "学习助手",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/deeptutor/login/login",
+      "style": {
+        "navigationBarTitleText": "DeepTutor Login",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/study/deeptutor/register/register",
+      "style": {
+        "navigationBarTitleText": "DeepTutor Register",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/study/deeptutor/chat/chat",
+      "style": { "navigationBarTitleText": "DeepTutor Chat" }
+    },
+    {
+      "path": "pages/study/deeptutor/chat/session",
+      "style": { "navigationBarTitleText": "DeepTutor Session" }
+    },
+    {
+      "path": "pages/study/deeptutor/knowledge/list",
+      "style": { "navigationBarTitleText": "Knowledge Base" }
+    },
+    {
+      "path": "pages/study/deeptutor/knowledge/detail",
+      "style": { "navigationBarTitleText": "Knowledge Detail" }
+    },
+    {
+      "path": "pages/study/deeptutor/knowledge/create",
+      "style": { "navigationBarTitleText": "Create Knowledge" }
+    },
+    {
+      "path": "pages/study/deeptutor/memory/overview",
+      "style": { "navigationBarTitleText": "Memory" }
+    },
+    {
+      "path": "pages/study/deeptutor/memory/doc",
+      "style": { "navigationBarTitleText": "Memory Document" }
+    },
+    {
+      "path": "pages/study/deeptutor/skills/list",
+      "style": { "navigationBarTitleText": "Skills" }
+    },
+    {
+      "path": "pages/study/deeptutor/skills/detail",
+      "style": { "navigationBarTitleText": "Skill Detail" }
+    },
+    {
+      "path": "pages/study/deeptutor/history/list",
+      "style": { "navigationBarTitleText": "Chat History" }
+    },
+    {
+      "path": "pages/study/deeptutor/question/generate",
+      "style": { "navigationBarTitleText": "Question Generate" }
+    },
+    {
+      "path": "pages/study/deeptutor/question/mimic",
+      "style": { "navigationBarTitleText": "Mock Exam" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/index",
+      "style": { "navigationBarTitleText": "Settings" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/status",
+      "style": { "navigationBarTitleText": "System Status" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/llm",
+      "style": { "navigationBarTitleText": "Model Config" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/tools",
+      "style": { "navigationBarTitleText": "Tools" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/appearance",
+      "style": { "navigationBarTitleText": "Appearance" }
+    },
+    {
+      "path": "pages/study/deeptutor/settings/users",
+      "style": { "navigationBarTitleText": "Users" }
     }
   ],
   "globalStyle": {
