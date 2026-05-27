@@ -2,6 +2,12 @@
   "name": "uni-preset-vue",
   "version": "0.0.0",
   "scripts": {
+    "dev:app": "uni -p app",
+    "dev:app-android": "uni -p app-android",
+    "dev:app-ios": "uni -p app-ios",
+    "build:app": "uni build -p app",
+    "build:app-android": "uni build -p app-android", 
+    "build:app-ios": "uni build -p app-ios",
     "dev:custom": "uni -p",
     "dev:h5": "uni",
     "dev:h5:ssr": "uni --ssr",

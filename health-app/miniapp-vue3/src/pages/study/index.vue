@@ -13,13 +13,6 @@
         <text class="hero-tag">每日打卡</text>
         <text class="hero-tag">智能问答</text>
       </view>
-      <view class="deeptutor-entry">
-        <view class="deeptutor-copy">
-          <text class="deeptutor-title">DeepTutor Learning Space</text>
-          <text class="deeptutor-note">Open the embedded DeepTutor knowledge, memory, skills, and session UI without changing the existing study-plan routes.</text>
-        </view>
-        <button class="deeptutor-btn" @tap="openDeepTutor">Open DeepTutor</button>
-      </view>
     </view>
 
     <view class="section-header">
@@ -45,12 +38,21 @@
               <text class="time-value">{{ plan.end }}</text>
             </view>
           </view>
-          <view class="plan-footer">
+          <!-- <view class="plan-footer">
             <button class="assistant-btn" @click="openAssistant(plan)">进入助手</button>
-          </view>
+          </view> -->
         </view>
       </view>
     </scroll-view>
+
+    <view class="deeptutor-card">
+      <view class="deeptutor-icon">🤖</view>
+      <view class="deeptutor-content">
+        <text class="deeptutor-title">学习助手</text>
+        <text class="deeptutor-desc">进入学习助手，获得个性化学习建议与智能问答支持</text>
+      </view>
+      <button class="deeptutor-btn" @tap="goDeeptutor">进入</button>
+    </view>
   </view>
 </template>
 
@@ -99,8 +101,17 @@ function openAssistant(plan) {
   uni.navigateTo({ url })
 }
 
-function openDeepTutor() {
-  uni.navigateTo({ url: '/pages/study/deeptutor/index/index' })
+function goDeeptutor() {
+  uni.navigateTo({
+    url: '/pages/study/deeptutor/index/index',
+    success: () => {
+      console.log('跳转至学习助手页面成功')
+    },
+    fail: (err) => {
+      console.error('跳转失败：', err)
+      uni.showToast({ title: '跳转失败，请检查页面路由', icon: 'none' })
+    }
+  })
 }
 
 function confirmDelete(id) {
@@ -216,47 +227,6 @@ onShow(() => {
   border-radius: 26rpx;
   font-size: 24rpx;
   font-weight: 600;
-}
-
-.deeptutor-entry {
-  margin-top: 26rpx;
-  padding: 24rpx;
-  border-radius: 30rpx;
-  background: rgba(255, 255, 255, 0.78);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
-}
-
-.deeptutor-copy {
-  flex: 1;
-}
-
-.deeptutor-title {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.deeptutor-note {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  line-height: 1.5;
-  color: #475569;
-}
-
-.deeptutor-btn {
-  min-width: 196rpx;
-  height: 72rpx;
-  border-radius: 999rpx;
-  border: none;
-  background: linear-gradient(90deg, #0f172a, #2563eb);
-  color: #ffffff;
-  font-size: 24rpx;
-  font-weight: 700;
 }
 
 .section-header {
@@ -410,5 +380,56 @@ onShow(() => {
   font-size: 28rpx;
   font-weight: 700;
   box-shadow: 0 16rpx 26rpx rgba(14, 165, 233, 0.18);
+}
+
+.deeptutor-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 30rpx;
+  padding: 28rpx 26rpx;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
+  backdrop-filter: blur(20rpx);
+  border-radius: 36rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
+}
+
+.deeptutor-icon {
+  font-size: 56rpx;
+  line-height: 56rpx;
+  flex-shrink: 0;
+}
+
+.deeptutor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.deeptutor-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.deeptutor-desc {
+  font-size: 24rpx;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.deeptutor-btn {
+  flex-shrink: 0;
+  min-width: 120rpx;
+  height: 64rpx;
+  background: linear-gradient(90deg, #0ea5e9, #14b8a6);
+  color: #ffffff;
+  border: none;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 20rpx rgba(14, 165, 233, 0.2);
 }
 </style>

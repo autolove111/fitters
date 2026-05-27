@@ -62,7 +62,8 @@ services:
       target: production
     container_name: health-deeptutor
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "${DEEPTUTOR_PORT:-8001}:8001"
     volumes:
       - ./study/aid_learning_agent/data/user:/app/data/user
       - ./study/aid_learning_agent/data/memory:/app/data/memory
