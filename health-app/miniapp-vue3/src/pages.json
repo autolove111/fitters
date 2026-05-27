@@ -116,8 +116,7 @@
       "path": "pages/study/deeptutor/index/index",
       "style": {
         "navigationBarTitleText": "学习助手",
-        "navigationBarBackgroundColor": "#ffffff",
-        "navigationStyle": "custom"
+        "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {

@@ -4,8 +4,8 @@
       <view class="sidebar">
         <view class="brand-block">
           <view class="brand-row">
-            <view class="brand-mark">D</view>
-            <text class="brand-name">DeepTutor</text>
+            <view class="brand-mark">A</view>
+            <text class="brand-name">AidLearning</text>
           </view>
           <view class="brand-badge">v1.4.0</view>
         </view>
@@ -329,10 +329,8 @@ export default {
 <style lang="scss" scoped>
 .workspace-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(115, 79, 48, 0.24), transparent 32%),
-    linear-gradient(180deg, #1d1916 0%, #191614 100%);
-  color: #f3ece7;
+  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  color: #0f172a;
 }
 
 .shell {
@@ -342,8 +340,8 @@ export default {
 }
 
 .sidebar {
-  background: rgba(43, 37, 33, 0.92);
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.06);
+  background: rgba(248, 250, 255, 0.95);
+  border-bottom: 1rpx solid rgba(148, 163, 184, 0.18);
   padding: 28rpx 24rpx 32rpx;
 }
 
@@ -364,8 +362,8 @@ export default {
   width: 56rpx;
   height: 56rpx;
   border-radius: 18rpx;
-  background: linear-gradient(135deg, #6ba7ff 0%, #f2b07f 100%);
-  color: #1b1714;
+  background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 100%);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -376,13 +374,13 @@ export default {
 .brand-name {
   font-size: 40rpx;
   font-weight: 600;
-  color: #f0e6df;
+  color: #0f172a;
   font-family: Georgia, 'Times New Roman', serif;
 }
 
 .brand-badge {
   font-size: 22rpx;
-  color: #9a8f88;
+  color: #64748b;
 }
 
 .nav-section {
@@ -392,21 +390,22 @@ export default {
 .primary-action {
   height: 84rpx;
   border-radius: 22rpx;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1rpx solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  color: #ffffff;
+  border: none;
   display: flex;
   align-items: center;
   gap: 16rpx;
   padding: 0 24rpx;
   font-size: 28rpx;
-  color: #f3ece7;
+  box-shadow: 0 16rpx 24rpx rgba(56, 189, 248, 0.22);
 }
 
 .section-label {
   display: block;
   font-size: 28rpx;
-  font-weight: 600;
-  color: #f3ece7;
+  font-weight: 700;
+  color: #0f172a;
   margin-bottom: 16rpx;
 }
 
@@ -419,7 +418,7 @@ export default {
   margin-bottom: 14rpx;
   font-size: 20rpx;
   letter-spacing: 2rpx;
-  color: #8f8178;
+  color: #64748b;
 }
 
 .session-link {
@@ -433,7 +432,7 @@ export default {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
-  background: #d89a3a;
+  background: #38bdf8;
 }
 
 .session-text,
@@ -448,14 +447,14 @@ export default {
 .session-text {
   max-width: 320rpx;
   font-size: 26rpx;
-  color: #8f8178;
+  color: #334155;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .session-empty {
   font-size: 24rpx;
-  color: #756961;
+  color: #64748b;
 }
 
 .menu-stack {
@@ -471,8 +470,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  background: rgba(255, 255, 255, 0.02);
-  color: #a59a92;
+  background: rgba(56, 189, 248, 0.12);
+  color: #0f172a;
   font-size: 26rpx;
 }
 
@@ -499,8 +498,8 @@ export default {
   width: 88rpx;
   height: 88rpx;
   border-radius: 28rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1rpx solid rgba(56, 189, 248, 0.18);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,7 +510,7 @@ export default {
   font-size: 72rpx;
   line-height: 1.08;
   font-family: Georgia, 'Times New Roman', serif;
-  color: #efe4dc;
+  color: #0f172a;
 }
 
 .hero-subtitle {
@@ -519,7 +518,7 @@ export default {
   max-width: 760rpx;
   font-size: 28rpx;
   line-height: 1.7;
-  color: #8f8178;
+  color: #475569;
 }
 
 .messages-area {
@@ -554,9 +553,9 @@ export default {
   max-width: 1100rpx;
   align-self: center;
   border-radius: 34rpx;
-  background: rgba(44, 38, 34, 0.94);
-  border: 1rpx solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 24rpx 60rpx rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1rpx solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 24rpx 60rpx rgba(30, 64, 175, 0.08);
   overflow: hidden;
 }
 
@@ -564,9 +563,9 @@ export default {
   margin: 22rpx 22rpx 0;
   border-radius: 26rpx;
   overflow: hidden;
-  border: 1rpx solid rgba(255, 255, 255, 0.06);
-  background: rgba(27, 23, 21, 0.98);
-  box-shadow: 0 18rpx 40rpx rgba(0, 0, 0, 0.28);
+  border: 1rpx solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.08);
 }
 
 .capability-item {
@@ -575,7 +574,7 @@ export default {
   justify-content: space-between;
   gap: 18rpx;
   padding: 24rpx 28rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1rpx solid rgba(148, 163, 184, 0.12);
 }
 
 .capability-item:last-child {
@@ -583,7 +582,7 @@ export default {
 }
 
 .capability-item.active {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(56, 189, 248, 0.14);
 }
 
 .capability-copy {
@@ -598,7 +597,7 @@ export default {
 
 .capability-title {
   font-size: 34rpx;
-  color: #f1e7df;
+  color: #0f172a;
   font-weight: 600;
 }
 
@@ -606,7 +605,7 @@ export default {
   display: block;
   margin-top: 8rpx;
   font-size: 25rpx;
-  color: #9e9288;
+  color: #475569;
   line-height: 1.4;
 }
 
@@ -614,7 +613,7 @@ export default {
   width: 14rpx;
   height: 14rpx;
   border-radius: 50%;
-  background: #ea8f57;
+  background: #38bdf8;
   flex-shrink: 0;
 }
 
@@ -623,7 +622,7 @@ export default {
   min-height: 180rpx;
   max-height: 320rpx;
   padding: 34rpx 34rpx 22rpx;
-  color: #f3ece7;
+  color: #0f172a;
   font-size: 32rpx;
   line-height: 1.65;
   background: transparent;
@@ -631,11 +630,11 @@ export default {
 }
 
 .composer-placeholder {
-  color: #706660;
+  color: #94a3b8;
 }
 
 .composer-footer {
-  border-top: 1rpx solid rgba(255, 255, 255, 0.05);
+  border-top: 1rpx solid rgba(148, 163, 184, 0.16);
   padding: 18rpx 20rpx 18rpx 24rpx;
 }
 
@@ -662,17 +661,17 @@ export default {
   height: 64rpx;
   padding: 0 20rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.03);
-  color: #a59a92;
+  background: rgba(56, 189, 248, 0.12);
+  color: #0f172a;
   font-size: 24rpx;
-  border: 1rpx solid transparent;
+  border: 1rpx solid rgba(56, 189, 248, 0.18);
 }
 
 .capability-pill.active {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.34);
-  color: #f0b27a;
-  box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.08);
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.28);
+  color: #0f172a;
+  box-shadow: inset 0 0 0 2rpx rgba(56, 189, 248, 0.12);
 }
 
 .composer-actions {
@@ -688,8 +687,8 @@ export default {
   height: 64rpx;
   border-radius: 18rpx;
   padding: 0 18rpx;
-  background: rgba(255, 255, 255, 0.03);
-  color: #8f8178;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
   font-size: 24rpx;
   display: flex;
   align-items: center;
@@ -700,7 +699,7 @@ export default {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: #d89a3a;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -716,7 +715,7 @@ export default {
     min-width: 300rpx;
     min-height: 100vh;
     border-bottom: none;
-    border-right: 1rpx solid rgba(255, 255, 255, 0.06);
+    border-right: 1rpx solid rgba(148, 163, 184, 0.18);
   }
 
   .menu-item {
@@ -729,6 +728,7 @@ export default {
 @media screen and (max-width: 959px) {
   .hero-title {
     font-size: 54rpx;
+    color: #0f172a;
   }
 
   .composer-textarea {
