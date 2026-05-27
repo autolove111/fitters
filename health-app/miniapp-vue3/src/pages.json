@@ -10,19 +10,19 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "Fitters Home" }
+      "style": { "navigationBarTitleText": "Fitters" }
     },
     {
       "path": "pages/register/register",
       "style": {
-        "navigationBarTitleText": "Register",
+        "navigationBarTitleText": "注册",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/workout/workout",
       "style": {
-        "navigationBarTitleText": "Workout",
+        "navigationBarTitleText": "健康管理",
         "navigationBarBackgroundColor": "#ffffff",
         "enablePullDownRefresh": false
       }
@@ -30,7 +30,7 @@
     {
       "path": "pages/workout/history",
       "style": {
-        "navigationBarTitleText": "Workout History",
+        "navigationBarTitleText": "历史统计",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
@@ -56,66 +56,67 @@
     },
     {
       "path": "pages/workout/add",
-      "style": { "navigationBarTitleText": "Add Workout" }
+      "style": { "navigationBarTitleText": "添加运动记录" }
     },
     {
       "path": "pages/sleep/add",
-      "style": { "navigationBarTitleText": "Add Sleep" }
+      "style": { "navigationBarTitleText": "添加睡眠时长" }
     },
     {
       "path": "pages/diet/add",
-      "style": { "navigationBarTitleText": "Add Diet" }
+      "style": { "navigationBarTitleText": "添加饮食记录" }
     },
     {
       "path": "pages/work/work",
       "style": {
-        "navigationBarTitleText": "Work Health"
+        "navigationBarTitleText": "工作健康助手"
       }
     },
     {
       "path": "pages/work/exercise-detail",
       "style": {
-        "navigationBarTitleText": "Exercise Detail"
+        "navigationBarTitleText": "微运动"
       }
     },
     {
       "path": "pages/work/occupation-select",
       "style": {
-        "navigationBarTitleText": "Select Occupation",
+        "navigationBarTitleText": "选择职业",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/work/pomodoro",
       "style": {
-        "navigationBarTitleText": "Pomodoro"
+        "navigationBarTitleText": "专注模式"
       }
     },
     {
       "path": "pages/study/index",
       "style": {
-        "navigationBarTitleText": "Study Plan",
+        "navigationBarTitleText": "学习计划",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/study/chat",
       "style": {
-        "navigationBarTitleText": "Study Assistant",
+        "navigationBarTitleText": "学习助手",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/study/add",
       "style": {
-        "navigationBarTitleText": "Add Study Plan",
+        "navigationBarTitleText": "添加学习计划",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
       "path": "pages/study/deeptutor/index/index",
       "style": {
-        "navigationBarTitleText": "DeepTutor",
+        "navigationBarTitleText": "学习助手",
+        "navigationBarBackgroundColor": "#ffffff",
         "navigationStyle": "custom"
       }
     },
