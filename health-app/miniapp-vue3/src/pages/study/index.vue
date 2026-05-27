@@ -13,6 +13,13 @@
         <text class="hero-tag">每日打卡</text>
         <text class="hero-tag">智能问答</text>
       </view>
+      <view class="deeptutor-entry">
+        <view class="deeptutor-copy">
+          <text class="deeptutor-title">DeepTutor Learning Space</text>
+          <text class="deeptutor-note">Open the embedded DeepTutor knowledge, memory, skills, and session UI without changing the existing study-plan routes.</text>
+        </view>
+        <button class="deeptutor-btn" @tap="openDeepTutor">Open DeepTutor</button>
+      </view>
     </view>
 
     <view class="section-header">
@@ -90,6 +97,10 @@ function goAddPlan() {
 function openAssistant(plan) {
   const url = `/pages/study/chat?planId=${plan.id}&title=${encodeURIComponent(plan.content)}`
   uni.navigateTo({ url })
+}
+
+function openDeepTutor() {
+  uni.navigateTo({ url: '/pages/study/deeptutor/index/index' })
 }
 
 function confirmDelete(id) {
@@ -205,6 +216,47 @@ onShow(() => {
   border-radius: 26rpx;
   font-size: 24rpx;
   font-weight: 600;
+}
+
+.deeptutor-entry {
+  margin-top: 26rpx;
+  padding: 24rpx;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.deeptutor-copy {
+  flex: 1;
+}
+
+.deeptutor-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.deeptutor-note {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.deeptutor-btn {
+  min-width: 196rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
+  border: none;
+  background: linear-gradient(90deg, #0f172a, #2563eb);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
 }
 
 .section-header {

@@ -55,5 +55,28 @@ services:
       timeout: 5s
       retries: 10
 
+  deeptutor:
+    build:
+      context: ./study/aid_learning_agent
+      dockerfile: Dockerfile.backend
+      target: production
+    container_name: health-deeptutor
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./study/aid_learning_agent/data/user:/app/data/user
+      - ./study/aid_learning_agent/data/memory:/app/data/memory
+      - ./study/aid_learning_agent/data/knowledge_bases:/app/data/knowledge_bases
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 volumes:
   pgdata:
