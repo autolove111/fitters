@@ -222,9 +222,9 @@ function goStudy() {
 
 <style scoped>
 .container {
-  padding: 30rpx;
+  padding: 32rpx;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, rgba(220, 240, 255, 0.5), rgba(235, 245, 255, 0.9));
+  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
 }
 
 /* ========= 登录表单样式 - 高级毛玻璃（未修改） ========= */
@@ -381,12 +381,12 @@ function goStudy() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(120deg, rgba(210, 230, 255, 0.75), rgba(235, 220, 255, 0.7));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
   backdrop-filter: blur(20rpx);
-  border-radius: 100rpx;
-  padding: 16rpx 20rpx 16rpx 16rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 12rpx 28rpx -12rpx rgba(0, 0, 0, 0.08);
+  border-radius: 40rpx;
+  padding: 20rpx 24rpx 20rpx 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
 }
 
 .user-info {
@@ -419,38 +419,34 @@ function goStudy() {
 .greeting {
   font-size: 34rpx;
   font-weight: 700;
-  background: linear-gradient(125deg, #1e293b, #2c4c6e);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #0f172a;
   letter-spacing: -0.3rpx;
   line-height: 1.3;
 }
 
 .today-date {
   font-size: 24rpx;
-  color: #6c7f9c;
+  color: #64748b;
   font-weight: 500;
   letter-spacing: 1rpx;
   margin-top: 6rpx;
 }
 
 .logout-btn {
-  background: rgba(255, 245, 245, 0.9);
+  background: rgba(59, 130, 246, 0.12);
   backdrop-filter: blur(12rpx);
   border: none;
-  border-radius: 60rpx;
+  border-radius: 999rpx;
   padding: 12rpx 32rpx;
-  font-size: 28rpx;
-  color: #f97373;
+  font-size: 26rpx;
+  color: #2563eb;
   font-weight: 600;
   transition: all 0.2s ease;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
 }
 .logout-btn:active {
   transform: scale(0.96);
-  background: #fee2e2;
-  color: #ef4444;
+  background: rgba(59, 130, 246, 0.2);
 }
 
 /* 功能卡片网格 */
@@ -463,27 +459,31 @@ function goStudy() {
 
 .menu-card {
   position: relative;
-  backdrop-filter: blur(24rpx);
-  border-radius: 56rpx;
+  backdrop-filter: blur(20rpx);
+  border-radius: 40rpx;
   padding: 48rpx 20rpx 40rpx;
   text-align: center;
   transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 16rpx 32rpx -12rpx rgba(0, 0, 0, 0.12);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
   overflow: hidden;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
 }
 
 .card-fitness {
-  background: rgba(255, 220, 180, 0.75);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
 }
 .card-weightloss {
-  background: rgba(190, 230, 180, 0.75);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(56, 189, 248, 0.18));
 }
 .card-wellness {
-  background: rgba(215, 195, 240, 0.75);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(56, 189, 248, 0.18));
 }
 .card-work {
-  background: rgba(180, 210, 240, 0.75);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(20, 184, 166, 0.18));
+}
+.card-study {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(34, 197, 94, 0.18));
 }
 
 .menu-card .card-glow {
@@ -501,8 +501,7 @@ function goStudy() {
 
 .menu-card:active {
   transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 28rpx 40rpx -18rpx rgba(0, 0, 0, 0.2);
+  box-shadow: 0 28rpx 50rpx rgba(59, 130, 246, 0.18);
 }
 .menu-card:active .card-glow {
   opacity: 0.5;
@@ -530,62 +529,51 @@ function goStudy() {
 }
 
 .card-title {
-  font-size: 44rpx;
+  font-size: 40rpx;
   font-weight: 800;
   display: block;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
   letter-spacing: -0.3rpx;
+  color: #0f172a;
 }
 
 .card-fitness .card-title {
-  background: linear-gradient(135deg, #c2410c, #ea580c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #0f172a;
 }
 .card-weightloss .card-title {
-  background: linear-gradient(135deg, #15803d, #16a34a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #0f172a;
 }
 .card-wellness .card-title {
-  background: linear-gradient(135deg, #6b21a5, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #0f172a;
 }
 .card-work .card-title {
-  background: linear-gradient(135deg, #1e40af, #2563eb);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #0f172a;
 }
 
 .card-desc {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 600;
-  color: #2c3e4e;
-  background: rgba(255, 255, 250, 0.65);
+  color: #475569;
+  background: rgba(255, 255, 255, 0.65);
   display: inline-block;
   padding: 8rpx 22rpx;
-  border-radius: 60rpx;
+  border-radius: 26rpx;
   backdrop-filter: blur(4rpx);
 }
 
-/* 健康小贴士 - 保留薄荷风格，内容动态 */
+/* 健康小贴士 - 学习页面风格 */
 .health-tip {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16rpx;
   margin-top: 10rpx;
-  background: rgba(175, 220, 190, 0.65);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
   backdrop-filter: blur(20rpx);
   padding: 26rpx 32rpx;
-  border-radius: 80rpx;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8rpx 24rpx -12rpx rgba(0, 0, 0, 0.08);
+  border-radius: 36rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
   transition: all 0.2s;
 }
 
@@ -595,9 +583,9 @@ function goStudy() {
 }
 
 .tip-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
-  color: #1f5e4b;
+  color: #0f172a;
   letter-spacing: 0.5rpx;
   flex: 1;
   text-align: center;
