@@ -1,0 +1,26 @@
+import { request, upload } from '../utils/api'
+
+export const knowledgeApi = {
+  health: () => request('/api/v1/knowledge/health'),
+  ragProviders: () => request('/api/v1/knowledge/rag-providers'),
+  supportedFileTypes: () => request('/api/v1/knowledge/supported-file-types'),
+  configs: () => request('/api/v1/knowledge/configs'),
+  getConfig: (name) => request(`/api/v1/knowledge/${name}/config`),
+  updateConfig: (name, data) => request(`/api/v1/knowledge/${name}/config`, { method: 'PUT', data }),
+  syncConfigs: () => request('/api/v1/knowledge/configs/sync', { method: 'POST' }),
+  getDefault: () => request('/api/v1/knowledge/default'),
+  setDefault: (name) => request(`/api/v1/knowledge/default/${name}`, { method: 'PUT' }),
+  list: () => request('/api/v1/knowledge/list'),
+  detail: (name) => request(`/api/v1/knowledge/${name}`),
+  files: (name) => request(`/api/v1/knowledge/${name}/files`),
+  delete: (name) => request(`/api/v1/knowledge/${name}`, { method: 'DELETE' }),
+  upload: (name, filePath) => upload(`/api/v1/knowledge/${name}/upload`, filePath),
+  create: (name, filePath, ragProvider) => upload('/api/v1/knowledge/create', filePath, { name, rag_provider: ragProvider || '' }),
+  reindex: (name) => request(`/api/v1/knowledge/${name}/reindex`, { method: 'POST' }),
+  progress: (name) => request(`/api/v1/knowledge/${name}/progress`),
+  clearProgress: (name) => request(`/api/v1/knowledge/${name}/progress/clear`, { method: 'POST' }),
+  linkFolder: (name, data) => request(`/api/v1/knowledge/${name}/link-folder`, { method: 'POST', data }),
+  linkedFolders: (name) => request(`/api/v1/knowledge/${name}/linked-folders`),
+  unlinkFolder: (name, folderId) => request(`/api/v1/knowledge/${name}/linked-folders/${folderId}`, { method: 'DELETE' }),
+  syncFolder: (name, folderId) => request(`/api/v1/knowledge/${name}/sync-folder/${folderId}`, { method: 'POST' }),
+}
