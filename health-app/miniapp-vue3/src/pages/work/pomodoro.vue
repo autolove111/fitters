@@ -60,7 +60,7 @@ const loadTodayStats = async () => {
   try {
     const todayStats = await workApi.getTodayStats()
     if (todayStats) {
-      todayPomodoros.value = todayStats.sessions || 0
+      todayPomodoros.value = Number(todayStats.sessions) || 0
     }
   } catch (error) {
     console.warn('加载今日统计失败', error)
