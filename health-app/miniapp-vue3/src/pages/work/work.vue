@@ -33,9 +33,25 @@
 
       <!-- 番茄钟入口卡片 -->
       <view class="pomodoro-entry-card">
-        <text class="card-title">🍅 番茄钟</text>
-        <text class="pomodoro-entry-desc">跳转到专属番茄钟页面进行专注计时，开始你的高效工作节奏。</text>
-        <button class="pomodoro-open-btn" @click="goToPomodoro">打开番茄钟</button>
+        <view class="pomodoro-entry-top">
+          <view class="pomodoro-entry-icon">🍅</view>
+          <view class="pomodoro-entry-content">
+            <text class="pomodoro-entry-title">番茄钟</text>
+            <text class="pomodoro-entry-desc">专注计时，开启高效工作节奏</text>
+          </view>
+          <button class="pomodoro-open-btn" @click="goToPomodoro">打开</button>
+        </view>
+        <view class="pomodoro-stats-bar">
+          <view class="pomodoro-stat-item">
+            <text class="pomodoro-stat-value">{{ todayFocusMinutes }}</text>
+            <text class="pomodoro-stat-label">专注分钟</text>
+          </view>
+          <view class="pomodoro-stat-divider"></view>
+          <view class="pomodoro-stat-item">
+            <text class="pomodoro-stat-value">{{ todaySessions }}</text>
+            <text class="pomodoro-stat-label">番茄钟</text>
+          </view>
+        </view>
       </view>
 
       <!-- 久坐提醒卡片 -->
@@ -64,143 +80,116 @@
         <!-- IT/设计 -->
         <view v-if="currentOccupation === 'it'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">👋 手腕健康指数</text>
-            <text class="metric-value">{{ wristHealthScore }}%</text>
-            <button class="action-btn" @click="recordWristExercise">记录手腕操</button>
+            <text class="metric-label">👋 手腕操</text>
+            <text class="metric-value">{{ wristHealthScore }} 次</text>
+            <button class="action-btn" @click="recordWristExercise">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">👀 今日护眼次数</text>
+            <text class="metric-label">👀 护眼休息</text>
             <text class="metric-value">{{ eyeRestCount }} 次</text>
-            <button class="action-btn" @click="recordEyeRest">完成20-20-20</button>
+            <button class="action-btn" @click="recordEyeRest">完成</button>
           </view>
         </view>
 
         <!-- 教师 -->
         <view v-if="currentOccupation === 'teacher'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">💧 今日饮水量</text>
+            <text class="metric-label">💧 喝水</text>
             <text class="metric-value">{{ waterIntake }} 杯</text>
-            <button class="action-btn" @click="addWater">+1杯</button>
+            <button class="action-btn" @click="addWater">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">🎤 声带休息次数</text>
+            <text class="metric-label">🎤 声带休息</text>
             <text class="metric-value">{{ vocalRestCount }} 次</text>
-            <button class="action-btn" @click="recordVocalRest">完成休息</button>
+            <button class="action-btn" @click="recordVocalRest">完成</button>
           </view>
         </view>
 
         <!-- 司机 -->
         <view v-if="currentOccupation === 'driver'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">🦴 腰部放松次数</text>
+            <text class="metric-label">🦴 腰部放松</text>
             <text class="metric-value">{{ backRelaxCount }} 次</text>
-            <button class="action-btn" @click="recordBackRelax">完成腰部操</button>
+            <button class="action-btn" @click="recordBackRelax">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">🅿️ 停车活动次数</text>
+            <text class="metric-label">🅿️ 停车活动</text>
             <text class="metric-value">{{ stopMoveCount }} 次</text>
-            <button class="action-btn" @click="recordStopMove">记录停车活动</button>
+            <button class="action-btn" @click="recordStopMove">完成</button>
           </view>
         </view>
 
         <!-- 学生 -->
         <view v-if="currentOccupation === 'student'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">👁️ 眼保健操次数</text>
+            <text class="metric-label">👁️ 眼保健操</text>
             <text class="metric-value">{{ eyeExerciseCount }} 次</text>
-            <button class="action-btn" @click="recordEyeExercise">完成眼操</button>
+            <button class="action-btn" @click="recordEyeExercise">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">🏃 课间活动次数</text>
+            <text class="metric-label">🏃 课间活动</text>
             <text class="metric-value">{{ classBreakCount }} 次</text>
-            <button class="action-btn" @click="recordClassBreak">站立活动</button>
+            <button class="action-btn" @click="recordClassBreak">完成</button>
           </view>
         </view>
 
         <!-- 医疗 -->
         <view v-if="currentOccupation === 'medical'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">🌬️ 深呼吸放松次数</text>
+            <text class="metric-label">🌬️ 深呼吸放松</text>
             <text class="metric-value">{{ deepBreathCount }} 次</text>
-            <button class="action-btn" @click="recordDeepBreath">完成深呼吸</button>
+            <button class="action-btn" @click="recordDeepBreath">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">🦵 腿部活动次数</text>
+            <text class="metric-label">🦵 腿部活动</text>
             <text class="metric-value">{{ legMoveCount }} 次</text>
-            <button class="action-btn" @click="recordLegMove">勾脚尖/踮脚</button>
+            <button class="action-btn" @click="recordLegMove">完成</button>
           </view>
         </view>
 
         <!-- 行政/文员 -->
         <view v-if="currentOccupation === 'admin'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">💆 肩颈放松次数</text>
+            <text class="metric-label">💆 肩颈放松</text>
             <text class="metric-value">{{ neckRelaxCount }} 次</text>
-            <button class="action-btn" @click="recordNeckRelax">完成肩颈操</button>
+            <button class="action-btn" @click="recordNeckRelax">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">💧 今日饮水量</text>
+            <text class="metric-label">💧 喝水</text>
             <text class="metric-value">{{ waterIntake }} 杯</text>
-            <button class="action-btn" @click="addWater">+1杯</button>
+            <button class="action-btn" @click="addWater">完成</button>
           </view>
         </view>
 
         <!-- 销售/外勤 -->
         <view v-if="currentOccupation === 'sales'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">🚶 今日步数</text>
+            <text class="metric-label">🚶 步行打卡</text>
             <text class="metric-value">{{ stepCount }} 步</text>
-            <button class="action-btn" @click="syncStepCount">同步微信运动</button>
+            <button class="action-btn" @click="syncStepCount">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">⚡ 能量补充次数</text>
+            <text class="metric-label">⚡ 能量补充</text>
             <text class="metric-value">{{ energySnackCount }} 次</text>
-            <button class="action-btn" @click="recordEnergySnack">小食/饮水</button>
+            <button class="action-btn" @click="recordEnergySnack">完成</button>
           </view>
         </view>
 
         <!-- 通用 -->
         <view v-if="currentOccupation === 'general'" class="career-content">
           <view class="health-metric">
-            <text class="metric-label">🚶 站立活动次数</text>
+            <text class="metric-label">🚶 站立活动</text>
             <text class="metric-value">{{ standCount }} 次</text>
-            <button class="action-btn" @click="recordStand">站起来</button>
+            <button class="action-btn" @click="recordStand">完成</button>
           </view>
           <view class="health-metric">
-            <text class="metric-label">💧 今日饮水量</text>
+            <text class="metric-label">💧 喝水</text>
             <text class="metric-value">{{ waterIntake }} 杯</text>
-            <button class="action-btn" @click="addWater">+1杯</button>
+            <button class="action-btn" @click="addWater">完成</button>
           </view>
         </view>
       </view>
 
-      <!-- 工作统计 -->
-      <view class="stats-card">
-        <text class="card-title">📊 工作统计</text>
-        <view class="stats-grid">
-          <view class="stat-item">
-            <text class="stat-value">{{ todayFocusMinutes }}</text>
-            <text class="stat-label">专注分钟</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-value">{{ todaySessions }}</text>
-            <text class="stat-label">番茄钟</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-value">{{ careerExtraStat }}</text>
-            <text class="stat-label">{{ extraStatLabel }}</text>
-          </view>
-        </view>
-        <view class="weekly-trend" v-if="weeklyStats.length">
-          <text class="trend-title">本周专注趋势</text>
-          <view class="trend-bars">
-            <view v-for="(item, idx) in weeklyStats" :key="idx" class="bar-item">
-              <view class="bar" :style="{ height: item.height + 'rpx' }"></view>
-              <text class="bar-label">{{ item.day }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
 
       <!-- 推荐微运动 -->
       <view class="exercises-card">
@@ -550,7 +539,7 @@ const updateHealthMetric = async (metricName, increment = 1) => {
 
 // 打卡方法（调用后端接口）
 const recordWristExercise = async () => {
-  await updateHealthMetric('wristHealthScore', 10)
+  await updateHealthMetric('wristHealthScore', 1)
   uni.showToast({ title: '手腕操+1', icon: 'success' })
 }
 const recordEyeRest = async () => {
@@ -853,7 +842,7 @@ onUnmounted(() => {
   box-sizing: border-box;
   width: 100%;
 }
-.greeting-card, .pomodoro-card, .reminder-card, .career-card, .stats-card, .exercises-card {
+.greeting-card, .pomodoro-card, .reminder-card, .career-card, .exercises-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 48rpx;
@@ -881,31 +870,6 @@ onUnmounted(() => {
 .greeting-icon { font-size: 48rpx; }
 .greeting-text { font-size: 30rpx; font-weight: 600; color: #2e7d32; flex:1; margin-left: 16rpx; }
 .change-occupation { font-size: 26rpx; color: #558b2f; text-decoration: underline; }
-
-.pomodoro-entry-card {
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 48rpx;
-  padding: 28rpx;
-  margin-bottom: 30rpx;
-  border: 1rpx solid rgba(14, 165, 233, 0.16);
-  box-shadow: 0 8rpx 18rpx rgba(14, 165, 233, 0.08);
-}
-.pomodoro-entry-desc {
-  font-size: 28rpx;
-  color: #2563eb;
-  line-height: 1.8;
-  margin: 20rpx 0;
-}
-.pomodoro-open-btn {
-  width: 100%;
-  height: 88rpx;
-  border-radius: 48rpx;
-  border: none;
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-  color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 700;
-}
 
 .duration-card, .todo-card {
   background: rgba(255, 255, 255, 0.96);
@@ -984,7 +948,86 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
-/* ========== 番茄钟卡片美化（仅样式，不改结构） ========== */
+/* ========== 番茄钟入口卡片（横向布局） ========== */
+.pomodoro-entry-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 48rpx;
+  padding: 28rpx;
+  margin-bottom: 30rpx;
+  border: 1rpx solid rgba(14, 165, 233, 0.16);
+  box-shadow: 0 8rpx 18rpx rgba(14, 165, 233, 0.08);
+}
+.pomodoro-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.pomodoro-entry-icon {
+  font-size: 56rpx;
+  line-height: 56rpx;
+  flex-shrink: 0;
+}
+.pomodoro-entry-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.pomodoro-entry-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #2e7d32;
+}
+.pomodoro-entry-desc {
+  font-size: 26rpx;
+  color: #4b5563;
+  line-height: 1.4;
+}
+.pomodoro-open-btn {
+  flex-shrink: 0;
+  min-width: 120rpx;
+  height: 64rpx;
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+  color: #ffffff;
+  border: none;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 20rpx rgba(67, 160, 71, 0.2);
+}
+.pomodoro-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 24rpx 0 4rpx;
+  margin-top: 20rpx;
+  border-top: 1px solid #e8f5e9;
+}
+.pomodoro-stat-item {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+.pomodoro-stat-value {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #2e7d32;
+}
+.pomodoro-stat-label {
+  font-size: 24rpx;
+  color: #5a7a4a;
+}
+.pomodoro-stat-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: #d0e2d0;
+}
+
+/* ========== 番茄钟卡片美化 ========== */
 .pomodoro-card {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(20px);
@@ -1042,7 +1085,7 @@ onUnmounted(() => {
 }
 .timer-btn {
   border-radius: 60rpx;
-  padding: 15rpx 80rpx;   
+  padding: 15rpx 80rpx;
   font-size: 34rpx;
   font-weight: 700;
   border: none;
@@ -1075,7 +1118,7 @@ onUnmounted(() => {
   margin-top: 10rpx;
 }
 
-/* 其余原有样式（久坐提醒、职业卡片、统计、微运动等）保持不变 */
+/* 其余原有样式（久坐提醒、职业卡片、微运动等）保持不变 */
 .reminder-header {
   display: flex;
   justify-content: space-between;
@@ -1108,7 +1151,7 @@ onUnmounted(() => {
 .health-metric {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16rpx;
   padding: 20rpx 0;
   border-bottom: 1px solid #e8f5e9;
 }
@@ -1125,50 +1168,13 @@ onUnmounted(() => {
   background: #e8f5e9;
   border: none;
   border-radius: 60rpx;
-  padding: 8rpx 24rpx;
+  padding: 8rpx 32rpx;
   font-size: 24rpx;
+  font-weight: 600;
   color: #2e7d32;
-}
-.stats-grid {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 30rpx;
-}
-.stat-item {
-  text-align: center;
-}
-.stat-value {
-  font-size: 48rpx;
-  font-weight: 800;
-  color: #c27e2a;
-  display: block;
-}
-.stat-label {
-  font-size: 26rpx;
-  color: #5a7a4a;
-}
-.weekly-trend {
-  border-top: 1px solid #e8f5e9;
-  padding-top: 20rpx;
-}
-.trend-bars {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 200rpx;
-}
-.bar {
-  background: #66bb6a;
-  width: 40rpx;
-  margin: 0 auto;
-  border-radius: 20rpx 20rpx 0 0;
-  min-height: 20rpx;
-}
-.bar-label {
-  font-size: 22rpx;
-  color: #8d9e8d;
-  margin-top: 8rpx;
-  text-align: center;
+  margin-left: auto;
+  margin-right: -15rpx;
+  flex-shrink: 0;
 }
 .exercise-item {
   display: flex;
