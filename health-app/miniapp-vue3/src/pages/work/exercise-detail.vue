@@ -1,27 +1,71 @@
 <template>
   <scroll-view class="detail-container" scroll-y>
-    <view class="detail-card">
+    <!-- 顶部 Hero -->
+    <view class="hero-section">
+      <view class="hero-bg-circle"></view>
       <text class="exercise-icon">{{ exercise.icon }}</text>
       <text class="exercise-name">{{ exercise.name }}</text>
-      <view class="exercise-instruction">
-        <text class="instruction-title">📖 动作说明</text>
-        <text class="instruction-text">{{ instruction }}</text>
+      <view class="hero-tags">
+        <text class="hero-tag">微运动</text>
+        <text class="hero-tag">{{ stepCount }} 个步骤</text>
+        <text class="hero-tag">随时可做</text>
       </view>
-      <view class="exercise-tips" v-if="tips">
-        <text class="tips-title">💡 小贴士</text>
-        <text class="tips-text">{{ tips }}</text>
+    </view>
+
+    <!-- 动作说明 -->
+    <view class="section-card instruction-card">
+      <view class="section-header">
+        <view class="section-icon">📖</view>
+        <view>
+          <text class="section-title">动作说明</text>
+          <text class="section-subtitle">按步骤完成动作</text>
+        </view>
       </view>
-      <button class="back-btn" @click="goBack">返回工作主页</button>
+      <view class="steps-list">
+        <view v-for="(step, idx) in steps" :key="idx" class="step-item">
+          <view class="step-number">{{ idx + 1 }}</view>
+          <text class="step-text">{{ step }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 小贴士 -->
+    <view class="section-card tips-card" v-if="tips">
+      <view class="section-header">
+        <view class="section-icon">💡</view>
+        <view>
+          <text class="section-title">小贴士</text>
+          <text class="section-subtitle">让运动更有效</text>
+        </view>
+      </view>
+      <text class="tips-text">{{ tips }}</text>
+    </view>
+
+    <!-- 底部操作 -->
+    <view class="bottom-actions">
+      <button class="back-btn" @click="goBack">
+        <text class="back-btn-text">返回工作主页</text>
+      </button>
     </view>
   </scroll-view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const exercise = ref({})
 const instruction = ref('')
 const tips = ref('')
+
+const steps = computed(() => {
+  if (!instruction.value) return []
+  return instruction.value
+    .split('\n')
+    .map(s => s.replace(/^\d+\.\s*/, '').trim())
+    .filter(Boolean)
+})
+
+const stepCount = computed(() => steps.value.length || 1)
 
 // 动作库（ID 与 work.vue 中的 id 对应）
 const exercisesMap = {
@@ -45,7 +89,6 @@ const exercisesMap = {
 }
 
 onMounted(() => {
-  // 获取页面参数 id
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   const options = currentPage.options
@@ -70,64 +113,181 @@ const goBack = () => {
 <style scoped>
 .detail-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f9f0, #e8f5e9);
-  padding: 30rpx;
+  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
   box-sizing: border-box;
 }
-.detail-card {
-  background: white;
-  border-radius: 48rpx;
-  padding: 50rpx 40rpx;
+
+/* Hero */
+.hero-section {
+  position: relative;
+  padding: 60rpx 30rpx 40rpx;
   text-align: center;
-  box-shadow: 0 12rpx 28rpx rgba(0,0,0,0.08);
+  overflow: hidden;
 }
+
+.hero-bg-circle {
+  position: absolute;
+  top: -80rpx;
+  right: -60rpx;
+  width: 280rpx;
+  height: 280rpx;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 50%;
+}
+
 .exercise-icon {
   font-size: 120rpx;
   display: block;
-  margin-bottom: 30rpx;
+  margin-bottom: 20rpx;
+  filter: drop-shadow(0 8rpx 16rpx rgba(0, 0, 0, 0.1));
 }
+
 .exercise-name {
-  font-size: 48rpx;
+  font-size: 52rpx;
   font-weight: 800;
-  color: #2e7d32;
+  color: #0f172a;
   display: block;
-  margin-bottom: 40rpx;
+  margin-bottom: 24rpx;
 }
-.exercise-instruction {
-  text-align: left;
-  background: #fafdfa;
-  border-radius: 32rpx;
+
+.hero-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.hero-tag {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* Section Card */
+.section-card {
+  margin: 0 30rpx 28rpx;
   padding: 30rpx;
-  margin-bottom: 30rpx;
+  border-radius: 36rpx;
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
 }
-.instruction-title, .tips-title {
+
+.instruction-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(232, 245, 233, 0.98));
+  box-shadow: 0 20rpx 44rpx rgba(34, 197, 94, 0.1);
+}
+
+.tips-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(254, 249, 235, 0.98));
+  box-shadow: 0 20rpx 44rpx rgba(251, 191, 36, 0.1);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 26rpx;
+}
+
+.section-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
+  background: rgba(34, 197, 94, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.tips-card .section-icon {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.section-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2e7d32;
+  color: #0f172a;
   display: block;
-  margin-bottom: 16rpx;
 }
-.instruction-text, .tips-text {
+
+.section-subtitle {
+  font-size: 24rpx;
+  color: #64748b;
+  display: block;
+  margin-top: 4rpx;
+}
+
+/* Steps */
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 18rpx;
+}
+
+.step-number {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.step-text {
+  flex: 1;
   font-size: 28rpx;
-  line-height: 1.6;
-  color: #2c3e2f;
-  white-space: pre-line;
+  line-height: 1.7;
+  color: #334155;
 }
-.exercise-tips {
-  text-align: left;
-  background: #fef9ef;
-  border-radius: 32rpx;
-  padding: 30rpx;
-  margin-bottom: 40rpx;
+
+/* Tips */
+.tips-text {
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: #334155;
+  padding: 20rpx 24rpx;
+  background: rgba(251, 191, 36, 0.08);
+  border-radius: 20rpx;
+  border-left: 6rpx solid rgba(251, 191, 36, 0.4);
 }
+
+/* Bottom */
+.bottom-actions {
+  padding: 16rpx 30rpx 60rpx;
+}
+
 .back-btn {
-  background: linear-gradient(135deg, #43a047, #2e7d32);
-  color: white;
-  border-radius: 60rpx;
-  height: 80rpx;
-  line-height: 80rpx;
-  font-size: 32rpx;
-  font-weight: 600;
+  width: 100%;
+  height: 88rpx;
+  border-radius: 999rpx;
   border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 16rpx 32rpx rgba(34, 197, 94, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn-text {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #ffffff;
 }
 </style>
