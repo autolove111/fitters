@@ -52,7 +52,7 @@ workRouter.put("/settings", asyncHandler(async (req, res) => {
 
 workRouter.post("/session/start", asyncHandler(async (req, res) => {
   const userId = (req as AuthenticatedRequest).userId;
-  const { type, startTime } = req.body;
+  const { type, startTime } = req.body as { type?: string; startTime: string };
 
   const session = await prisma.workSession.create({
     data: {
@@ -67,7 +67,7 @@ workRouter.post("/session/start", asyncHandler(async (req, res) => {
 
 workRouter.put("/session/end", asyncHandler(async (req, res) => {
   const userId = (req as AuthenticatedRequest).userId;
-  const { sessionId, endTime, duration } = req.body;
+  const { sessionId, endTime, duration } = req.body as { sessionId: number; endTime: string; duration?: number };
 
   const session = await prisma.workSession.update({
     where: { id: sessionId },
@@ -188,7 +188,7 @@ workRouter.get("/health-data", asyncHandler(async (req, res) => {
 
 workRouter.post("/health-data/metric", asyncHandler(async (req, res) => {
   const userId = (req as AuthenticatedRequest).userId;
-  const { metricName, increment } = req.body;
+  const { metricName, increment } = req.body as { metricName: string; increment?: number };
 
   const settings = await prisma.workSettings.upsert({
     where: { userId },
@@ -272,7 +272,7 @@ workRouter.get("/todos/today", asyncHandler(async (req, res) => {
 
 workRouter.post("/todos", asyncHandler(async (req, res) => {
   const userId = (req as AuthenticatedRequest).userId;
-  const { content } = req.body;
+  const { content } = req.body as { content: string };
 
   const todo = await prisma.workTodo.create({
     data: {
