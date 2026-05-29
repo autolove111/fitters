@@ -364,9 +364,9 @@ const loadAllData = async () => {
     // 2. 加载今日统计数据
     const todayStats = await workApi.getTodayStats()
     if (todayStats) {
-      todayFocusMinutes.value = todayStats.focusMinutes || 0
-      todaySessions.value = todayStats.sessions || 0
-      todayPomodoros.value = todayStats.sessions || 0
+      todayFocusMinutes.value = Number(todayStats.focusMinutes) || 0
+      todaySessions.value = Number(todayStats.sessions) || 0
+      todayPomodoros.value = Number(todayStats.sessions) || 0
     }
 
     // 2.1 加载今日工作时长
@@ -402,9 +402,13 @@ const loadAllData = async () => {
     await loadCareerHealthData()
     
     // 5. 加载推荐微运动
-    const exercises = await workApi.getRecommendedExercises(currentOccupation.value)
-    if (exercises && exercises.length) {
-      recommendedExercises.value = exercises
+    const exercisesRes = await workApi.getRecommendedExercises(currentOccupation.value)
+    const exercises = Array.isArray(exercisesRes) ? exercisesRes : (exercisesRes?.data || [])
+    if (exercises.length) {
+      recommendedExercises.value = exercises.map(ex => ({
+        ...ex,
+        detailUrl: ex.detailUrl || `/pages/work/exercise-detail?id=${ex.id}`
+      }))
     } else {
       // 使用默认本地数据作为fallback
       recommendedExercises.value = getLocalRecommendedExercises(currentOccupation.value)
@@ -649,9 +653,9 @@ const tick = async () => {
       // 刷新今日统计
       const todayStats = await workApi.getTodayStats()
       if (todayStats) {
-        todayFocusMinutes.value = todayStats.focusMinutes || 0
-        todaySessions.value = todayStats.sessions || 0
-        todayPomodoros.value = todayStats.sessions || 0
+        todayFocusMinutes.value = Number(todayStats.focusMinutes) || 0
+        todaySessions.value = Number(todayStats.sessions) || 0
+        todayPomodoros.value = Number(todayStats.sessions) || 0
       }
       isWorking.value = false
       remainingSeconds.value = BREAK_DURATION
@@ -698,9 +702,9 @@ const resetTimer = async () => {
   // 刷新今日统计
   const todayStats = await workApi.getTodayStats()
   if (todayStats) {
-    todayFocusMinutes.value = todayStats.focusMinutes || 0
-    todaySessions.value = todayStats.sessions || 0
-    todayPomodoros.value = todayStats.sessions || 0
+    todayFocusMinutes.value = Number(todayStats.focusMinutes) || 0
+    todaySessions.value = Number(todayStats.sessions) || 0
+    todayPomodoros.value = Number(todayStats.sessions) || 0
   }
 }
 
@@ -786,8 +790,11 @@ const applyOccupationChange = async (newOcc) => {
     // 重新加载职业健康数据
     await loadCareerHealthData()
     // 重新加载推荐运动
-    const exercises = await workApi.getRecommendedExercises(newOcc)
-    recommendedExercises.value = exercises.length ? exercises : getLocalRecommendedExercises(newOcc)
+    const exercisesRes = await workApi.getRecommendedExercises(newOcc)
+    const exercises = Array.isArray(exercisesRes) ? exercisesRes : (exercisesRes?.data || [])
+    recommendedExercises.value = exercises.length
+      ? exercises.map(ex => ({ ...ex, detailUrl: ex.detailUrl || `/pages/work/exercise-detail?id=${ex.id}` }))
+      : getLocalRecommendedExercises(newOcc)
     // 更新久坐间隔（按职业调整）
     const intervalMap = { it:45, teacher:50, driver:60, student:40, medical:50, admin:55, sales:60, general:50 }
     const newInterval = intervalMap[newOcc] || 50
