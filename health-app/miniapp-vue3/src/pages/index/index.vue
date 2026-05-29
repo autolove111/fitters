@@ -39,16 +39,16 @@
       <!-- 顶部用户栏 -->
       <view class="user-bar">
         <view class="user-info">
-          <view class="avatar-ring" @click="changeAvatar">
+          <view class="avatar-ring" @click="viewAvatar">
             <image v-if="userAvatar" class="avatar-img" :src="userAvatar" mode="aspectFill" />
             <text v-else class="avatar-emoji">🧘</text>
           </view>
           <view class="user-text">
-            <text class="greeting">🌿 你好，{{ username }}</text>
+            <text class="greeting">🌿 你好，{{ displayName }}</text>
             <text class="today-date">{{ currentDate }}</text>
           </view>
         </view>
-        <button class="logout-btn" @click="logout">退出</button>
+        <button class="logout-btn" @click="goProfile">个人中心</button>
       </view>
 
       <!-- 四色功能卡片网格 -->
@@ -115,26 +115,14 @@ import { useUserStore } from '@/store/user'
 import { auth } from '@/utils/api'
 
 const userStore = useUserStore()
-const { isLoggedIn, state, setUser, loadAvatar, saveAvatar, clearUser } = userStore
+const { isLoggedIn, state, displayName, setUser, loadAvatar, loadProfile } = userStore
 
 const userAvatar = computed(() => state.avatar || '')
 
 onShow(() => {
   loadAvatar()
+  loadProfile()
 })
-
-const changeAvatar = () => {
-  uni.showActionSheet({
-    itemList: ['查看头像', '修改头像'],
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        viewAvatar()
-      } else if (res.tapIndex === 1) {
-        pickAvatar()
-      }
-    }
-  })
-}
 
 const viewAvatar = () => {
   if (!userAvatar.value) {
@@ -147,26 +135,11 @@ const viewAvatar = () => {
   })
 }
 
-const pickAvatar = () => {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: async (res) => {
-      await saveAvatar(res.tempFilePaths[0])
-      uni.showToast({ title: '头像已更新', icon: 'success' })
-    }
-  })
-}
-
 // 登录表单
 const account = ref('demo')
 const password = ref('demo123')
 const authError = ref('')
 const showPassword = ref(false)
-
-// 用户名（响应式）
-const username = computed(() => state.username)
 
 // 当前日期（用于展示）
 const currentDate = computed(() => {
@@ -228,18 +201,9 @@ async function handleRegister() {
   uni.navigateTo({ url: '/pages/register/register' })
 }
 
-// 退出登录
-function logout() {
-  uni.showModal({
-    title: '提示',
-    content: '确定要退出登录吗？',
-    success: (res) => {
-      if (res.confirm) {
-        clearUser()
-        uni.showToast({ title: '已退出', icon: 'none' })
-      }
-    }
-  })
+// 个人中心
+function goProfile() {
+  uni.navigateTo({ url: '/pages/profile/index' })
 }
 
 // 功能跳转

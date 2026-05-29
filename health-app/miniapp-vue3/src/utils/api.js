@@ -154,4 +154,8 @@ export const assistantApi = {
 export const userApi = {
   getAvatar: () => request('/user/avatar', { method: 'GET' }),
   uploadAvatar: (filePath) => uploadFile('/user/avatar', filePath),
+  getProfile: () => request('/user/profile', { method: 'GET' }),
+  updateProfile: (data) => request('/user/profile', { method: 'PUT', data }),
+  changePassword: (data) => request('/user/password', { method: 'PUT', data }),
+  deleteAccount: () => request('/user/account', { method: 'DELETE' }),
 }
