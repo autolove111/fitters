@@ -256,13 +256,14 @@ const formattedWorkDuration = computed(() => {
 })
 
 // 番茄钟
-const WORK_DURATION = 25 * 60
-const BREAK_DURATION = 5 * 60
+const workDurationMin = ref(25)
+const breakDurationMin = ref(5)
 let timerInterval = null
 const isWorking = ref(true)
-const remainingSeconds = ref(WORK_DURATION)
+const remainingSeconds = ref(25 * 60)
 const isTimerRunning = ref(false)
 let currentSessionId = null
+let sessionStartTimestamp = null
 const todayPomodoros = ref(0)
 const todayFocusMinutes = ref(0)
 const todaySessions = ref(0)
@@ -636,8 +637,10 @@ const tick = async () => {
     if (isWorking.value) {
       // 专注完成，结束session
       if (currentSessionId) {
-        await workApi.endSession(currentSessionId, new Date().toISOString(), WORK_DURATION)
+        const elapsed = sessionStartTimestamp ? Math.round((Date.now() - sessionStartTimestamp) / 1000) : workDurationMin.value * 60
+        await workApi.endSession(currentSessionId, new Date().toISOString(), elapsed)
         currentSessionId = null
+        sessionStartTimestamp = null
       }
       // 刷新今日统计
       const todayStats = await workApi.getTodayStats()
@@ -647,11 +650,11 @@ const tick = async () => {
         todayPomodoros.value = Number(todayStats.sessions) || 0
       }
       isWorking.value = false
-      remainingSeconds.value = BREAK_DURATION
+      remainingSeconds.value = breakDurationMin.value * 60
       uni.showToast({ title: '专注结束，休息一下', icon: 'none' })
     } else {
       isWorking.value = true
-      remainingSeconds.value = WORK_DURATION
+      remainingSeconds.value = workDurationMin.value * 60
       uni.showToast({ title: '休息结束，开始专注', icon: 'none' })
     }
   } else {
@@ -666,6 +669,7 @@ const startTimer = async () => {
     try {
       const session = await workApi.startSession(isWorking.value ? 'work' : 'break')
       currentSessionId = session.sessionId
+      sessionStartTimestamp = Date.now()
     } catch (error) {
       console.error('开始session失败', error)
     }
@@ -683,11 +687,13 @@ const pauseTimer = () => {
 const resetTimer = async () => {
   pauseTimer()
   if (currentSessionId) {
-    await workApi.endSession(currentSessionId, new Date().toISOString(), WORK_DURATION - remainingSeconds.value)
+    const elapsed = sessionStartTimestamp ? Math.round((Date.now() - sessionStartTimestamp) / 1000) : 0
+    await workApi.endSession(currentSessionId, new Date().toISOString(), elapsed)
     currentSessionId = null
+    sessionStartTimestamp = null
   }
   isWorking.value = true
-  remainingSeconds.value = WORK_DURATION
+  remainingSeconds.value = workDurationMin.value * 60
   // 刷新今日统计
   const todayStats = await workApi.getTodayStats()
   if (todayStats) {
