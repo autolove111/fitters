@@ -245,14 +245,15 @@ async function loadDashboard() {
     }
 
     // 计算今日健康指数（基于完成百分比）
-    const workoutScore = Math.min(100, (workoutMinutes / workoutTarget) * 100)
-    const sleepScore = Math.min(100, (sleepHours / sleepTarget) * 100)
+    const safeDivide = (a, b) => (b && b > 0 ? (a / b) * 100 : 0)
+    const workoutScore = Math.min(100, safeDivide(workoutMinutes, workoutTarget))
+    const sleepScore = Math.min(100, safeDivide(sleepHours, sleepTarget))
     // 饮食得分：越接近目标越高，使用偏差率计算（100 - 偏差百分比）
-    const dietDiffPercent = Math.abs(dietCalories - dietTarget) / dietTarget * 100
+    const dietDiffPercent = dietTarget > 0 ? Math.abs(dietCalories - dietTarget) / dietTarget * 100 : 100
     const dietScore = Math.max(0, 100 - dietDiffPercent)
-    const stepsScore = Math.min(100, (stepsCount / stepsTarget) * 100)
+    const stepsScore = Math.min(100, safeDivide(stepsCount, stepsTarget))
     const totalScore = Math.round((workoutScore + sleepScore + dietScore + stepsScore) / 4)
-    dailyReport.value.score = totalScore
+    dailyReport.value.score = isNaN(totalScore) ? 0 : totalScore
 
     // 生成建议
     generateReportAndAdvice()
