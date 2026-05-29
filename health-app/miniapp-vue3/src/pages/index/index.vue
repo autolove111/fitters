@@ -39,8 +39,9 @@
       <!-- 顶部用户栏 -->
       <view class="user-bar">
         <view class="user-info">
-          <view class="avatar-ring">
-            <text class="avatar-emoji">🧘</text>
+          <view class="avatar-ring" @click="changeAvatar">
+            <image v-if="userAvatar" class="avatar-img" :src="userAvatar" mode="aspectFill" />
+            <text v-else class="avatar-emoji">🧘</text>
           </view>
           <view class="user-text">
             <text class="greeting">🌿 你好，{{ username }}</text>
@@ -109,11 +110,54 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import { auth } from '@/utils/api'
 
 const userStore = useUserStore()
-const { isLoggedIn, state, setUser, clearUser } = userStore
+const { isLoggedIn, state, setUser, loadAvatar, saveAvatar, clearUser } = userStore
+
+const userAvatar = computed(() => state.avatar || '')
+
+onShow(() => {
+  loadAvatar()
+})
+
+const changeAvatar = () => {
+  uni.showActionSheet({
+    itemList: ['查看头像', '修改头像'],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        viewAvatar()
+      } else if (res.tapIndex === 1) {
+        pickAvatar()
+      }
+    }
+  })
+}
+
+const viewAvatar = () => {
+  if (!userAvatar.value) {
+    uni.showToast({ title: '暂无头像', icon: 'none' })
+    return
+  }
+  uni.previewImage({
+    urls: [userAvatar.value],
+    current: userAvatar.value
+  })
+}
+
+const pickAvatar = () => {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      await saveAvatar(res.tempFilePaths[0])
+      uni.showToast({ title: '头像已更新', icon: 'success' })
+    }
+  })
+}
 
 // 登录表单
 const account = ref('demo')
@@ -404,6 +448,12 @@ function goStudy() {
   align-items: center;
   justify-content: center;
   box-shadow: 0 8rpx 16rpx -6rpx rgba(0, 0, 0, 0.05), 0 0 0 2rpx rgba(255, 255, 255, 0.8) inset;
+  overflow: hidden;
+}
+.avatar-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 60rpx;
 }
 
 .avatar-emoji {

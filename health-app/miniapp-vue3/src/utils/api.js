@@ -19,7 +19,6 @@ export const request = (url, options = {}) => {
       header,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          // 处理后端 {code, data, message} 格式
           const payload = res.data
           if (payload && typeof payload === 'object' && 'code' in payload && 'data' in payload) {
             resolve(payload.data)
@@ -28,6 +27,32 @@ export const request = (url, options = {}) => {
           }
         } else {
           reject(new Error(res.data?.message || '请求失败'))
+        }
+      },
+      fail: reject
+    })
+  })
+}
+
+// 统一文件上传函数
+export const uploadFile = (url, filePath, name = 'avatar') => {
+  return new Promise((resolve, reject) => {
+    const token = getToken()
+    uni.uploadFile({
+      url: `${BASE_URL}${url}`,
+      filePath,
+      name,
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const payload = JSON.parse(res.data)
+            resolve(payload?.data ?? payload)
+          } catch {
+            resolve(res.data)
+          }
+        } else {
+          reject(new Error('上传失败'))
         }
       },
       fail: reject
@@ -123,4 +148,10 @@ export const studyApi = {
 export const assistantApi = {
   // 将用户输入发送到后端知识助手接口，后端负责返回 AI 回复
   chat: (payload) => request('/assistant/chat', { method: 'POST', data: payload })
+}
+
+// ========== 用户模块 API ==========
+export const userApi = {
+  getAvatar: () => request('/user/avatar', { method: 'GET' }),
+  uploadAvatar: (filePath) => uploadFile('/user/avatar', filePath),
 }
