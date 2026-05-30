@@ -1,8 +1,8 @@
 # Fitters 数据库设计文档
 
-> 数据库负责人：袁启泰  
-> 最后更新：2026-05-28  
-> 分支：`yqt-database-schema`
+> 数据库负责人：袁启泰
+> 最后更新：2026-05-30
+> 分支：`debug-zzj-5/28`
 
 ---
 
@@ -44,7 +44,7 @@
 |------|-----------|------|------|
 | `id` | SERIAL INTEGER | 是 | PRIMARY KEY |
 | `account` | VARCHAR(64) | 是 | NOT NULL, UNIQUE |
-| `password_hash` | VARCHAR(255) | 是 | NOT NULL（bcrypt 哈希，禁止明文） |
+| `password_hash` | VARCHAR(255) | 是 | NOT NULL |
 | `nickname` | VARCHAR(64) | 否 | — |
 | `created_at` | TIMESTAMP(3) | 是 | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 | `updated_at` | TIMESTAMP(3) | 是 | NOT NULL, 自动更新 |
@@ -82,28 +82,19 @@
 | `user_id` | INTEGER | 是 | FK → users(id) ON DELETE CASCADE |
 | `record_date` | DATE | 是 | NOT NULL, DEFAULT CURRENT_DATE |
 | `duration_hours` | DECIMAL(4,2) | 否 | CHECK: IS NULL OR > 0 |
-| `deep_hours` | DECIMAL(4,2) | 否 | CHECK: IS NULL OR >= 0; deep_hours ≤ duration_hours |
-| `bed_time` | TIMESTAMP(3) | 是 | NOT NULL |
+| `sleep_time` | TIMESTAMP(3) | 是 | NOT NULL |
 | `wake_time` | TIMESTAMP(3) | 是 | NOT NULL |
 | `quality_score` | INTEGER | 是 | NOT NULL, DEFAULT 0, CHECK: 0 ≤ x ≤ 100 |
 | `notes` | VARCHAR(255) | 否 | — |
-| `metadata` | JSONB | 否 | 扩展字段（设备来源、睡眠阶段等） |
 | `created_at` | TIMESTAMP(3) | 是 | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **索引：**
 - PK: `sleep_records_pkey` (`id`)
 - COMPOSITE: `idx_sleep_records_user_record_date` (`user_id`, `record_date`)
 
-**检查约束：**
-- `duration_hours` 填写时必须 > 0
-- `deep_hours` 填写时必须 ≥ 0，且 ≤ duration_hours
-- `quality_score` ∈ [0, 100]
-
 ---
 
-### 3.4 diet_records — 饮食汇总记录表（兼容保留）
-
-> 说明：此表用于兼容现有 `/api/diets` 路由。结构化饮食数据请使用 `foods` → `meals` → `meal_items` 链路。
+### 3.4 diet_records — 饮食汇总记录表
 
 | 字段 | 数据库类型 | 必填 | 约束 |
 |------|-----------|------|------|
@@ -132,7 +123,6 @@
 | `fat_grams` | DECIMAL(6,2) | 否 | CHECK ≥ 0 |
 | `carb_grams` | DECIMAL(6,2) | 否 | CHECK ≥ 0 |
 | `serving_grams` | DECIMAL(6,2) | 否 | CHECK > 0 |
-| `metadata` | JSONB | 否 | 扩展字段（如外部食物库 ID、条形码等） |
 | `created_at` | TIMESTAMP(3) | 是 | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **索引：**
@@ -148,7 +138,7 @@
 | `id` | SERIAL INTEGER | 是 | PRIMARY KEY |
 | `user_id` | INTEGER | 是 | FK → users(id) ON DELETE CASCADE |
 | `meal_date` | DATE | 是 | NOT NULL |
-| `meal_type` | VARCHAR(32) | 是 | NOT NULL（如 breakfast/lunch/dinner/snack） |
+| `meal_type` | VARCHAR(32) | 是 | NOT NULL |
 | `notes` | VARCHAR(255) | 否 | — |
 | `created_at` | TIMESTAMP(3) | 是 | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
@@ -165,13 +155,12 @@
 | `id` | SERIAL INTEGER | 是 | PRIMARY KEY |
 | `meal_id` | INTEGER | 是 | FK → meals(id) ON DELETE CASCADE |
 | `food_id` | INTEGER | 否 | FK → foods(id) ON DELETE SET NULL |
-| `food_name` | VARCHAR(128) | 是 | NOT NULL（冗余保存，便于历史追溯） |
+| `food_name` | VARCHAR(128) | 是 | NOT NULL |
 | `quantity_grams` | DECIMAL(8,2) | 否 | CHECK > 0 |
 | `calories` | INTEGER | 是 | NOT NULL, DEFAULT 0, CHECK ≥ 0 |
 | `protein_grams` | DECIMAL(6,2) | 否 | CHECK ≥ 0 |
 | `fat_grams` | DECIMAL(6,2) | 否 | CHECK ≥ 0 |
 | `carb_grams` | DECIMAL(6,2) | 否 | CHECK ≥ 0 |
-| `metadata` | JSONB | 否 | 扩展字段 |
 | `created_at` | TIMESTAMP(3) | 是 | NOT NULL, DEFAULT CURRENT_TIMESTAMP |
 
 **索引：**
@@ -211,7 +200,7 @@
      ├──< sleep_records      (user_id → users.id, CASCADE)
      ├──< diet_records       (user_id → users.id, CASCADE)
      ├──< meals              (user_id → users.id, CASCADE)
-     └──< goals              (user_id → users.id, CASCADE)
+     ├──< goals              (user_id → users.id, CASCADE)
 
 ┌──────────┐     ┌────────────┐
 │  meals   │────<│ meal_items │
@@ -226,42 +215,32 @@ meal_items.meal_id  → meals.id  (CASCADE)
 meal_items.food_id  → foods.id  (SET NULL)
 ```
 
-**Mermaid 版本（可渲染）：**
-
-```mermaid
-erDiagram
-    USERS ||--o{ WORKOUT_RECORDS : "运动记录"
-    USERS ||--o{ SLEEP_RECORDS : "睡眠记录"
-    USERS ||--o{ DIET_RECORDS : "饮食汇总(兼容)"
-    USERS ||--o{ MEALS : "餐次"
-    USERS ||--o{ GOALS : "目标"
-    MEALS ||--o{ MEAL_ITEMS : "餐次明细"
-    FOODS ||--o{ MEAL_ITEMS : "食物引用"
-```
-
 ---
 
-## 五、已有接口覆盖
+## 五、待办事项
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/auth/register` | 注册 |
-| POST | `/api/auth/login` | 登录 |
-| POST | `/api/workouts` | 添加运动记录 |
-| GET | `/api/workouts` | 查询运动记录 |
-| DELETE | `/api/workouts/:id` | 删除运动记录 |
-| POST | `/api/goals` | 设置目标 |
-| GET | `/api/stats/today` | 今日统计 |
-| GET | `/api/stats/weekly` | 周统计 |
-| GET | `/api/stats/summary` | 汇总统计 |
-
----
-
-## 六、待办事项
-
-- [ ] 对齐 `/api/sleeps` 接口，写入睡眠结构化字段
-- [ ] 对齐 `/api/diets`，接入 `meals` + `meal_items` 结构化链路
-- [ ] 更新统计接口，按运动/睡眠/饮食三类聚合
-- [ ] 外部工具接入：考虑增加 `device_data_sources` 表追踪数据来源
-- [ ] 外部工具接入：`foods` 表补充 `barcode`(条形码) 字段支持扫码录入
+- [ ] 执行数据库迁移：`npx prisma migrate dev`
 - [ ] 后续阶段：健康报告、智能建议、提醒、审计日志表
+
+---
+
+*最后更新：2026-05-30 - 精简数据库表，移除未使用字段*
+
+---
+
+## 修改记录
+
+### 2026-05-30 修改内容
+
+**精简内容：**
+
+| 表名 | 精简项 | 原字段 | 原因 |
+|------|--------|--------|------|
+| sleep_records | 移除 `deep_hours` | DECIMAL(4,2) | 无代码引用 |
+| sleep_records | 移除 `metadata` | JSONB | 无代码引用 |
+| foods | 移除 `metadata` | JSONB | 无代码引用 |
+| meal_items | 移除 `metadata` | JSONB | 无代码引用 |
+
+**数据表数量变更：**
+- 13张 → 8张（移除文档中未实现的表，保留实际代码中存在的表）
+- 字段精简：移除4个未使用的字段
