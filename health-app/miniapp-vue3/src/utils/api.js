@@ -152,10 +152,10 @@ export const assistantApi = {
 
 // ========== 用户模块 API ==========
 export const userApi = {
-  getAvatar: () => request('/user/avatar', { method: 'GET' }),
-  uploadAvatar: (filePath) => uploadFile('/user/avatar', filePath),
-  getProfile: () => request('/user/profile', { method: 'GET' }),
-  updateProfile: (data) => request('/user/profile', { method: 'PUT', data }),
-  changePassword: (data) => request('/user/password', { method: 'PUT', data }),
-  deleteAccount: () => request('/user/account', { method: 'DELETE' }),
+  getAvatar: () => request('/users/avatar', { method: 'GET' }),
+  uploadAvatar: (filePath) => uploadFile('/users/avatar', filePath),
+  getProfile: () => request('/users/profile', { method: 'GET' }),
+  updateProfile: (data) => request('/users/profile', { method: 'PUT', data }),
+  changePassword: (data) => request('/users/password', { method: 'PUT', data }),
+  deleteAccount: () => request('/users/account', { method: 'DELETE' }),
 }
