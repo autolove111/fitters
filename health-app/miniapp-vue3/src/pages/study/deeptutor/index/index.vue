@@ -1,13 +1,13 @@
 <template>
   <view class="workspace-page">
     <view class="shell">
-      <view class="sidebar">
+      <view :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
         <view class="brand-block">
           <view class="brand-row">
             <view class="brand-mark">A</view>
             <text class="brand-name">AidLearning</text>
           </view>
-          <view class="brand-badge">v1.4.0</view>
+          <!-- <view class="brand-badge">v1.4.0</view> -->
         </view>
 
         <view class="nav-section">
@@ -45,6 +45,12 @@
             <text>{{ item.label }}</text>
           </view>
         </view>
+      </view>
+
+      <view class="page-topbar">
+        <button class="menu-toggle-btn" @click="toggleSidebar">
+          <u-icon name="menu" color="#0f172a" />
+        </button>
       </view>
 
       <view class="main-panel">
@@ -143,6 +149,7 @@
           </view>
         </view>
       </view>
+      <view v-if="isSidebarOpen" class="sidebar-backdrop" @click="closeSidebar" />
     </view>
   </view>
 </template>
@@ -207,6 +214,7 @@ export default {
         { label: 'Memory', icon: 'heart', route: '/pages/study/deeptutor/memory/overview' },
         { label: 'Settings', icon: 'setting', route: '/pages/study/deeptutor/settings/index' },
       ],
+      isSidebarOpen: false,
     }
   },
   computed: {
@@ -264,16 +272,19 @@ export default {
     },
     handleMenu(item) {
       uni.navigateTo({ url: item.route })
+      this.isSidebarOpen = false
     },
     startNewChat() {
       this.chatStore.newSession()
       this.draft = ''
       this.showCapabilityMenu = false
+      this.isSidebarOpen = false
     },
     async openSession(id) {
       try {
         await this.chatStore.loadSession(id)
         this.showCapabilityMenu = false
+        this.isSidebarOpen = false
         this.scrollToBottom()
       } catch (e) {
         uni.showToast({ title: 'Failed to open session', icon: 'none' })
@@ -313,6 +324,13 @@ export default {
     goMemory() {
       this.showCapabilityMenu = false
       uni.navigateTo({ url: '/pages/study/deeptutor/memory/overview' })
+      this.isSidebarOpen = false
+    },
+    toggleSidebar() {
+      this.isSidebarOpen = !this.isSidebarOpen
+    },
+    closeSidebar() {
+      this.isSidebarOpen = false
     },
     scrollToBottom() {
       setTimeout(() => {
@@ -340,9 +358,30 @@ export default {
 }
 
 .sidebar {
-  background: rgba(248, 250, 255, 0.95);
-  border-bottom: 1rpx solid rgba(148, 163, 184, 0.18);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 300rpx;
+  background: linear-gradient(180deg, rgba(243, 249, 255, 0.98), rgba(238, 245, 255, 0.98));
+  backdrop-filter: blur(20rpx);
+  border-right: 1rpx solid rgba(255, 255, 255, 0.7);
   padding: 28rpx 24rpx 32rpx;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 110;
+  overflow-y: auto;
+}
+
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 100;
 }
 
 .brand-block {
@@ -362,7 +401,7 @@ export default {
   width: 56rpx;
   height: 56rpx;
   border-radius: 18rpx;
-  background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -388,8 +427,8 @@ export default {
 }
 
 .primary-action {
-  height: 84rpx;
-  border-radius: 22rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
   background: linear-gradient(90deg, #38bdf8, #22c55e);
   color: #ffffff;
   border: none;
@@ -397,7 +436,8 @@ export default {
   align-items: center;
   gap: 16rpx;
   padding: 0 24rpx;
-  font-size: 28rpx;
+  font-size: 26rpx;
+  font-weight: 700;
   box-shadow: 0 16rpx 24rpx rgba(56, 189, 248, 0.22);
 }
 
@@ -465,22 +505,44 @@ export default {
 
 .menu-item {
   height: 76rpx;
-  border-radius: 18rpx;
+  border-radius: 26rpx;
   padding: 0 20rpx;
   display: flex;
   align-items: center;
   gap: 12rpx;
-  background: rgba(56, 189, 248, 0.12);
+  background: rgba(59, 130, 246, 0.12);
   color: #0f172a;
   font-size: 26rpx;
+  font-weight: 600;
 }
 
 .main-panel {
   flex: 1;
-  padding: 24rpx 24rpx 40rpx;
+  padding: 120rpx 24rpx 40rpx;
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.page-topbar {
+  position: fixed;
+  top: 24rpx;
+  right: 24rpx;
+  z-index: 130;
+}
+
+.menu-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  height: 64rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  color: #0f172a;
+  font-size: 24rpx;
 }
 
 .hero {
@@ -498,11 +560,13 @@ export default {
   width: 88rpx;
   height: 88rpx;
   border-radius: 28rpx;
-  border: 1rpx solid rgba(56, 189, 248, 0.18);
-  background: rgba(255, 255, 255, 0.95);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
+  backdrop-filter: blur(20rpx);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
 }
 
 .hero-title {
@@ -535,13 +599,15 @@ export default {
 
 .streaming-bubble {
   max-width: 85%;
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+  backdrop-filter: blur(20rpx);
   padding: 24rpx 30rpx;
-  border-radius: 20rpx 20rpx 20rpx 4rpx;
+  border-radius: 28rpx 28rpx 28rpx 4rpx;
   font-size: 28rpx;
-  color: #1f2937;
+  color: #0f172a;
   line-height: 1.6;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.06);
 }
 
 .msg-bottom {
@@ -552,20 +618,22 @@ export default {
   width: 100%;
   max-width: 1100rpx;
   align-self: center;
-  border-radius: 34rpx;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1rpx solid rgba(148, 163, 184, 0.14);
-  box-shadow: 0 24rpx 60rpx rgba(30, 64, 175, 0.08);
+  border-radius: 40rpx;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+  backdrop-filter: blur(20rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 28rpx 50rpx rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
 
 .capability-menu {
   margin: 22rpx 22rpx 0;
-  border-radius: 26rpx;
+  border-radius: 36rpx;
   overflow: hidden;
-  border: 1rpx solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+  backdrop-filter: blur(20rpx);
+  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
 .capability-item {
@@ -582,7 +650,7 @@ export default {
 }
 
 .capability-item.active {
-  background: rgba(56, 189, 248, 0.14);
+  background: rgba(59, 130, 246, 0.14);
 }
 
 .capability-copy {
@@ -613,7 +681,7 @@ export default {
   width: 14rpx;
   height: 14rpx;
   border-radius: 50%;
-  background: #38bdf8;
+  background: linear-gradient(90deg, #0ea5e9, #14b8a6);
   flex-shrink: 0;
 }
 
@@ -660,18 +728,19 @@ export default {
   gap: 10rpx;
   height: 64rpx;
   padding: 0 20rpx;
-  border-radius: 999rpx;
-  background: rgba(56, 189, 248, 0.12);
+  border-radius: 26rpx;
+  background: rgba(59, 130, 246, 0.12);
   color: #0f172a;
   font-size: 24rpx;
-  border: 1rpx solid rgba(56, 189, 248, 0.18);
+  font-weight: 600;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
 }
 
 .capability-pill.active {
-  background: rgba(56, 189, 248, 0.22);
-  border-color: rgba(56, 189, 248, 0.28);
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(255, 255, 255, 0.85);
   color: #0f172a;
-  box-shadow: inset 0 0 0 2rpx rgba(56, 189, 248, 0.12);
+  box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.12);
 }
 
 .composer-actions {
@@ -715,7 +784,16 @@ export default {
     min-width: 300rpx;
     min-height: 100vh;
     border-bottom: none;
-    border-right: 1rpx solid rgba(148, 163, 184, 0.18);
+    border-right: 1rpx solid rgba(255, 255, 255, 0.7);
+    transform: translateX(0);
+  }
+
+  .page-topbar {
+    display: none;
+  }
+
+  .main-panel {
+    padding-top: 40rpx;
   }
 
   .menu-item {

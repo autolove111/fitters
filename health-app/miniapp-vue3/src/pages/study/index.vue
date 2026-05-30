@@ -53,6 +53,15 @@
       </view>
       <button class="deeptutor-btn" @tap="goDeeptutor">进入</button>
     </view>
+
+    <view class="pomodoro-entry-card">
+      <view class="pomodoro-entry-icon">🍅</view>
+      <view class="pomodoro-entry-content">
+        <text class="pomodoro-entry-title">番茄钟</text>
+        <text class="pomodoro-entry-desc">进入番茄钟专注计时，提升学习效率</text>
+      </view>
+      <button class="pomodoro-open-btn" @tap="goPomodoro">打开</button>
+    </view>
   </view>
 </template>
 
@@ -107,6 +116,16 @@ function goDeeptutor() {
     success: () => {
       console.log('跳转至学习助手页面成功')
     },
+    fail: (err) => {
+      console.error('跳转失败：', err)
+      uni.showToast({ title: '跳转失败，请检查页面路由', icon: 'none' })
+    }
+  })
+}
+
+function goPomodoro() {
+  uni.navigateTo({
+    url: '/pages/work/pomodoro',
     fail: (err) => {
       console.error('跳转失败：', err)
       uni.showToast({ title: '跳转失败，请检查页面路由', icon: 'none' })
@@ -421,6 +440,57 @@ onShow(() => {
 }
 
 .deeptutor-btn {
+  flex-shrink: 0;
+  min-width: 120rpx;
+  height: 64rpx;
+  background: linear-gradient(90deg, #0ea5e9, #14b8a6);
+  color: #ffffff;
+  border: none;
+  border-radius: 32rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 20rpx rgba(14, 165, 233, 0.2);
+}
+
+.pomodoro-entry-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 30rpx;
+  padding: 28rpx 26rpx;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
+  backdrop-filter: blur(20rpx);
+  border-radius: 36rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
+}
+
+.pomodoro-entry-icon {
+  font-size: 56rpx;
+  line-height: 56rpx;
+  flex-shrink: 0;
+}
+
+.pomodoro-entry-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.pomodoro-entry-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pomodoro-entry-desc {
+  font-size: 24rpx;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.pomodoro-open-btn {
   flex-shrink: 0;
   min-width: 120rpx;
   height: 64rpx;

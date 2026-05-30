@@ -60,20 +60,19 @@
 
     <!-- ========= 已登录仪表板（明亮高级版，保持原有风格） ========= -->
     <view v-else class="dashboard">
-      <view class="hero-section">
-        <view class="user-greeting">
-          <view class="greeting-avatar">
-            <text class="avatar-glyph">🧬</text>
-            <view class="avatar-ring-pulse"></view>
+      <!-- 顶部用户栏 -->
+      <view class="user-bar">
+        <view class="user-info">
+          <view class="avatar-ring" @click="viewAvatar">
+            <image v-if="userAvatar" class="avatar-img" :src="userAvatar" mode="aspectFill" />
+            <text v-else class="avatar-emoji">🧘</text>
           </view>
-          <view class="greeting-texts">
-            <text class="greeting-line1">{{ greetingWord }}，{{ username }}</text>
-            <text class="greeting-line2">{{ currentDate }}</text>
+          <view class="user-text">
+            <text class="greeting">🌿 你好，{{ displayName }}</text>
+            <text class="today-date">{{ currentDate }}</text>
           </view>
         </view>
-        <view class="settings-touch" @click="logout">
-          <text class="settings-icon">⤴</text>
-        </view>
+        <button class="logout-btn" @click="goProfile">个人中心</button>
       </view>
 
       <!-- 四色功能卡片网格 -->
@@ -120,11 +119,30 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import { auth } from '@/utils/api'
 
 const userStore = useUserStore()
-const { isLoggedIn, state, setUser, clearUser } = userStore
+const { isLoggedIn, state, displayName, setUser, loadAvatar, loadProfile } = userStore
+
+const userAvatar = computed(() => state.avatar || '')
+
+onShow(() => {
+  loadAvatar()
+  loadProfile()
+})
+
+const viewAvatar = () => {
+  if (!userAvatar.value) {
+    uni.showToast({ title: '暂无头像', icon: 'none' })
+    return
+  }
+  uni.previewImage({
+    urls: [userAvatar.value],
+    current: userAvatar.value
+  })
+}
 
 // 登录表单
 const account = ref('demo')
@@ -207,14 +225,9 @@ function handleRegister() {
   uni.navigateTo({ url: '/pages/register/register' })
 }
 
-function logout() {
-  uni.showModal({
-    title: '退出',
-    content: '确定要离开吗？',
-    success: (res) => {
-      if (res.confirm) clearUser()
-    }
-  })
+// 个人中心
+function goProfile() {
+  uni.navigateTo({ url: '/pages/profile/index' })
 }
 
 function goTo(url) {
@@ -229,13 +242,9 @@ function goStudy() {
 <style scoped>
 /* 全局容器 — 背景动态切换 */
 .container {
+  padding: 32rpx;
   min-height: 100vh;
-  padding: 0;
-  position: relative;
-  overflow-x: hidden;
-}
-.container.dark-bg {
-  background: radial-gradient(circle at 10% 20%, #1a2a3a, #0e1a24);
+  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
 }
 
 /* ========= 登录界面样式（深色奢华） ========= */
@@ -475,7 +484,12 @@ function goStudy() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx 0;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
+  backdrop-filter: blur(20rpx);
+  border-radius: 40rpx;
+  padding: 20rpx 24rpx 20rpx 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
 }
 .user-greeting {
   display: flex;
@@ -491,7 +505,13 @@ function goStudy() {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12rpx 24rpx -12rpx rgba(0,0,0,0.1), inset 0 1rpx 0 rgba(255,255,255,0.9);
+  box-shadow: 0 8rpx 16rpx -6rpx rgba(0, 0, 0, 0.05), 0 0 0 2rpx rgba(255, 255, 255, 0.8) inset;
+  overflow: hidden;
+}
+.avatar-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 60rpx;
 }
 .avatar-glyph {
   font-size: 52rpx;
@@ -514,49 +534,178 @@ function goStudy() {
   display: flex;
   flex-direction: column;
 }
-.greeting-line1 {
-  font-size: 38rpx;
-  font-weight: 540;
-  color: #1f2e3e;
+
+.greeting {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #0f172a;
   letter-spacing: -0.3rpx;
   margin-bottom: 8rpx;
 }
-.greeting-line2 {
-  font-size: 26rpx;
-  font-weight: 450;
-  color: #8fa0b2;
+
+.today-date {
+  font-size: 24rpx;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+  margin-top: 6rpx;
 }
-.settings-touch {
-  width: 76rpx;
-  height: 76rpx;
+
+.logout-btn {
+  background: rgba(59, 130, 246, 0.12);
+  backdrop-filter: blur(12rpx);
+  border: none;
+  border-radius: 999rpx;
+  padding: 12rpx 32rpx;
+  font-size: 26rpx;
+  color: #2563eb;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+}
+.logout-btn:active {
+  transform: scale(0.96);
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* 功能卡片网格 */
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32rpx;
+  margin: 8rpx 0;
+}
+
+.menu-card {
+  position: relative;
+  backdrop-filter: blur(20rpx);
+  border-radius: 40rpx;
+  padding: 48rpx 20rpx 40rpx;
+  text-align: center;
+  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+}
+
+.card-fitness {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
+}
+.card-weightloss {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(56, 189, 248, 0.18));
+}
+.card-wellness {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(56, 189, 248, 0.18));
+}
+.card-work {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(20, 184, 166, 0.18));
+}
+.card-study {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(34, 197, 94, 0.18));
+}
+
+.menu-card .card-glow {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(circle, rgba(255,255,245,0.4) 0%, rgba(255,255,255,0) 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.menu-card:active {
+  transform: scale(0.96);
+  box-shadow: 0 28rpx 50rpx rgba(59, 130, 246, 0.18);
+}
+.menu-card:active .card-glow {
+  opacity: 0.5;
+}
+
+.card-icon-wrapper {
+  margin-bottom: 28rpx;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 80rpx;
+  backdrop-filter: blur(4rpx);
+  transition: transform 0.2s ease;
+}
+.menu-card:active .card-icon-wrapper {
+  transform: scale(0.94);
+}
+
+.card-icon {
+  font-size: 80rpx;
+  filter: drop-shadow(0 8rpx 14rpx rgba(0, 0, 0, 0.1));
+}
+
+.card-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  display: block;
+  margin-bottom: 12rpx;
+  letter-spacing: -0.3rpx;
+  color: #0f172a;
+}
+
+.card-fitness .card-title {
+  color: #0f172a;
+}
+.card-weightloss .card-title {
+  color: #0f172a;
+}
+.card-wellness .card-title {
+  color: #0f172a;
+}
+.card-work .card-title {
+  color: #0f172a;
+}
+
+.card-desc {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.65);
+  display: inline-block;
+  padding: 8rpx 22rpx;
+  border-radius: 26rpx;
+  backdrop-filter: blur(4rpx);
+}
+
+/* 健康小贴士 - 学习页面风格 */
+.health-tip {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 60rpx;
-  background: rgba(0,0,0,0.02);
+  gap: 16rpx;
+  margin-top: 10rpx;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
+  backdrop-filter: blur(20rpx);
+  padding: 26rpx 32rpx;
+  border-radius: 36rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
   transition: all 0.2s;
 }
 .settings-touch:active {
   background: rgba(0,0,0,0.06);
   transform: rotate(15deg);
 }
-.settings-icon {
-  font-size: 44rpx;
-  color: #9bafc2;
-  transform: rotate(45deg);
-  display: inline-block;
-}
-.function-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32rpx;
-}
-.func-card {
-  position: relative;
-  background: rgba(255,255,245,0.75);
-  backdrop-filter: blur(24rpx);
-  border-radius: 72rpx;
-  padding: 44rpx 16rpx 40rpx;
+
+.tip-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.5rpx;
+  flex: 1;
   text-align: center;
   transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.2);
   border: 1rpx solid rgba(255,255,255,0.7);
