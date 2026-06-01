@@ -188,7 +188,9 @@ async function handleLogin() {
   authError.value = ''
   try {
     const res = await auth.login(account.value, password.value)
-    setUser(res.token, res.user.account)
+    setUser(res.token, res.user.account, res.user.nickname || '', res.user.avatar || '')
+    await loadProfile()
+    await loadAvatar()
     uni.showToast({ title: '登录成功', icon: 'success' })
   } catch (e) {
     authError.value = e.message

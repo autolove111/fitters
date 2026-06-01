@@ -1,17 +1,15 @@
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --only=production
 
 COPY prisma ./prisma
 RUN npx prisma generate
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
+COPY dist ./dist
 
 EXPOSE 8080
 CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/server.js"]

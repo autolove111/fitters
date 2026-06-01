@@ -15,12 +15,16 @@ const init = () => {
   state.avatar = uni.getStorageSync('auth_avatar') || ''
 }
 
-const setUser = (token, username) => {
+const setUser = (token, username, nickname = '', avatar = '') => {
   if (token && username) {
     state.token = token
     state.username = username
+    state.nickname = nickname
+    state.avatar = avatar
     uni.setStorageSync('auth_token', token)
     uni.setStorageSync('auth_username', username)
+    if (nickname) uni.setStorageSync('auth_nickname', nickname)
+    if (avatar) uni.setStorageSync('auth_avatar', avatar)
   } else {
     uni.removeStorageSync('auth_token')
     uni.removeStorageSync('auth_username')
@@ -67,13 +71,17 @@ const loadProfile = async () => {
   try {
     const data = await userApi.getProfile()
     if (data) {
-      if (data.nickname) {
+      if (data.nickname !== undefined && data.nickname !== null) {
         state.nickname = data.nickname
         uni.setStorageSync('auth_nickname', data.nickname)
       }
-      if (data.username && !state.username) {
+      if (data.username) {
         state.username = data.username
         uni.setStorageSync('auth_username', data.username)
+      }
+      if (data.avatar !== undefined && data.avatar !== null) {
+        state.avatar = data.avatar
+        uni.setStorageSync('auth_avatar', data.avatar)
       }
     }
   } catch (e) {

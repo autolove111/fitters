@@ -66,7 +66,7 @@ async function handleRegister() {
   }
   try {
     const res = await auth.register(account.value, password.value)
-    setUser(res.token, res.user.account)
+    setUser(res.token, res.user.account, res.user.nickname || '', res.user.avatar || '')
     uni.showToast({ title: '注册成功', icon: 'success' })
     uni.navigateBack()
   } catch (e) {
