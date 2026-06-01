@@ -25,14 +25,75 @@
 
 <script>
 import { marked } from 'marked'
+import katex from 'katex'
 
-// 配置 marked：不使用异步渲染，启用常用扩展
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
+marked.setOptions({ breaks: true, gfm: true })
 
-// 给 HTML 元素注入内联样式（rich-text 不支持外部 CSS）
+// ============ KaTeX 渲染（HTML 输出 + 内联样式） ============
+
+function latexToHtml(tex, displayMode) {
+  try {
+    const html = katex.renderToString(tex, {
+      displayMode: !!displayMode,
+      throwOnError: false,
+      output: 'html',
+      trust: true,
+    })
+    // 给 katex 容器加内联样式，确保 rich-text 中可读
+    return html
+      .replace(/class="katex"/g, 'style="font-size:1.1em;line-height:1.4;color:#1f2937;" class="katex"')
+      .replace(/class="katex-display"/g, 'style="margin:12rpx 0;padding:16rpx 20rpx;background:#f8fafc;border-radius:12rpx;overflow-x:auto;text-align:center;" class="katex-display"')
+      // 去掉依赖 CSS 定位的 vlist-strut（这些在 rich-text 中无效，去掉后文字会线性排列但不会重叠）
+      .replace(/<span class="pstrut"[^>]*><\/span>/g, '')
+      .replace(/<span class="strut"[^>]*><\/span>/g, '')
+      // 给上标/下标容器加 font-size 使其与正文区分
+      .replace(/class="sizing reset-size6 size3"/g, 'style="font-size:0.7em;"')
+      .replace(/class="sizing reset-size6 size4"/g, 'style="font-size:0.8em;"')
+      .replace(/class="sizing reset-size6 size5"/g, 'style="font-size:0.9em;"')
+      .replace(/class="sizing reset-size6 size6"/g, 'style="font-size:1em;"')
+      .replace(/class="sizing reset-size6 size7"/g, 'style="font-size:1.2em;"')
+      .replace(/class="sizing reset-size6 size8"/g, 'style="font-size:1.4em;"')
+      .replace(/class="sizing reset-size6 size9"/g, 'style="font-size:1.6em;"')
+      .replace(/class="sizing reset-size6 size10"/g, 'style="font-size:1.8em;"')
+      .replace(/class="sizing reset-size6 size11"/g, 'style="font-size:2em;"')
+  } catch {
+    return displayMode
+      ? '<p style="color:#ef4444;font-size:24rpx;">[LaTeX 渲染失败]</p>'
+      : '<span style="color:#ef4444;font-size:24rpx;">[LaTeX 渲染失败]</span>'
+  }
+}
+
+// ============ LaTeX 占位符处理 ============
+
+function processMath(text) {
+  const blocks = []
+  const inlines = []
+
+  // $$...$$ 块级公式
+  let result = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
+    const idx = blocks.length
+    blocks.push(latexToHtml(tex.trim(), true))
+    return `%%MATH_BLOCK_${idx}%%`
+  })
+
+  // $...$ 行内公式（跳过 \$）
+  result = result.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, (_, tex) => {
+    const idx = inlines.length
+    inlines.push(latexToHtml(tex.trim(), false))
+    return `%%MATH_INLINE_${idx}%%`
+  })
+
+  return { text: result, blocks, inlines }
+}
+
+function restoreMath(html, blocks, inlines) {
+  blocks.forEach((h, i) => { html = html.replace(`%%MATH_BLOCK_${i}%%`, h) })
+  inlines.forEach((h, i) => { html = html.replace(`%%MATH_INLINE_${i}%%`, h) })
+  return html
+}
+
+// ============ Markdown HTML 内联样式 ============
+
 const styleMap = {
   h1: 'font-size:36rpx;font-weight:700;color:#0f172a;margin:20rpx 0 12rpx;',
   h2: 'font-size:32rpx;font-weight:700;color:#0f172a;margin:18rpx 0 10rpx;',
@@ -77,7 +138,6 @@ function styleHtml(html) {
     .replace(/<strong>/g, `<strong style="${styleMap.strong}">`)
     .replace(/<em>/g, `<em style="${styleMap.em}">`)
     .replace(/<img\s/g, `<img style="${styleMap.img}" `)
-    // 行内 code（非 pre 内的）：给 <code> 不在 <pre> 内的加背景
     .replace(/<code style="[^"]*">/g, (match, offset) => {
       const before = html.substring(0, offset)
       if (before.lastIndexOf('<pre') > before.lastIndexOf('</pre>')) return match
@@ -98,8 +158,10 @@ export default {
       const raw = this.message.content || ''
       if (!raw) return ''
       try {
-        const html = marked.parse(raw)
-        return styleHtml(html)
+        const { text, blocks, inlines } = processMath(raw)
+        const mdHtml = marked.parse(text)
+        const styled = styleHtml(mdHtml)
+        return restoreMath(styled, blocks, inlines)
       } catch {
         return raw
       }
@@ -124,6 +186,7 @@ export default {
 }
 .content {
   word-break: break-all;
+  overflow-x: auto;
 }
 .thinking-block {
   background: #f9fafb; border-radius: 12rpx; padding: 16rpx; margin-bottom: 16rpx;
