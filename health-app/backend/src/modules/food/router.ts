@@ -18,8 +18,8 @@ const foodSchema = z.object({
 
 function toNumber(value: any): number | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'number') return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "number") return value;
   if (value.toNumber) return value.toNumber();
   return Number(value);
 }
@@ -27,12 +27,12 @@ function toNumber(value: any): number | null {
 function serializeFood(food: any) {
   return {
     id: food.id,
-    name: food.name,
-    caloriesKcal: food.caloriesKcal,
+    name: food.foodName,
+    caloriesKcal: food.calories,
     proteinGrams: toNumber(food.proteinGrams),
     fatGrams: toNumber(food.fatGrams),
     carbGrams: toNumber(food.carbGrams),
-    servingGrams: toNumber(food.servingGrams),
+    servingGrams: toNumber(food.quantityGrams),
     metadata: food.metadata,
     createdAt: food.createdAt.toISOString(),
   };
@@ -42,19 +42,30 @@ foodRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const body = foodSchema.parse(req.body);
-    
-    const food = await prisma.food.create({
+
+    const existing = await prisma.dietRecord.findFirst({
+      where: { recordType: "food_catalog", foodName: body.name },
+    });
+    if (existing) {
+      throw new HttpError(409, "food already exists");
+    }
+
+    const food = await prisma.dietRecord.create({
       data: {
-        name: body.name,
-        caloriesKcal: body.caloriesKcal || 0,
+        userId: null,
+        recordType: "food_catalog",
+        type: "food_catalog",
+        foodName: body.name,
+        calories: body.caloriesKcal || 0,
         proteinGrams: body.proteinGrams,
         fatGrams: body.fatGrams,
         carbGrams: body.carbGrams,
-        servingGrams: body.servingGrams,
+        quantityGrams: body.servingGrams,
+        recordDate: new Date(),
         metadata: body.metadata,
       },
     });
-    
+
     ok(res, serializeFood(food), "created");
   }),
 );
@@ -63,19 +74,19 @@ foodRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const { name, limit = 20, offset = 0 } = req.query;
-    
-    const where: any = {};
+
+    const where: any = { recordType: "food_catalog" };
     if (name) {
-      where.name = { contains: String(name), mode: "insensitive" };
+      where.foodName = { contains: String(name), mode: "insensitive" };
     }
-    
-    const foods = await prisma.food.findMany({
+
+    const foods = await prisma.dietRecord.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take: Number(limit),
       skip: Number(offset),
     });
-    
+
     ok(res, foods.map(serializeFood));
   }),
 );
@@ -87,12 +98,12 @@ foodRouter.get(
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid food id");
     }
-    
-    const food = await prisma.food.findUnique({ where: { id } });
-    if (!food) {
+
+    const food = await prisma.dietRecord.findUnique({ where: { id } });
+    if (!food || food.recordType !== "food_catalog") {
       throw new HttpError(404, "food not found");
     }
-    
+
     ok(res, serializeFood(food));
   }),
 );
@@ -104,18 +115,28 @@ foodRouter.put(
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid food id");
     }
-    
+
+    const food = await prisma.dietRecord.findUnique({ where: { id } });
+    if (!food || food.recordType !== "food_catalog") {
+      throw new HttpError(404, "food not found");
+    }
+
     const body = foodSchema.partial().parse(req.body);
-    
-    const food = await prisma.food.update({
+
+    const updatedFood = await prisma.dietRecord.update({
       where: { id },
       data: {
-        ...body,
-        caloriesKcal: body.caloriesKcal ?? undefined,
+        foodName: body.name,
+        calories: body.caloriesKcal,
+        proteinGrams: body.proteinGrams,
+        fatGrams: body.fatGrams,
+        carbGrams: body.carbGrams,
+        quantityGrams: body.servingGrams,
+        metadata: body.metadata,
       },
     });
-    
-    ok(res, serializeFood(food), "updated");
+
+    ok(res, serializeFood(updatedFood), "updated");
   }),
 );
 
@@ -126,13 +147,13 @@ foodRouter.delete(
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid food id");
     }
-    
-    const food = await prisma.food.findUnique({ where: { id } });
-    if (!food) {
+
+    const food = await prisma.dietRecord.findUnique({ where: { id } });
+    if (!food || food.recordType !== "food_catalog") {
       throw new HttpError(404, "food not found");
     }
-    
-    await prisma.food.delete({ where: { id } });
+
+    await prisma.dietRecord.delete({ where: { id } });
     ok(res, null, "deleted");
   }),
 );

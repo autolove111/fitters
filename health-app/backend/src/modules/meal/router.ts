@@ -26,16 +26,21 @@ const mealSchema = z.object({
 
 function toNumber(value: any): number | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'number') return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "number") return value;
   if (value.toNumber) return value.toNumber();
   return Number(value);
 }
 
+function metadataObject(value: any): Record<string, any> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
 function serializeMealItem(item: any) {
+  const metadata = metadataObject(item.metadata);
   return {
     id: item.id,
-    foodId: item.foodId,
+    foodId: metadata.foodId ?? null,
     foodName: item.foodName,
     quantityGrams: toNumber(item.quantityGrams),
     calories: item.calories,
@@ -46,16 +51,48 @@ function serializeMealItem(item: any) {
 }
 
 function serializeMeal(meal: any) {
-  const date = formatDate(meal.mealDate);
-  const totalCalories = meal.items?.reduce((sum: number, item: any) => sum + item.calories, 0) || 0;
+  const date = formatDate(meal.recordDate);
+  const items = meal.children || [];
+  const totalCalories = items.reduce((sum: number, item: any) => sum + item.calories, 0);
   return {
     id: meal.id,
-    mealType: meal.mealType,
+    mealType: meal.mealType || meal.type,
     mealDate: date,
     date,
     totalCalories,
-    items: meal.items?.map(serializeMealItem) || [],
+    items: items.map(serializeMealItem),
     createdAt: meal.createdAt.toISOString(),
+  };
+}
+
+async function findUserMeal(id: number, userId: number) {
+  const meal = await prisma.dietRecord.findUnique({
+    where: { id },
+    include: { children: { where: { recordType: "meal_item" }, orderBy: { createdAt: "asc" } } },
+  });
+  if (!meal || meal.recordType !== "meal") {
+    throw new HttpError(404, "meal not found");
+  }
+  if (meal.userId !== userId) {
+    throw new HttpError(403, "cannot access another user's meal");
+  }
+  return meal;
+}
+
+function mealItemData(item: z.infer<typeof mealItemSchema>, userId: number, recordDate: Date, parentRecordId: number) {
+  return {
+    userId,
+    parentRecordId,
+    recordType: "meal_item",
+    type: "meal_item",
+    recordDate,
+    foodName: item.foodName,
+    quantityGrams: item.quantityGrams,
+    calories: item.calories,
+    proteinGrams: item.proteinGrams,
+    fatGrams: item.fatGrams,
+    carbGrams: item.carbGrams,
+    metadata: item.foodId ? { foodId: item.foodId } : undefined,
   };
 }
 
@@ -66,18 +103,18 @@ mealRouter.get(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const { date } = req.query;
-    
-    const where: any = { userId };
+
+    const where: any = { userId, recordType: "meal" };
     if (date) {
-      where.mealDate = dateOnly(String(date));
+      where.recordDate = dateOnly(String(date));
     }
-    
-    const meals = await prisma.meal.findMany({
+
+    const meals = await prisma.dietRecord.findMany({
       where,
-      include: { items: true },
-      orderBy: [{ mealDate: "desc" }, { createdAt: "desc" }],
+      include: { children: { where: { recordType: "meal_item" }, orderBy: { createdAt: "asc" } } },
+      orderBy: [{ recordDate: "desc" }, { createdAt: "desc" }],
     });
-    
+
     ok(res, meals.map(serializeMeal));
   }),
 );
@@ -87,24 +124,12 @@ mealRouter.get(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const id = Number(req.params.id);
-    
+
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid meal id");
     }
-    
-    const meal = await prisma.meal.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-    
-    if (!meal) {
-      throw new HttpError(404, "meal not found");
-    }
-    
-    if (meal.userId !== userId) {
-      throw new HttpError(403, "cannot access another user's meal");
-    }
-    
+
+    const meal = await findUserMeal(id, userId);
     ok(res, serializeMeal(meal));
   }),
 );
@@ -114,29 +139,30 @@ mealRouter.post(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const body = mealSchema.parse(req.body);
-    
     const mealDate = body.mealDate ? dateOnly(body.mealDate) : todayUtc();
-    
-    const meal = await prisma.meal.create({
-      data: {
-        userId,
-        mealType: body.mealType,
-        mealDate,
-        items: {
-          create: body.items.map((item: any) => ({
-            foodId: item.foodId,
-            foodName: item.foodName,
-            quantityGrams: item.quantityGrams,
-            calories: item.calories,
-            proteinGrams: item.proteinGrams,
-            fatGrams: item.fatGrams,
-            carbGrams: item.carbGrams,
-          })),
+
+    const meal = await prisma.$transaction(async (tx) => {
+      const createdMeal = await tx.dietRecord.create({
+        data: {
+          userId,
+          recordType: "meal",
+          type: body.mealType,
+          mealType: body.mealType,
+          calories: 0,
+          recordDate: mealDate,
         },
-      },
-      include: { items: true },
+      });
+
+      await tx.dietRecord.createMany({
+        data: body.items.map((item) => mealItemData(item, userId, mealDate, createdMeal.id)),
+      });
+
+      return tx.dietRecord.findUnique({
+        where: { id: createdMeal.id },
+        include: { children: { where: { recordType: "meal_item" }, orderBy: { createdAt: "asc" } } },
+      });
     });
-    
+
     ok(res, serializeMeal(meal), "created");
   }),
 );
@@ -146,41 +172,34 @@ mealRouter.put(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const id = Number(req.params.id);
-    
+
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid meal id");
     }
-    
-    const meal = await prisma.meal.findUnique({ where: { id } });
-    if (!meal) {
-      throw new HttpError(404, "meal not found");
-    }
-    
-    if (meal.userId !== userId) {
-      throw new HttpError(403, "cannot modify another user's meal");
-    }
-    
+
+    await findUserMeal(id, userId);
+
     const updateSchema = z.object({
       mealType: z.string().trim().min(1).max(32).optional(),
       mealDate: z.string().optional(),
     });
-    
     const body = updateSchema.parse(req.body);
-    
+
     const data: any = {};
     if (body.mealType) {
+      data.type = body.mealType;
       data.mealType = body.mealType;
     }
     if (body.mealDate) {
-      data.mealDate = dateOnly(body.mealDate);
+      data.recordDate = dateOnly(body.mealDate);
     }
-    
-    const updatedMeal = await prisma.meal.update({
+
+    const updatedMeal = await prisma.dietRecord.update({
       where: { id },
       data,
-      include: { items: true },
+      include: { children: { where: { recordType: "meal_item" }, orderBy: { createdAt: "asc" } } },
     });
-    
+
     ok(res, serializeMeal(updatedMeal), "updated");
   }),
 );
@@ -190,21 +209,13 @@ mealRouter.delete(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const id = Number(req.params.id);
-    
+
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid meal id");
     }
-    
-    const meal = await prisma.meal.findUnique({ where: { id } });
-    if (!meal) {
-      throw new HttpError(404, "meal not found");
-    }
-    
-    if (meal.userId !== userId) {
-      throw new HttpError(403, "cannot delete another user's meal");
-    }
-    
-    await prisma.meal.delete({ where: { id } });
+
+    await findUserMeal(id, userId);
+    await prisma.dietRecord.delete({ where: { id } });
     ok(res, null, "deleted");
   }),
 );
@@ -214,35 +225,18 @@ mealRouter.post(
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
     const id = Number(req.params.id);
-    
+
     if (!Number.isInteger(id)) {
       throw new HttpError(400, "invalid meal id");
     }
-    
-    const meal = await prisma.meal.findUnique({ where: { id } });
-    if (!meal) {
-      throw new HttpError(404, "meal not found");
-    }
-    
-    if (meal.userId !== userId) {
-      throw new HttpError(403, "cannot modify another user's meal");
-    }
-    
+
+    const meal = await findUserMeal(id, userId);
     const body = mealItemSchema.parse(req.body);
-    
-    const item = await prisma.mealItem.create({
-      data: {
-        mealId: id,
-        foodId: body.foodId,
-        foodName: body.foodName,
-        quantityGrams: body.quantityGrams,
-        calories: body.calories,
-        proteinGrams: body.proteinGrams,
-        fatGrams: body.fatGrams,
-        carbGrams: body.carbGrams,
-      },
+
+    const item = await prisma.dietRecord.create({
+      data: mealItemData(body, userId, meal.recordDate, id),
     });
-    
+
     ok(res, serializeMealItem(item), "created");
   }),
 );
@@ -253,26 +247,19 @@ mealRouter.delete(
     const userId = (req as AuthenticatedRequest).userId;
     const id = Number(req.params.id);
     const itemId = Number(req.params.itemId);
-    
+
     if (!Number.isInteger(id) || !Number.isInteger(itemId)) {
       throw new HttpError(400, "invalid meal or item id");
     }
-    
-    const meal = await prisma.meal.findUnique({ where: { id } });
-    if (!meal) {
-      throw new HttpError(404, "meal not found");
-    }
-    
-    if (meal.userId !== userId) {
-      throw new HttpError(403, "cannot modify another user's meal");
-    }
-    
-    const item = await prisma.mealItem.findUnique({ where: { id: itemId } });
-    if (!item || item.mealId !== id) {
+
+    await findUserMeal(id, userId);
+
+    const item = await prisma.dietRecord.findUnique({ where: { id: itemId } });
+    if (!item || item.recordType !== "meal_item" || item.parentRecordId !== id) {
       throw new HttpError(404, "meal item not found");
     }
-    
-    await prisma.mealItem.delete({ where: { id: itemId } });
+
+    await prisma.dietRecord.delete({ where: { id: itemId } });
     ok(res, null, "deleted");
   }),
 );
