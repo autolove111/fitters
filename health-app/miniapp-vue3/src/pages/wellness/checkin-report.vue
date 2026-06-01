@@ -1,5 +1,5 @@
 <template>
-  <scroll-view class="report-container" scroll-y>
+  <scroll-view class="report-container" scroll-y :class="{ dark: isDark }">
     <view class="report-inner">
       <view class="report-header">
         <text class="title">月度养生报告</text>
@@ -104,6 +104,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { wellnessApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const username = userStore.state.username || 'guest'
@@ -334,7 +338,7 @@ onMounted(() => {
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 

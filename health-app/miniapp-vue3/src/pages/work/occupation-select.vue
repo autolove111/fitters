@@ -1,5 +1,5 @@
 <template>
-  <scroll-view class="select-container" scroll-y>
+  <scroll-view class="select-container" :class="{ dark: isDark }" scroll-y>
     <view class="select-inner">
       <view class="header">
         <text class="title">选择您的职业</text>
@@ -23,6 +23,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const occupations = [
   { value: 'it', label: 'IT/设计', icon: '💻', desc: '保护手腕与眼睛' },
@@ -60,7 +63,7 @@ const confirmOccupation = (occ) => {
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 
@@ -95,7 +98,7 @@ const confirmOccupation = (occ) => {
   gap: 30rpx;
 }
 .occ-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 40rpx 20rpx;
   text-align: center;
@@ -120,6 +123,6 @@ const confirmOccupation = (occ) => {
 }
 .occ-desc {
   font-size: 24rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
 }
 </style>

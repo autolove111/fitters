@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :class="{ dark: isDark }">
     <!-- 综合健康指数卡片 -->
     <view class="score-card">
       <view class="score-left">
@@ -93,7 +93,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
 import { statsApi } from '@/utils/api'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { isLoggedIn } = userStore
@@ -489,7 +493,7 @@ onMounted(() => {
 <style scoped>
 .container {
   padding: 30rpx;
-  background-color: #f5f7fa;
+  background-color: var(--bg-primary);
   min-height: 100vh;
   padding-bottom: 100rpx;
 }
@@ -562,7 +566,7 @@ onMounted(() => {
 .stat-card {
   flex: 1;
   min-width: 200rpx;
-  background: white;
+  background: var(--card-bg);
   border-radius: 24rpx;
   padding: 24rpx;
   box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
@@ -578,11 +582,11 @@ onMounted(() => {
 }
 .stat-title {
   font-size: 28rpx;
-  color: #606266;
+  color: var(--text-secondary);
 }
 .stat-value {
   font-size: 28rpx;
-  color: #303133;
+  color: var(--text-primary);
   margin-bottom: 20rpx;
   display: block;
 }
@@ -616,7 +620,7 @@ onMounted(() => {
 .advice-text {
   flex: 1;
   font-size: 28rpx;
-  color: #2c3e50;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
@@ -646,13 +650,13 @@ onMounted(() => {
 .plan-title {
   font-size: 30rpx;
   font-weight: bold;
-  color: #303133;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 16rpx;
 }
 .plan-text {
   font-size: 28rpx;
-  color: #606266;
+  color: var(--text-secondary);
   line-height: 1.6;
   white-space: pre-line;
 }
@@ -705,14 +709,14 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
 }
 .loading-content {
-  background: white;
+  background: var(--modal-bg);
   padding: 30rpx 60rpx;
   border-radius: 16rpx;
   font-size: 28rpx;

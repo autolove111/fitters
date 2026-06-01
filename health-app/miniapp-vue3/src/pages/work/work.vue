@@ -1,5 +1,5 @@
 <template>
-  <scroll-view class="work-container" scroll-y>
+  <scroll-view class="work-container" scroll-y :class="{ dark: isDark }">
     <view class="inner-wrapper">
       <!-- 顶部职业栏 -->
       <view class="greeting-card">
@@ -213,6 +213,10 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { workApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { isLoggedIn, state } = userStore
@@ -840,7 +844,7 @@ onUnmounted(() => {
 .work-container {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 .inner-wrapper {
@@ -849,13 +853,13 @@ onUnmounted(() => {
   width: 100%;
 }
 .greeting-card, .pomodoro-card, .reminder-card, .career-card, .exercises-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
   border-radius: 48rpx;
   padding: 30rpx;
   margin-bottom: 30rpx;
   box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.05);
-  border: 1px solid #d0e2d0;
+  border: 1px solid var(--input-border);
 }
 .card-title {
   font-size: 36rpx;
@@ -865,7 +869,7 @@ onUnmounted(() => {
 }
 .card-subtitle {
   font-size: 26rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
   margin-bottom: 20rpx;
 }
 .greeting-card {
@@ -878,7 +882,7 @@ onUnmounted(() => {
 .change-occupation { font-size: 26rpx; color: #558b2f; text-decoration: underline; }
 
 .duration-card, .todo-card {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 28rpx;
   margin-bottom: 30rpx;
@@ -895,7 +899,7 @@ onUnmounted(() => {
 .duration-note {
   margin-top: 12rpx;
   font-size: 26rpx;
-  color: #4b5563;
+  color: var(--text-secondary);
 }
 .todo-input-row {
   display: flex;
@@ -907,8 +911,8 @@ onUnmounted(() => {
   flex: 1;
   height: 82rpx;
   border-radius: 42rpx;
-  border: 1rpx solid #d1fae5;
-  background: #f7fdf7;
+  border: 1rpx solid var(--input-border);
+  background: var(--input-bg);
   padding: 0 24rpx;
   font-size: 28rpx;
 }
@@ -935,7 +939,7 @@ onUnmounted(() => {
 }
 .todo-text {
   font-size: 28rpx;
-  color: #0f172a;
+  color: var(--text-primary);
   flex: 1;
 }
 .todo-complete-btn {
@@ -956,7 +960,7 @@ onUnmounted(() => {
 
 /* ========== 番茄钟入口卡片（横向布局） ========== */
 .pomodoro-entry-card {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 28rpx;
   margin-bottom: 30rpx;
@@ -986,7 +990,7 @@ onUnmounted(() => {
 }
 .pomodoro-entry-desc {
   font-size: 26rpx;
-  color: #4b5563;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 .pomodoro-open-btn {
@@ -1035,13 +1039,13 @@ onUnmounted(() => {
 
 /* ========== 番茄钟卡片美化 ========== */
 .pomodoro-card {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   border-radius: 72rpx;
   padding: 40rpx 30rpx;
   margin-bottom: 30rpx;
   box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--card-border);
   transition: all 0.3s ease;
 }
 .timer-display {
@@ -1139,17 +1143,17 @@ onUnmounted(() => {
 }
 .interval-input {
   width: 120rpx;
-  background: #f5f9f5;
+  background: var(--input-bg);
   border-radius: 32rpx;
   padding: 12rpx 20rpx;
   text-align: center;
   font-size: 28rpx;
-  border: 1px solid #d0e2d0;
+  border: 1px solid var(--input-border);
 }
 .unit {
   margin-left: 12rpx;
   font-size: 26rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
 }
 .career-content {
   margin-top: 20rpx;
@@ -1163,7 +1167,7 @@ onUnmounted(() => {
 }
 .metric-label {
   font-size: 28rpx;
-  color: #2c3e2f;
+  color: var(--text-primary);
 }
 .metric-value {
   font-size: 32rpx;
@@ -1198,11 +1202,11 @@ onUnmounted(() => {
 .exercise-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #2c3e2f;
+  color: var(--text-primary);
 }
 .exercise-desc {
   font-size: 26rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
 }
 .exercise-arrow {
   font-size: 40rpx;

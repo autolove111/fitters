@@ -28,6 +28,7 @@ export default {
     --text-tertiary: #94a3b8;
     --divider: rgba(148, 163, 184, 0.1);
     --modal-bg: #ffffff;
+    --input-bg: #f8fafc;
     --input-border: rgba(148, 163, 184, 0.2);
     --btn-cancel-bg: #f1f5f9;
     --btn-cancel-text: #334155;
@@ -50,6 +51,7 @@ export default {
     --text-tertiary: #64748b;
     --divider: rgba(71, 85, 105, 0.3);
     --modal-bg: #1e293b;
+    --input-bg: #1e293b;
     --input-border: rgba(71, 85, 105, 0.4);
     --btn-cancel-bg: #334155;
     --btn-cancel-text: #e2e8f0;
