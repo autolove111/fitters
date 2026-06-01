@@ -129,9 +129,9 @@ export const workApi = {
   getAllExercises: () => request('/work/exercises', { method: 'GET' }),
   // 获取今日工作时长
   getTodayWorkDuration: () => request('/work/today-duration', { method: 'GET' }),
-  // 今日TODO
+  // TODO
   getTodayTodos: () => request('/work/todos/today', { method: 'GET' }),
-  addTodayTodo: (content) => request('/work/todos', { method: 'POST', data: { content } }),
+  addTodayTodo: (content, deadline) => request('/work/todos', { method: 'POST', data: { content, deadline } }),
   completeTodo: (todoId) => request(`/work/todos/${todoId}`, { method: 'DELETE' }),
   // 获取用户健康数据（职业专属指标）
   getHealthData: (occupation) => request(`/work/health-data?occupation=${occupation}`, { method: 'GET' }),

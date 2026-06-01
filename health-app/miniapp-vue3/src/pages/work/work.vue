@@ -8,26 +8,23 @@
         <text class="change-occupation" @click="goToOccupationSelect">更换职业</text>
       </view>
 
-      <!-- 今日工作时长 -->
-      <view class="duration-card">
-        <text class="card-title">⏱️ 今日工作时长</text>
-        <text class="duration-value">{{ formattedWorkDuration }}</text>
-        <text class="duration-note">从后端获取并展示今日累计工作时间</text>
-      </view>
-
-      <!-- 今日 TODO -->
-      <view class="todo-card">
-        <text class="card-title">📝 今日 TODO</text>
-        <view class="todo-input-row">
-          <input class="todo-input" v-model="newTodoText" placeholder="添加新的今日任务" placeholder-class="placeholder" />
-          <button class="add-todo-btn" @click="addTodo">添加</button>
+      <!-- 工作时长 + TODO 双列 -->
+      <view class="top-row">
+        <view class="duration-card" @click="goToWorkStats">
+          <text class="card-title">⏱️ 工作时长</text>
+          <text class="duration-value">{{ formattedWorkDuration }}</text>
+          <text class="duration-note">今日累计</text>
         </view>
-        <view class="todo-list">
-          <view v-for="todo in todoList" :key="todo.id" class="todo-item">
-            <text class="todo-text">{{ todo.content }}</text>
-            <button class="todo-complete-btn" @click="completeTodo(todo.id)">完成</button>
+        <view class="todo-card" @click="goToTodoList">
+          <text class="card-title">📝 TODO</text>
+          <view class="todo-preview">
+            <view v-for="todo in previewTodos" :key="todo.id" class="todo-preview-item">
+              <text class="todo-preview-dot">•</text>
+              <text class="todo-preview-text">{{ todo.content }}</text>
+            </view>
+            <text v-if="todoList.length === 0" class="todo-empty">暂无任务</text>
+            <text v-if="todoList.length > 3" class="todo-more">还有 {{ todoList.length - 3 }} 项...</text>
           </view>
-          <text v-if="todoList.length === 0" class="todo-empty">暂无今日TODO，赶紧添加一条吧！</text>
         </view>
       </view>
 
@@ -273,7 +270,9 @@ const todayFocusMinutes = ref(0)
 const todaySessions = ref(0)
 const todayWorkDuration = ref(0)
 const todoList = ref([])
-const newTodoText = ref('')
+
+// 预览：只显示前3条
+const previewTodos = computed(() => todoList.value.slice(0, 3))
 
 // 久坐提醒
 const sedentaryEnabled = ref(true)
@@ -454,55 +453,20 @@ const loadTodayWorkDuration = async () => {
 const loadTodayTodos = async () => {
   try {
     const todos = await workApi.getTodayTodos()
-    if (Array.isArray(todos)) {
-      todoList.value = todos.map(item => ({ id: item.id, content: item.content || item.title || '' }))
-    } else if (todos?.data && Array.isArray(todos.data)) {
-      todoList.value = todos.data.map(item => ({ id: item.id, content: item.content || item.title || '' }))
-    } else {
-      todoList.value = []
-    }
+    const list = Array.isArray(todos) ? todos : (todos?.data && Array.isArray(todos.data) ? todos.data : [])
+    todoList.value = list
+      .map(item => ({ id: item.id, content: item.content || item.title || '', deadline: item.deadline || '' }))
+      .sort((a, b) => {
+        if (!a.deadline) return 1
+        if (!b.deadline) return -1
+        return new Date(a.deadline) - new Date(b.deadline)
+      })
   } catch (error) {
-    console.warn('加载今日TODO失败', error)
+    console.warn('加载TODO失败', error)
     todoList.value = []
   }
 }
 
-const addTodo = async () => {
-  const content = newTodoText.value.trim()
-  if (!content) {
-    uni.showToast({ title: '请输入待办内容', icon: 'none' })
-    return
-  }
-  try {
-    const result = await workApi.addTodayTodo(content)
-    const newItem = result?.data || result || {}
-    const todo = {
-      id: newItem.id ?? Date.now(),
-      content: newItem.content || newItem.title || content
-    }
-    todoList.value.unshift(todo)
-    newTodoText.value = ''
-    uni.showToast({ title: '添加成功', icon: 'success' })
-  } catch (error) {
-    console.warn('添加TODO失败，使用本地暂存', error)
-    const todo = { id: Date.now(), content }
-    todoList.value.unshift(todo)
-    newTodoText.value = ''
-    uni.showToast({ title: '已添加到本地', icon: 'none' })
-  }
-}
-
-const completeTodo = async (id) => {
-  try {
-    await workApi.completeTodo(id)
-    todoList.value = todoList.value.filter(item => item.id !== id)
-    uni.showToast({ title: '已完成', icon: 'success' })
-  } catch (error) {
-    console.warn('完成TODO失败，仍从页面移除', error)
-    todoList.value = todoList.value.filter(item => item.id !== id)
-    uni.showToast({ title: '已标记完成', icon: 'success' })
-  }
-}
 
 // 保存单个健康指标（通用方法）
 const updateHealthMetric = async (metricName, increment = 1) => {
@@ -780,6 +744,20 @@ const goToOccupationSelect = () => {
   })
 }
 
+// 工作时长统计
+const goToWorkStats = () => {
+  uni.navigateTo({
+    url: '/pages/work/work-stats'
+  })
+}
+
+// TODO 管理
+const goToTodoList = () => {
+  uni.navigateTo({
+    url: '/pages/work/todo-list'
+  })
+}
+
 const applyOccupationChange = async (newOcc) => {
   if (currentOccupation.value === newOcc) return
   currentOccupation.value = newOcc
@@ -818,6 +796,9 @@ const applyOccupationChange = async (newOcc) => {
 onMounted(async () => {
   uni.$on('occupationChanged', (data) => {
     applyOccupationChange(data.value)
+  })
+  uni.$on('todoRefresh', () => {
+    loadTodayTodos()
   })
 
   if (!isLoggedIn) {
@@ -881,11 +862,16 @@ onUnmounted(() => {
 .greeting-text { font-size: 30rpx; font-weight: 600; color: #2e7d32; flex:1; margin-left: 16rpx; }
 .change-occupation { font-size: 26rpx; color: #558b2f; text-decoration: underline; }
 
+.top-row {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
 .duration-card, .todo-card {
+  flex: 1;
   background: var(--card-bg);
   border-radius: 48rpx;
   padding: 28rpx;
-  margin-bottom: 30rpx;
   border: 1rpx solid rgba(132, 204, 22, 0.18);
   box-shadow: 0 8rpx 18rpx rgba(34, 197, 94, 0.08);
 }
@@ -901,59 +887,36 @@ onUnmounted(() => {
   font-size: 26rpx;
   color: var(--text-secondary);
 }
-.todo-input-row {
+.todo-preview {
+  margin-top: 16rpx;
+}
+.todo-preview-item {
   display: flex;
-  gap: 18rpx;
-  margin-top: 24rpx;
   align-items: center;
+  gap: 8rpx;
+  margin-bottom: 8rpx;
 }
-.todo-input {
-  flex: 1;
-  height: 82rpx;
-  border-radius: 42rpx;
-  border: 1rpx solid var(--input-border);
-  background: var(--input-bg);
-  padding: 0 24rpx;
-  font-size: 28rpx;
-}
-.add-todo-btn {
-  min-width: 180rpx;
-  height: 82rpx;
-  border-radius: 42rpx;
-  border: none;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+.todo-preview-dot {
+  color: #10b981;
   font-size: 28rpx;
   font-weight: 700;
 }
-.todo-list {
-  margin-top: 24rpx;
-}
-.todo-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid #ecfdf5;
-}
-.todo-text {
-  font-size: 28rpx;
-  color: var(--text-primary);
-  flex: 1;
-}
-.todo-complete-btn {
-  min-width: 170rpx;
-  height: 70rpx;
-  border-radius: 36rpx;
-  border: none;
-  background: #34d399;
-  color: white;
+.todo-preview-text {
   font-size: 26rpx;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220rpx;
+}
+.todo-more {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
 }
 .todo-empty {
   display: block;
-  margin-top: 14rpx;
   font-size: 26rpx;
   color: #6b7280;
 }

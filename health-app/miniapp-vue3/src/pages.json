@@ -114,6 +114,20 @@
       }
     },
     {
+      "path": "pages/work/work-stats",
+      "style": {
+        "navigationBarTitleText": "工作统计",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/work/todo-list",
+      "style": {
+        "navigationBarTitleText": "任务管理",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/study/index",
       "style": {
         "navigationBarTitleText": "学习计划",
