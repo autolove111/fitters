@@ -165,3 +165,16 @@ export const themeApi = {
   getTheme: () => request('/users/theme', { method: 'GET' }),
   updateTheme: (mode) => request('/users/theme', { method: 'PUT', data: { mode } }),
 }
+
+// ========== 饮水模块 API ==========
+export const waterApi = {
+  add: (data) => request('/waters', { method: 'POST', data }),
+  list: () => request('/waters'),
+  today: () => request('/waters/today', { method: 'GET' }),
+}
+
+// ========== 体重模块 API ==========
+export const weightApi = {
+  add: (data) => request('/weights', { method: 'POST', data }),
+  today: () => request('/weights/today', { method: 'GET' }),
+}

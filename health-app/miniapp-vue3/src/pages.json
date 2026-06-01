@@ -73,6 +73,14 @@
       "style": { "navigationBarTitleText": "添加运动记录" }
     },
     {
+      "path": "pages/workout/add-hub",
+      "style": { "navigationBarTitleText": "添加记录" }
+    },
+    {
+      "path": "pages/workout/add-water",
+      "style": { "navigationBarTitleText": "添加饮水" }
+    },
+    {
       "path": "pages/sleep/add",
       "style": { "navigationBarTitleText": "添加睡眠时长" }
     },
