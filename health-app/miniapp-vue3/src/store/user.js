@@ -34,12 +34,24 @@ const setUser = (token, username, nickname = '', avatar = '') => {
 // 显示名称：优先昵称，其次用户名
 const displayName = computed(() => state.nickname || state.username || '')
 
+// 从后端返回数据中提取头像 URL
+const extractAvatarUrl = (data) => {
+  if (typeof data === 'string') return data
+  if (data && typeof data === 'object') {
+    const keys = ['url', 'avatar', 'avatarUrl', 'avatar_url', 'imageUrl', 'image_url', 'path', 'href', 'src']
+    for (const k of keys) {
+      if (typeof data[k] === 'string' && data[k]) return data[k]
+    }
+  }
+  return null
+}
+
 // 从后端加载头像
 const loadAvatar = async () => {
   try {
     const data = await userApi.getAvatar()
-    const url = data?.url || data?.avatar || data
-    if (url && typeof url === 'string') {
+    const url = extractAvatarUrl(data)
+    if (url) {
       state.avatar = url
       uni.setStorageSync('auth_avatar', url)
       return
@@ -50,20 +62,16 @@ const loadAvatar = async () => {
   state.avatar = uni.getStorageSync('auth_avatar') || ''
 }
 
-// 保存头像：先本地再上传后端
+// 保存头像：上传后端获取远程 URL
 const saveAvatar = async (filePath) => {
-  state.avatar = filePath
-  uni.setStorageSync('auth_avatar', filePath)
-  try {
-    const data = await userApi.uploadAvatar(filePath)
-    const url = data?.url || data?.avatar || data
-    if (url && typeof url === 'string') {
-      state.avatar = url
-      uni.setStorageSync('auth_avatar', url)
-    }
-  } catch (e) {
-    console.warn('上传头像到后端失败，已保留本地缓存', e)
+  const data = await userApi.uploadAvatar(filePath)
+  const url = extractAvatarUrl(data)
+  if (url) {
+    state.avatar = url
+    uni.setStorageSync('auth_avatar', url)
+    return
   }
+  throw new Error('头像上传失败，请重试')
 }
 
 // 从后端加载用户资料（昵称等）

@@ -159,3 +159,9 @@ export const userApi = {
   changePassword: (data) => request('/users/password', { method: 'PUT', data }),
   deleteAccount: () => request('/users/account', { method: 'DELETE' }),
 }
+
+// ========== 主题模块 API ==========
+export const themeApi = {
+  getTheme: () => request('/users/theme', { method: 'GET' }),
+  updateTheme: (mode) => request('/users/theme', { method: 'PUT', data: { mode } }),
+}
