@@ -79,15 +79,25 @@ export const sleepApi = {
 
 export const dietApi = {
   add: (data) => request('/diets', { method: 'POST', data }),
-  list: () => request('/diets')
+  list: (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return request(`/diets${query ? '?' + query : ''}`)
+  },
+  get: (id) => request(`/diets/${id}`),
+  update: (id, data) => request(`/diets/${id}`, { method: 'PUT', data }),
+  delete: (id) => request(`/diets/${id}`, { method: 'DELETE' }),
+  summary: (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return request(`/diets/summary${query ? '?' + query : ''}`)
+  }
 }
 
 export const statsApi = {
   today: () => request('/stats/today'),
   weekly: () => request('/stats/weekly'),
   summary: () => request('/stats/summary'),
-  sleepToday: () => request('/stats/sleep/today'), 
-  dietToday: () => request('/stats/diet/today'),  
+  sleepToday: () => request('/stats/sleep/today'),
+  dietToday: () => request('/stats/diet/today'),
   getHistory: (params = { days: 30 }) => request('/stats/history', { data: params }),
   generatePlan: (userData) => request('/plans/today-workout', { method: 'POST', data: userData })
 }

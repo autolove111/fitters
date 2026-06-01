@@ -10,12 +10,6 @@ function daysAgo(days: number) {
   return date;
 }
 
-function atUtc(days: number, hour: number, minute = 0) {
-  const date = daysAgo(days);
-  date.setUTCHours(hour, minute, 0, 0);
-  return date;
-}
-
 async function main() {
   const passwordHash = await bcrypt.hash("demo123", 10);
   const user = await prisma.user.upsert({
@@ -97,8 +91,8 @@ async function main() {
         recordDate: daysAgo(days),
         durationHours,
         deepHours: 1.6 + index * 0.08,
-        sleepTime: atUtc(days + 1, 23, index % 2 === 0 ? 10 : 35),
-        wakeTime: atUtc(days, 6, 30 + (index % 3) * 10),
+        sleepTime: new Date(daysAgo(days + 1).getTime() + 23 * 60 * 60 * 1000 + (index % 2 === 0 ? 10 : 35) * 60 * 1000),
+        wakeTime: new Date(daysAgo(days).getTime() + 6 * 60 * 60 * 1000 + (30 + (index % 3) * 10) * 60 * 1000),
         quality: Math.min(100, 72 + index * 3),
         notes: "demo sleep data",
         metadata: { source: "seed" },
@@ -107,94 +101,57 @@ async function main() {
   });
 
   await prisma.dietRecord.deleteMany({ where: { userId: user.id } });
-  await prisma.dietRecord.createMany({
-    data: Array.from({ length: 7 }, (_, index) => ({
-      userId: user.id,
-      type: index % 2 === 0 ? "balanced" : "high-protein",
-      calories: 1780 + index * 45,
-      recordDate: daysAgo(6 - index),
-      notes: "demo diet summary data",
-    })),
+
+  const foods = [
+    { name: "Oatmeal", calories: 389, protein: 16.9, fat: 6.9, carb: 66.3 },
+    { name: "Chicken Breast", calories: 165, protein: 31.0, fat: 3.6, carb: 0 },
+    { name: "Apple", calories: 52, protein: 0.3, fat: 0.2, carb: 14.0 },
+  ];
+
+  const mealTypes = ["BREAKFAST", "LUNCH", "DINNER"];
+
+  const dietData: any[] = [];
+  Array.from({ length: 7 }, (_, dayIndex) => {
+    const recordDate = daysAgo(6 - dayIndex);
+    mealTypes.forEach((mealType, mealIndex) => {
+      const food = foods[(dayIndex + mealIndex) % 3];
+      const quantityGrams = 100 + dayIndex * 20 + mealIndex * 10;
+      const factor = quantityGrams / 100;
+
+      dietData.push({
+        userId: user.id,
+        recordDate,
+        mealType,
+        foodName: food.name,
+        quantityGrams,
+        calories: Math.round(food.calories * factor),
+        proteinGrams: Number((food.protein * factor).toFixed(2)),
+        fatGrams: Number((food.fat * factor).toFixed(2)),
+        carbGrams: Number((food.carb * factor).toFixed(2)),
+        notes: "demo diet data",
+        metadata: { source: "seed" },
+      });
+    });
   });
 
-  const foods = await Promise.all([
-    prisma.food.upsert({
-      where: { name: "Oatmeal" },
-      update: {},
-      create: {
-        name: "Oatmeal",
-        caloriesKcal: 389,
-        proteinGrams: 16.90,
-        fatGrams: 6.90,
-        carbGrams: 66.30,
-        servingGrams: 100,
-      },
-    }),
-    prisma.food.upsert({
-      where: { name: "Chicken Breast" },
-      update: {},
-      create: {
-        name: "Chicken Breast",
-        caloriesKcal: 165,
-        proteinGrams: 31.00,
-        fatGrams: 3.60,
-        carbGrams: 0,
-        servingGrams: 100,
-      },
-    }),
-    prisma.food.upsert({
-      where: { name: "Apple" },
-      update: {},
-      create: {
-        name: "Apple",
-        caloriesKcal: 52,
-        proteinGrams: 0.30,
-        fatGrams: 0.20,
-        carbGrams: 14.00,
-        servingGrams: 100,
-      },
-    }),
-  ]);
+  await prisma.dietRecord.createMany({ data: dietData });
 
-  await prisma.mealItem.deleteMany({ where: { meal: { userId: user.id } } });
-  await prisma.meal.deleteMany({ where: { userId: user.id } });
-  await Promise.all(
-    Array.from({ length: 7 }, (_, index) => {
-      const mealDate = daysAgo(6 - index);
-      return prisma.meal.create({
-        data: {
-          userId: user.id,
-          mealDate,
-          mealType: index % 2 === 0 ? "breakfast" : "lunch",
-          notes: "demo meal data",
-          items: {
-            create: [
-              {
-                foodId: foods[0].id,
-                foodName: foods[0].name,
-                quantityGrams: 60,
-                calories: 233,
-                proteinGrams: 10.14,
-                fatGrams: 4.14,
-                carbGrams: 39.78,
-                metadata: { source: "seed" },
-              },
-              {
-                foodId: index % 2 === 0 ? foods[2].id : foods[1].id,
-                foodName: index % 2 === 0 ? foods[2].name : foods[1].name,
-                quantityGrams: index % 2 === 0 ? 180 : 150,
-                calories: index % 2 === 0 ? 94 : 248,
-                proteinGrams: index % 2 === 0 ? 0.54 : 46.50,
-                fatGrams: index % 2 === 0 ? 0.36 : 5.40,
-                carbGrams: index % 2 === 0 ? 25.20 : 0,
-                metadata: { source: "seed" },
-              },
-            ],
-          },
-        },
-      });
-    }),
-  );
+  await prisma.workRecord.deleteMany({ where: { userId: user.id } });
+  await prisma.workRecord.createMany({
+    data: {
+      userId: user.id,
+      recordType: "SETTINGS",
+      recordDate: daysAgo(0),
+      occupation: "it",
+      pomodoroDuration: 25,
+      sedentaryReminderOn: true,
+      sedentaryInterval: 60,
+      wristHealthScore: 80,
+      eyeRestCount: 3,
+      waterIntake: 5,
+      backRelaxCount: 2,
+    },
+  });
 }
 
 main()

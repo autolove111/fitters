@@ -28,12 +28,8 @@ model User {
   workouts     WorkoutRecord[]
   goals        Goal[]
   sleeps       SleepRecord[]
-  diets        DietRecord[]
-  meals        Meal[]
-  workSettings WorkSettings?
-  workSessions WorkSession[]
-  workTodos    WorkTodo[]
-  sedentaryResponses SedentaryResponse[]
+  dietRecords  DietRecord[]
+  workRecords  WorkRecord[]
 
   @@map("users")
 }
@@ -86,129 +82,62 @@ model SleepRecord {
 }
 
 model DietRecord {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  type        String   @db.VarChar(64)
-  calories    Int      @default(0)
-  recordDate  DateTime @map("record_date") @db.Date
-  notes       String?  @db.VarChar(255)
-  createdAt   DateTime @default(now()) @map("created_at")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  recordDate    DateTime  @map("record_date") @db.Date
+  mealType      String    @map("meal_type") @db.VarChar(32)
+  foodName      String    @map("food_name") @db.VarChar(128)
+  quantityGrams Decimal?  @map("quantity_grams") @db.Decimal(8, 2)
+  calories      Int       @default(0)
+  proteinGrams  Decimal?  @map("protein_grams") @db.Decimal(6, 2)
+  fatGrams      Decimal?  @map("fat_grams") @db.Decimal(6, 2)
+  carbGrams     Decimal?  @map("carb_grams") @db.Decimal(6, 2)
+  notes         String?   @db.VarChar(255)
+  metadata      Json?     @db.JsonB
+  createdAt     DateTime  @default(now()) @map("created_at")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, recordDate], map: "idx_diet_records_user_record_date")
+  @@index([userId, mealType, recordDate], map: "idx_diet_records_user_meal_date")
   @@map("diet_records")
 }
 
-model Food {
-  id            Int        @id @default(autoincrement())
-  name          String     @unique @db.VarChar(128)
-  caloriesKcal  Int        @default(0) @map("calories_kcal")
-  proteinGrams  Decimal?   @map("protein_grams") @db.Decimal(6, 2)
-  fatGrams      Decimal?   @map("fat_grams") @db.Decimal(6, 2)
-  carbGrams     Decimal?   @map("carb_grams") @db.Decimal(6, 2)
-  servingGrams  Decimal?   @map("serving_grams") @db.Decimal(6, 2)
-  metadata      Json?      @db.JsonB
-  createdAt     DateTime   @default(now()) @map("created_at")
-  mealItems     MealItem[]
+model WorkRecord {
+  id                    Int       @id @default(autoincrement())
+  userId                Int       @map("user_id")
+  recordType            String    @map("record_type") @db.VarChar(32)
+  recordDate            DateTime  @map("record_date") @db.Date
+  occupation            String?   @db.VarChar(64)
+  pomodoroDuration      Int?      @map("pomodoro_duration")
+  sedentaryReminderOn   Boolean?  @map("sedentary_reminder_on")
+  sedentaryInterval     Int?      @map("sedentary_interval")
+  wristHealthScore      Int?      @map("wrist_health_score")
+  eyeRestCount          Int?      @map("eye_rest_count")
+  waterIntake           Int?      @map("water_intake")
+  backRelaxCount        Int?      @map("back_relax_count")
+  vocalRestCount        Int?      @map("vocal_rest_count")
+  stopMoveCount         Int?      @map("stop_move_count")
+  eyeExerciseCount      Int?      @map("eye_exercise_count")
+  classBreakCount       Int?      @map("class_break_count")
+  deepBreathCount       Int?      @map("deep_breath_count")
+  legMoveCount          Int?      @map("leg_move_count")
+  neckRelaxCount        Int?      @map("neck_relax_count")
+  stepCount             Int?      @map("step_count")
+  energySnackCount       Int?      @map("energy_snack_count")
+  standCount            Int?      @map("stand_count")
+  sessionType           String?   @map("session_type") @db.VarChar(32)
+  sessionStart          DateTime? @map("session_start")
+  sessionEnd            DateTime? @map("session_end")
+  sessionDuration       Int?      @map("session_duration")
+  todoContent           String?   @map("todo_content") @db.VarChar(255)
+  todoCompleted         Boolean?  @map("todo_completed")
+  sedentaryRespondedAt  DateTime? @map("sedentary_responded_at")
+  notes                 String?   @db.VarChar(255)
+  metadata              Json?     @db.JsonB
+  createdAt             DateTime  @default(now()) @map("created_at")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("foods")
-}
-
-model Meal {
-  id        Int        @id @default(autoincrement())
-  userId    Int        @map("user_id")
-  mealDate  DateTime   @map("meal_date") @db.Date
-  mealType  String     @map("meal_type") @db.VarChar(32)
-  notes     String?    @db.VarChar(255)
-  createdAt DateTime   @default(now()) @map("created_at")
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     MealItem[]
-
-  @@index([userId, mealDate], map: "idx_meals_user_meal_date")
-  @@map("meals")
-}
-
-model MealItem {
-  id             Int      @id @default(autoincrement())
-  mealId         Int      @map("meal_id")
-  foodId         Int?     @map("food_id")
-  foodName       String   @map("food_name") @db.VarChar(128)
-  quantityGrams  Decimal? @map("quantity_grams") @db.Decimal(8, 2)
-  calories       Int      @default(0)
-  proteinGrams   Decimal? @map("protein_grams") @db.Decimal(6, 2)
-  fatGrams       Decimal? @map("fat_grams") @db.Decimal(6, 2)
-  carbGrams      Decimal? @map("carb_grams") @db.Decimal(6, 2)
-  metadata       Json?    @db.JsonB
-  createdAt      DateTime @default(now()) @map("created_at")
-  meal           Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
-  food           Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
-
-  @@index([mealId], map: "idx_meal_items_meal_id")
-  @@index([foodId], map: "idx_meal_items_food_id")
-  @@map("meal_items")
-}
-
-model WorkSettings {
-  id                    Int      @id @default(autoincrement())
-  userId                Int      @unique @map("user_id")
-  occupation            String?  @db.VarChar(64)
-  pomodoroDuration      Int      @default(25) @map("pomodoro_duration")
-  sedentaryReminderOn   Boolean  @default(true) @map("sedentary_reminder_on")
-  sedentaryInterval     Int      @default(60) @map("sedentary_interval")
-  wristHealthScore      Int      @default(0) @map("wrist_health_score")
-  eyeRestCount          Int      @default(0) @map("eye_rest_count")
-  waterIntake           Int      @default(0) @map("water_intake")
-  backRelaxCount        Int      @default(0) @map("back_relax_count")
-  vocalRestCount        Int      @default(0) @map("vocal_rest_count")
-  stopMoveCount         Int      @default(0) @map("stop_move_count")
-  eyeExerciseCount      Int      @default(0) @map("eye_exercise_count")
-  classBreakCount       Int      @default(0) @map("class_break_count")
-  deepBreathCount       Int      @default(0) @map("deep_breath_count")
-  legMoveCount          Int      @default(0) @map("leg_move_count")
-  neckRelaxCount        Int      @default(0) @map("neck_relax_count")
-  stepCount             Int      @default(0) @map("step_count")
-  energySnackCount      Int      @default(0) @map("energy_snack_count")
-  standCount            Int      @default(0) @map("stand_count")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("work_settings")
-}
-
-model WorkSession {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  type      String    @db.VarChar(32)
-  startTime DateTime  @map("start_time")
-  endTime   DateTime? @map("end_time")
-  duration  Int?      @default(0)
-  createdAt DateTime  @default(now()) @map("created_at")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, startTime], map: "idx_work_sessions_user_start")
-  @@map("work_sessions")
-}
-
-model WorkTodo {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  content   String    @db.VarChar(255)
-  completed Boolean   @default(false)
-  todoDate  DateTime  @map("todo_date") @db.Date
-  createdAt DateTime  @default(now()) @map("created_at")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, todoDate], map: "idx_work_todos_user_date")
-  @@map("work_todos")
-}
-
-model SedentaryResponse {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @map("user_id")
-  respondedAt DateTime @default(now()) @map("responded_at")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, respondedAt], map: "idx_sedentary_user_responded")
-  @@map("sedentary_responses")
+  @@index([userId, recordDate], map: "idx_work_records_user_record_date")
+  @@index([userId, recordType, recordDate], map: "idx_work_records_user_type_date")
+  @@map("work_records")
 }
