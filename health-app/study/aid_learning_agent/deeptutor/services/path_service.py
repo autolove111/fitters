@@ -15,8 +15,7 @@ PathService — 运行时路径管理器
           ├── chat/            — 对话会话（sessions.json）
           ├── deep_solve/      — 解题会话
           ├── deep_question/   — 出题会话
-          ├── deep_research/   — 研究会话
-          └── math_animator/   — 数学动画
+          └── deep_research/   — 研究会话
 
 支持多用户隔离：多用户模式下 workspace_root 指向 multi-user/<uid>/
 """
@@ -33,7 +32,6 @@ AgentModule = Literal[
     "research",
     "run_code_workspace",
     "logs",
-    "math_animator",
 ]
 
 ChatWorkspaceFeature = Literal[
@@ -41,7 +39,6 @@ ChatWorkspaceFeature = Literal[
     "deep_solve",
     "deep_question",
     "deep_research",
-    "math_animator",
     "_detached_code_execution",
 ]
 
@@ -67,7 +64,6 @@ class PathService:
         "chat": ("chat", "chat"),
         "question": ("chat", "deep_question"),
         "research": ("chat", "deep_research"),
-        "math_animator": ("chat", "math_animator"),
         "run_code_workspace": ("chat", "_detached_code_execution"),
     }
     _PRIVATE_SUFFIXES = {".json", ".sqlite", ".db", ".md", ".yaml", ".yml", ".py", ".log"}
@@ -143,13 +139,6 @@ class PathService:
         ):
             return True
 
-        if (
-            len(parts) >= 5
-            and parts[:3] == ("workspace", "chat", "math_animator")
-            and "artifacts" in parts[4:]
-        ):
-            return True
-
         if len(parts) >= 5 and parts[:2] == ("workspace", "chat") and "code_runs" in parts[3:]:
             return True
 
@@ -197,7 +186,6 @@ class PathService:
             "deep_solve",
             "deep_question",
             "deep_research",
-            "math_animator",
             "_detached_code_execution",
         }:
             return self.get_chat_feature_dir(cast(ChatWorkspaceFeature, feature))
@@ -320,7 +308,6 @@ class PathService:
                 "deep_solve",
                 "deep_question",
                 "deep_research",
-                "math_animator",
                 "_detached_code_execution",
             ),
         ):

@@ -1151,7 +1151,10 @@ class TurnRuntimeManager:
             from deeptutor.services.model_selection.runtime import (
                 reset_llm_selection as reset_active_llm_selection,
             )
-            from deeptutor.services.notebook import get_notebook_manager
+            try:
+                from deeptutor.services.notebook import get_notebook_manager
+            except ImportError:
+                get_notebook_manager = None  # notebook service removed
             from deeptutor.services.session.context_builder import ContextBuilder
             from deeptutor.services.skill import get_skill_service
 
@@ -1373,7 +1376,7 @@ class TurnRuntimeManager:
 
                 resolved_notebook_records = (
                     get_notebook_manager().get_records_by_references(notebook_references)
-                    if notebook_references
+                    if notebook_references and get_notebook_manager is not None
                     else []
                 )
                 # Current turn ordinal = (#user messages on this branch's
@@ -1396,7 +1399,7 @@ class TurnRuntimeManager:
                 source_manifest_text, source_index = render_manifest(inventory)
                 effective_user_message = raw_user_content
             else:
-                if notebook_references:
+                if notebook_references and get_notebook_manager is not None:
                     referenced_records = get_notebook_manager().get_records_by_references(
                         notebook_references
                     )

@@ -38,10 +38,8 @@ class PromptManager:
         "solve",
         "question",
         "co_writer",
-        "math_animator",
         "book",
         "notebook",
-        "visualize",
         "chat",
     ]
 

@@ -1,13 +1,14 @@
 <template>
   <view class="llm-page">
     <text class="page-title">Model Catalog</text>
-    <text class="page-subtitle">Configure the active LLM profile used by unified chat.</text>
+    <text class="page-subtitle">Configure the active LLM and Embedding profiles.</text>
 
     <view v-if="loading" class="loading">
       <u-loading-icon />
     </view>
 
     <template v-else>
+      <!-- LLM Panel -->
       <view class="panel">
         <text class="section-title">Active LLM</text>
 
@@ -76,6 +77,76 @@
         </view>
       </view>
 
+      <!-- Embedding Panel -->
+      <view class="panel">
+        <text class="section-title">Active Embedding</text>
+        <text class="section-desc">Used for knowledge base vectorization. Required for reindex.</text>
+
+        <view class="field">
+          <text class="field-label">Provider</text>
+          <picker
+            mode="selector"
+            :range="embeddingProviderLabels"
+            :value="embeddingProviderIndex"
+            @change="handleEmbeddingProviderChange"
+          >
+            <view class="picker-field">
+              <text>{{ embeddingProviderLabels[embeddingProviderIndex] || 'Select provider' }}</text>
+              <u-icon name="arrow-down" size="20" color="#8b735f" />
+            </view>
+          </picker>
+        </view>
+
+        <view class="field">
+          <text class="field-label">Profile Name</text>
+          <input
+            v-model="embForm.profileName"
+            class="text-input"
+            placeholder="Embedding Profile"
+          />
+        </view>
+
+        <view class="field">
+          <view class="field-header">
+            <text class="field-label">Base URL</text>
+            <text class="field-tip" @click="fillEmbeddingDefaultUrl">Use default</text>
+          </view>
+          <input
+            v-model="embForm.baseUrl"
+            class="text-input"
+            placeholder="https://api.openai.com/v1"
+          />
+        </view>
+
+        <view class="field">
+          <text class="field-label">API Key</text>
+          <input
+            v-model="embForm.apiKey"
+            class="text-input"
+            password
+            placeholder="sk-..."
+          />
+        </view>
+
+        <view class="field">
+          <text class="field-label">Model ID</text>
+          <input
+            v-model="embForm.modelId"
+            class="text-input"
+            placeholder="text-embedding-3-small / bge-m3"
+          />
+        </view>
+
+        <view class="field">
+          <text class="field-label">Model Name</text>
+          <input
+            v-model="embForm.modelName"
+            class="text-input"
+            placeholder="Shown in the UI"
+          />
+        </view>
+      </view>
+
       <view class="action-row">
         <u-button
           class="action-btn"
@@ -106,7 +177,17 @@
           :loading="testing"
           @click="testConnection"
         >
-          Test Connection
+          Test LLM
+        </u-button>
+        <u-button
+          class="action-btn"
+          plain
+          shape="circle"
+          color="#8b735f"
+          :loading="testingEmb"
+          @click="testEmbedding"
+        >
+          Test Embedding
         </u-button>
       </view>
 
@@ -160,12 +241,23 @@ export default {
       saving: false,
       applying: false,
       testing: false,
+      testingEmb: false,
       settingsStore: useSettingsStore(),
       catalogDraft: defaultCatalog(),
       providerOptions: [],
       providerIndex: 0,
+      embeddingProviderOptions: [],
+      embeddingProviderIndex: 0,
       testResult: null,
       form: {
+        profileName: '',
+        provider: 'openai',
+        baseUrl: '',
+        apiKey: '',
+        modelId: '',
+        modelName: '',
+      },
+      embForm: {
         profileName: '',
         provider: 'openai',
         baseUrl: '',
@@ -181,6 +273,12 @@ export default {
     },
     selectedProvider() {
       return this.providerOptions[this.providerIndex] || null
+    },
+    embeddingProviderLabels() {
+      return this.embeddingProviderOptions.map((item) => item.label)
+    },
+    selectedEmbeddingProvider() {
+      return this.embeddingProviderOptions[this.embeddingProviderIndex] || null
     },
   },
   onShow() {
@@ -200,6 +298,14 @@ export default {
             { value: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1' },
           ]
         }
+        this.embeddingProviderOptions = settings.providers?.embedding || []
+        if (!this.embeddingProviderOptions.length) {
+          this.embeddingProviderOptions = [
+            { value: 'openai', label: 'OpenAI', base_url: 'https://api.openai.com/v1' },
+            { value: 'siliconflow', label: 'SiliconFlow', base_url: 'https://api.siliconflow.cn/v1' },
+            { value: 'aliyun', label: 'Aliyun DashScope', base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+          ]
+        }
         this.syncFormFromCatalog()
       } catch (e) {
         uni.showToast({ title: e.message || 'Load failed', icon: 'none' })
@@ -209,35 +315,78 @@ export default {
     },
     syncFormFromCatalog() {
       const catalog = this.catalogDraft?.services?.llm ? this.catalogDraft : defaultCatalog()
+
+      // LLM
       const llmService = catalog.services.llm || {}
-      const profiles = llmService.profiles || []
-      const profile =
-        profiles.find((item) => item.id === llmService.active_profile_id) ||
-        profiles[0] ||
+      const llmProfiles = llmService.profiles || []
+      const llmProfile =
+        llmProfiles.find((item) => item.id === llmService.active_profile_id) ||
+        llmProfiles[0] ||
         {}
-      const models = profile.models || []
-      const model =
-        models.find((item) => item.id === llmService.active_model_id) ||
-        models[0] ||
+      const llmModels = llmProfile.models || []
+      const llmModel =
+        llmModels.find((item) => item.id === llmService.active_model_id) ||
+        llmModels[0] ||
         {}
 
-      const providerValue = profile.binding || 'openai'
+      const providerValue = llmProfile.binding || 'openai'
       let providerIndex = this.providerOptions.findIndex((item) => item.value === providerValue)
       if (providerIndex < 0) providerIndex = 0
       this.providerIndex = providerIndex
 
       const selected = this.providerOptions[providerIndex] || {}
       const fallbackModelId = selected.value === 'ollama' ? 'qwen2.5:7b' : 'gpt-4o-mini'
-      const modelId = model.model || ''
-      const modelName = model.name || modelId || fallbackModelId
+      const modelId = llmModel.model || ''
+      const modelName = llmModel.name || modelId || fallbackModelId
 
       this.form = {
-        profileName: profile.name || selected.label || 'LLM Profile',
+        profileName: llmProfile.name || selected.label || 'LLM Profile',
         provider: providerValue,
-        baseUrl: profile.base_url || selected.base_url || '',
-        apiKey: profile.api_key || '',
+        baseUrl: llmProfile.base_url || selected.base_url || '',
+        apiKey: llmProfile.api_key || '',
         modelId: modelId || fallbackModelId,
         modelName,
+      }
+
+      // Embedding
+      const embService = catalog.services.embedding || {}
+      const embProfiles = embService.profiles || []
+      const embProfile =
+        embProfiles.find((item) => item.id === embService.active_profile_id) ||
+        embProfiles[0] ||
+        null
+
+      if (embProfile) {
+        const embModels = embProfile.models || []
+        const embModel =
+          embModels.find((item) => item.id === embService.active_model_id) ||
+          embModels[0] ||
+          {}
+        const embProviderValue = embProfile.binding || 'openai'
+        let embProviderIndex = this.embeddingProviderOptions.findIndex((item) => item.value === embProviderValue)
+        if (embProviderIndex < 0) embProviderIndex = 0
+        this.embeddingProviderIndex = embProviderIndex
+
+        this.embForm = {
+          profileName: embProfile.name || 'Embedding Profile',
+          provider: embProviderValue,
+          baseUrl: embProfile.base_url || '',
+          apiKey: embProfile.api_key || '',
+          modelId: embModel.model || '',
+          modelName: embModel.name || '',
+        }
+      } else {
+        // Default to first embedding provider option
+        this.embeddingProviderIndex = 0
+        const defaultEmb = this.embeddingProviderOptions[0] || {}
+        this.embForm = {
+          profileName: '',
+          provider: defaultEmb.value || 'openai',
+          baseUrl: '',
+          apiKey: '',
+          modelId: '',
+          modelName: '',
+        }
       }
     },
     handleProviderChange(event) {
@@ -252,8 +401,23 @@ export default {
         this.form.baseUrl = selected.base_url || ''
       }
     },
+    handleEmbeddingProviderChange(event) {
+      const index = Number(event.detail.value || 0)
+      this.embeddingProviderIndex = index
+      const selected = this.embeddingProviderOptions[index] || {}
+      this.embForm.provider = selected.value || 'openai'
+      if (!this.embForm.profileName || this.embForm.profileName === 'Embedding Profile') {
+        this.embForm.profileName = selected.label || 'Embedding Profile'
+      }
+      if (!this.embForm.baseUrl) {
+        this.embForm.baseUrl = selected.base_url || ''
+      }
+    },
     fillProviderDefaultUrl() {
       this.form.baseUrl = this.selectedProvider?.base_url || ''
+    },
+    fillEmbeddingDefaultUrl() {
+      this.embForm.baseUrl = this.selectedEmbeddingProvider?.base_url || ''
     },
     buildCatalog() {
       const catalog = clone(this.catalogDraft || defaultCatalog())
@@ -269,6 +433,7 @@ export default {
       }
       catalog.services = services
 
+      // LLM
       const profileId = services.llm.active_profile_id || 'llm-profile-1'
       const modelId = services.llm.active_model_id || 'llm-model-1'
       const modelValue = (this.form.modelId || '').trim()
@@ -295,6 +460,35 @@ export default {
         },
       ]
 
+      // Embedding (only save if user filled in a model ID)
+      const embModelValue = (this.embForm.modelId || '').trim()
+      if (embModelValue) {
+        const embProfileId = services.embedding.active_profile_id || 'emb-profile-1'
+        const embModelId = services.embedding.active_model_id || 'emb-model-1'
+        const embModelName = (this.embForm.modelName || '').trim() || embModelValue
+
+        services.embedding.active_profile_id = embProfileId
+        services.embedding.active_model_id = embModelId
+        services.embedding.profiles = [
+          {
+            id: embProfileId,
+            name: (this.embForm.profileName || '').trim() || this.selectedEmbeddingProvider?.label || 'Embedding Profile',
+            binding: this.embForm.provider || this.selectedEmbeddingProvider?.value || 'openai',
+            base_url: (this.embForm.baseUrl || '').trim(),
+            api_key: (this.embForm.apiKey || '').trim(),
+            api_version: '',
+            extra_headers: {},
+            models: [
+              {
+                id: embModelId,
+                name: embModelName,
+                model: embModelValue,
+              },
+            ],
+          },
+        ]
+      }
+
       return catalog
     },
     async persistCatalog(showToast = true) {
@@ -308,7 +502,7 @@ export default {
     },
     async saveCatalog() {
       if (!this.form.modelId.trim()) {
-        uni.showToast({ title: 'Model ID is required', icon: 'none' })
+        uni.showToast({ title: 'LLM Model ID is required', icon: 'none' })
         return
       }
       this.saving = true
@@ -322,7 +516,7 @@ export default {
     },
     async applyCatalog() {
       if (!this.form.modelId.trim()) {
-        uni.showToast({ title: 'Model ID is required', icon: 'none' })
+        uni.showToast({ title: 'LLM Model ID is required', icon: 'none' })
         return
       }
       this.applying = true
@@ -338,7 +532,7 @@ export default {
     },
     async testConnection() {
       if (!this.form.modelId.trim()) {
-        uni.showToast({ title: 'Model ID is required', icon: 'none' })
+        uni.showToast({ title: 'LLM Model ID is required', icon: 'none' })
         return
       }
       this.testing = true
@@ -349,7 +543,7 @@ export default {
         const result = await this.settingsStore.testLLMConnection()
         this.testResult = result
         uni.showToast({
-          title: result.success ? 'Connection OK' : 'Connection failed',
+          title: result.success ? 'LLM Connection OK' : 'LLM Connection failed',
           icon: 'none',
         })
       } catch (e) {
@@ -361,6 +555,33 @@ export default {
         uni.showToast({ title: e.message || 'Connection failed', icon: 'none' })
       } finally {
         this.testing = false
+      }
+    },
+    async testEmbedding() {
+      if (!this.embForm.modelId.trim()) {
+        uni.showToast({ title: 'Embedding Model ID is required', icon: 'none' })
+        return
+      }
+      this.testingEmb = true
+      this.testResult = null
+      try {
+        const catalog = await this.persistCatalog(false)
+        await this.settingsStore.applyCatalog(catalog)
+        const result = await this.settingsStore.testEmbeddingConnection()
+        this.testResult = result
+        uni.showToast({
+          title: result.success ? 'Embedding Connection OK' : 'Embedding Connection failed',
+          icon: 'none',
+        })
+      } catch (e) {
+        this.testResult = {
+          success: false,
+          message: e.message || 'Connection failed',
+          error: e.message || 'Connection failed',
+        }
+        uni.showToast({ title: e.message || 'Connection failed', icon: 'none' })
+      } finally {
+        this.testingEmb = false
       }
     },
   },
@@ -410,6 +631,14 @@ export default {
   font-size: 30rpx;
   font-weight: 600;
   color: #2e221b;
+}
+
+.section-desc {
+  display: block;
+  margin-top: -12rpx;
+  margin-bottom: 20rpx;
+  font-size: 22rpx;
+  color: #8b735f;
 }
 
 .field {

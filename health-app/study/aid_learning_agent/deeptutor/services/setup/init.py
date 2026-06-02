@@ -84,9 +84,6 @@ DEFAULT_AGENTS_SETTINGS = {
     "services": {
         "personalization": {"temperature": 0.5, "max_tokens": 8192},
     },
-    "plugins": {
-        "math_animator": {"temperature": 0.4, "max_tokens": 12000},
-    },
 }
 
 
@@ -129,7 +126,6 @@ def init_user_directories(project_root: Path | None = None) -> None:
             ├── deep_solve/
             ├── deep_question/
             ├── deep_research/
-            ├── math_animator/
             └── _detached_code_execution/
 
     Args:

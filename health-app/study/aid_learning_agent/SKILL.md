@@ -32,7 +32,6 @@ deeptutor run chat "Explain Fourier transform"
 deeptutor run deep_solve "Solve x^2 = 4" --tool rag --kb textbook
 deeptutor run deep_question "Linear algebra" --config num_questions=5
 deeptutor run deep_research "Attention mechanisms" --kb papers
-deeptutor run math_animator "Visualize a Fourier series"
 
 # Options for `run`:
 #   --session <id>         Resume existing session

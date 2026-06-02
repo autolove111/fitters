@@ -10,12 +10,10 @@ from typing import Any
 
 import pytest
 
-import deeptutor.agents.visualize.pipeline as visualize_pipeline
 from deeptutor.capabilities.chat import ChatCapability
 from deeptutor.capabilities.deep_question import DeepQuestionCapability
 from deeptutor.capabilities.deep_research import DeepResearchCapability
 from deeptutor.capabilities.deep_solve import DeepSolveCapability
-from deeptutor.capabilities.visualize import VisualizeCapability
 from deeptutor.core.context import Attachment, UnifiedContext
 from deeptutor.core.stream import StreamEvent, StreamEventType
 from deeptutor.core.stream_bus import StreamBus
@@ -375,74 +373,3 @@ async def test_deep_research_capability_delegates_to_pipeline(
     assert run_kwargs["attachments"][0].filename == "brief.png"
 
 
-@pytest.mark.asyncio
-async def test_visualize_capability_passes_attachments_to_analysis_agent(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict[str, Any] = {}
-
-    class FakeAnalysis:
-        render_type = "svg"
-        description = "A diagram"
-        data_description = "diagram data"
-
-        def model_dump(self) -> dict[str, Any]:
-            return {
-                "render_type": self.render_type,
-                "description": self.description,
-                "data_description": self.data_description,
-            }
-
-    class FakeReview:
-        optimized_code = "<svg></svg>"
-        changed = False
-        review_notes = "ok"
-
-        def model_dump(self) -> dict[str, Any]:
-            return {
-                "optimized_code": self.optimized_code,
-                "changed": self.changed,
-                "review_notes": self.review_notes,
-            }
-
-    class FakeVisualizePipeline:
-        def __init__(self, **kwargs: Any) -> None:
-            captured["init"] = kwargs
-
-        async def run_analysis(self, **kwargs: Any) -> FakeAnalysis:
-            captured["analysis"] = kwargs
-            return FakeAnalysis()
-
-        async def run_code_generation(self, **kwargs: Any) -> str:
-            captured["code_generation"] = kwargs
-            return "<svg></svg>"
-
-        async def run_review(self, **kwargs: Any) -> FakeReview:
-            captured["review"] = kwargs
-            return FakeReview()
-
-    monkeypatch.setattr(
-        visualize_pipeline,
-        "VisualizePipeline",
-        FakeVisualizePipeline,
-    )
-    _install_module(
-        monkeypatch,
-        "deeptutor.services.llm.config",
-        get_llm_config=lambda: SimpleNamespace(api_key="k", base_url="u", api_version="v1"),
-    )
-
-    context = UnifiedContext(
-        user_message="make a figure",
-        active_capability="visualize",
-        config_overrides={"render_mode": "svg"},
-        language="en",
-        attachments=[Attachment(type="image", base64="ZmFrZQ==", filename="figure.png")],
-    )
-
-    capability = VisualizeCapability()
-    events = await _collect_events(lambda bus: capability.run(context, bus))
-
-    assert captured["analysis"]["attachments"][0].filename == "figure.png"
-    result_event = next(event for event in events if event.type == StreamEventType.RESULT)
-    assert result_event.metadata["render_type"] == "svg"

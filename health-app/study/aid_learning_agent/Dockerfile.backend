@@ -45,7 +45,6 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY deeptutor/ ./deeptutor/
-COPY deeptutor_cli/ ./deeptutor_cli/
 COPY pyproject.toml ./
 
 RUN mkdir -p \
@@ -57,7 +56,6 @@ RUN mkdir -p \
     data/user/workspace/chat/deep_solve \
     data/user/workspace/chat/deep_question \
     data/user/workspace/chat/deep_research/reports \
-    data/user/workspace/chat/math_animator \
     data/user/workspace/chat/_detached_code_execution \
     data/user/logs \
     data/knowledge_bases

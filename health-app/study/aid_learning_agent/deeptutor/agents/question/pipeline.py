@@ -38,7 +38,6 @@ from deeptutor.agents._shared.tool_composition import (
     compose_enabled_tools,
     default_optional_tools,
     user_has_memory,
-    user_has_notebooks,
 )
 from deeptutor.capabilities._shared import emit_capability_result
 from deeptutor.core.agentic import (
@@ -1482,7 +1481,6 @@ class QuestionPipeline:
             has_kb=bool(self.kb_name),
             has_sources=bool(self._source_index(context)),
             has_memory=user_has_memory(),
-            has_notebooks=user_has_notebooks(),
         )
 
     def _resolved_tools(self, context: UnifiedContext) -> list[str]:
@@ -1564,9 +1562,6 @@ class QuestionPipeline:
             kwargs.setdefault("sort_by", "relevance")
         elif tool_name == "read_source":
             kwargs["source_index"] = self._source_index(context)
-        elif tool_name == "write_note":
-            kwargs["conversation_history"] = list(context.conversation_history or [])
-            kwargs["current_user_message"] = context.user_message or ""
         return kwargs
 
     def _retrieve_trace_metadata(

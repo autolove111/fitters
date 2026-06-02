@@ -391,10 +391,13 @@ async def _collect_from_user_message(
     # Notebook records — re-resolve through the notebook service.
     notebook_refs = snap.get("notebookReferences") or []
     if notebook_refs:
-        from deeptutor.services.notebook import get_notebook_manager
+        try:
+            from deeptutor.services.notebook import get_notebook_manager
+        except ImportError:
+            get_notebook_manager = None
 
         try:
-            records = get_notebook_manager().get_records_by_references(list(notebook_refs))
+            records = get_notebook_manager().get_records_by_references(list(notebook_refs)) if get_notebook_manager else []
         except Exception:
             records = []
         for rec in records:

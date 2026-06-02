@@ -39,7 +39,6 @@ from deeptutor.agents._shared.tool_composition import (
     compose_enabled_tools,
     default_optional_tools,
     user_has_memory,
-    user_has_notebooks,
 )
 from deeptutor.capabilities._shared import emit_capability_result
 from deeptutor.core.agentic import (
@@ -1238,9 +1237,6 @@ class AgenticChatPipeline:
             system_parts.append(context.skills_context)
         if context.source_manifest:
             system_parts.append(context.source_manifest)
-        notebook_manifest = self._build_notebook_manifest()
-        if notebook_manifest:
-            system_parts.append(notebook_manifest)
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": "\n\n---\n\n".join(system_parts)}
         ]
@@ -1277,7 +1273,6 @@ class AgenticChatPipeline:
         - ``has_sources`` — iff the turn has a non-empty source index
           (notebook / book / history / question / attachment).
         - ``has_memory`` — iff the active user has memory content.
-        - ``has_notebooks`` — iff the active user has at least one notebook.
         """
         return compose_enabled_tools(
             registry=self.registry,
@@ -1287,7 +1282,6 @@ class AgenticChatPipeline:
                 has_kb=bool(self._selected_kbs(context)),
                 has_sources=bool(self._source_index(context)),
                 has_memory=user_has_memory(),
-                has_notebooks=user_has_notebooks(),
             ),
         )
 
@@ -1330,101 +1324,8 @@ class AgenticChatPipeline:
                 sid_schema = properties.get("source_id")
                 if isinstance(sid_schema, dict) and source_ids:
                     sid_schema["enum"] = source_ids
-            if (
-                function.get("name") in {"list_notebook", "write_note"}
-                and isinstance(properties, dict)
-                and notebook_choices
-            ):
-                nb_schema = properties.get("notebook_id")
-                if isinstance(nb_schema, dict):
-                    nb_schema["enum"] = [choice["id"] for choice in notebook_choices]
-                    nb_choices_render = "; ".join(
-                        f"{c['id']} = {c['name']}" for c in notebook_choices
-                    )
-                    nb_schema["description"] = (
-                        f"{nb_schema.get('description', '').rstrip(' .')}. "
-                        f"Available: {nb_choices_render}."
-                    )
             parameters["additionalProperties"] = False
         return schemas
-
-    def _build_notebook_manifest(self) -> str:
-        """Render the user's notebooks as a system-prompt index block.
-
-        Always-on (when the user has notebooks): keeps the LLM grounded in
-        the real notebook names + ids + record counts so it never invents
-        notebook names when asking the user where to save. The block is
-        tiny (one line per notebook), capped at ~30 entries to protect the
-        context window. Heavy listing belongs to the ``list_notebook`` tool
-        — this is the "always visible at a glance" affordance only.
-        """
-        choices = self._notebook_choices_full()
-        if not choices:
-            return ""
-        capped = choices[:30]
-        if self.language == "zh":
-            lines = ["[用户的笔记本列表]"]
-        else:
-            lines = ["[User's notebooks]"]
-        for entry in capped:
-            nid = entry.get("id", "")
-            name = entry.get("name", nid)
-            count = entry.get("record_count", 0)
-            lines.append(f"- `{nid}` — {name} ({count} records)")
-        if len(choices) > len(capped):
-            lines.append(
-                f"… (+{len(choices) - len(capped)} more — call `list_notebook` to see the rest)"
-            )
-        if self.language == "zh":
-            lines.append(
-                "（要列出某笔记本里的具体记录，用 `list_notebook(notebook_id=...)`；要新增或编辑记录，用 `write_note`。）"
-            )
-        else:
-            lines.append(
-                "(Use `list_notebook(notebook_id=...)` to drill into one; use `write_note` to append / edit records.)"
-            )
-        return "\n".join(lines)
-
-    @staticmethod
-    def _notebook_choices_full() -> list[dict[str, Any]]:
-        try:
-            from deeptutor.services.notebook import get_notebook_manager
-
-            notebooks = get_notebook_manager().list_notebooks() or []
-        except Exception:
-            return []
-        rows: list[dict[str, Any]] = []
-        for nb in notebooks:
-            nid = str(nb.get("id") or "").strip()
-            if not nid:
-                continue
-            name = str(nb.get("name") or nb.get("title") or nid).strip() or nid
-            count = nb.get("record_count")
-            if not isinstance(count, int):
-                try:
-                    count = int(count or 0)
-                except (TypeError, ValueError):
-                    count = 0
-            rows.append({"id": nid, "name": name, "record_count": count})
-        return rows
-
-    @staticmethod
-    def _notebook_choices() -> list[dict[str, str]]:
-        """List the active user's notebooks as ``[{id, name}]`` rows."""
-        try:
-            from deeptutor.services.notebook import get_notebook_manager
-
-            notebooks = get_notebook_manager().list_notebooks() or []
-        except Exception:
-            return []
-        choices: list[dict[str, str]] = []
-        for nb in notebooks:
-            nid = str(nb.get("id") or "").strip()
-            if not nid:
-                continue
-            name = str(nb.get("name") or nb.get("title") or nid).strip() or nid
-            choices.append({"id": nid, "name": name})
-        return choices
 
     @staticmethod
     def _extract_answer_now_context(context: UnifiedContext) -> dict[str, Any] | None:
@@ -1472,15 +1373,6 @@ class AgenticChatPipeline:
             # ReadSourceTool reads from this per-turn map rather than from
             # any shared state, so each turn's sources stay isolated.
             kwargs["source_index"] = self._source_index(context)
-        elif tool_name == "write_note":
-            # The tool assembles the transcript body itself from the
-            # conversation history (so the saved record is real Q&A, not
-            # an LLM-authored summary). Inject the history snapshot +
-            # current user message; the LLM never sees these as arguments
-            # — they're stripped from the JSON schema and populated
-            # server-side.
-            kwargs["conversation_history"] = list(context.conversation_history or [])
-            kwargs["current_user_message"] = context.user_message or ""
         return kwargs
 
     # ------------------------------------------------------------------

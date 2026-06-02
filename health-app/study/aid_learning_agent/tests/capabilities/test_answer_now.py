@@ -23,7 +23,6 @@ the fast-paths run end-to-end without network or API keys.
 
 from __future__ import annotations
 
-import json
 from typing import Any, AsyncIterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -62,15 +61,6 @@ def _fake_llm_config(model: str = "gpt-4o-mini") -> MagicMock:
     cfg.api_version = None
     return cfg
 
-
-def _make_stream_factory(chunks: list[str]):
-    """Return an async generator factory that yields the given chunks once."""
-
-    async def _stream(*_args: Any, **_kwargs: Any) -> AsyncIterator[str]:
-        for chunk in chunks:
-            yield chunk
-
-    return _stream
 
 
 def _build_context(
@@ -484,173 +474,6 @@ class TestChatAnswerNow:
             assert text == "FINISHED tasks stay visible."
             result = _result_event(events)
             assert result.metadata.get("response") == "FINISHED tasks stay visible."
-
-
-class TestVisualizeAnswerNow:
-    @pytest.mark.asyncio
-    async def test_emits_renderable_code_envelope(self) -> None:
-        cfg = _fake_llm_config()
-        payload_json = json.dumps(
-            {
-                "render_type": "svg",
-                "code": "<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'/>",
-            }
-        )
-        with (
-            patch.object(_answer_now, "get_llm_config", return_value=cfg),
-            patch.object(_answer_now, "llm_stream", _make_stream_factory([payload_json])),
-        ):
-            from deeptutor.capabilities.visualize import VisualizeCapability
-
-            ctx = _build_context(
-                capability="visualize",
-                payload={
-                    "original_user_message": "Draw a circle",
-                    "events": [],
-                },
-                config_overrides={"render_mode": "svg"},
-            )
-            bus = StreamBus()
-            cap = VisualizeCapability()
-            events = await _drain(bus, cap.run(ctx, bus))
-
-            result = _result_event(events)
-            assert result.metadata.get("render_type") == "svg"
-            code = result.metadata.get("code") or {}
-            assert code.get("language") == "svg"
-            assert "<svg" in code.get("content", "")
-            assert result.metadata.get("metadata", {}).get("answer_now") is True
-
-            content = _content_text(events)
-            assert "```svg" in content
-
-    @pytest.mark.asyncio
-    async def test_falls_back_to_svg_when_render_type_invalid(self) -> None:
-        cfg = _fake_llm_config()
-        payload_json = json.dumps({"render_type": "totally-bogus", "code": "x"})
-        with (
-            patch.object(_answer_now, "get_llm_config", return_value=cfg),
-            patch.object(_answer_now, "llm_stream", _make_stream_factory([payload_json])),
-        ):
-            from deeptutor.capabilities.visualize import VisualizeCapability
-
-            ctx = _build_context(
-                capability="visualize",
-                payload={"original_user_message": "x", "events": []},
-            )
-            bus = StreamBus()
-            cap = VisualizeCapability()
-            events = await _drain(bus, cap.run(ctx, bus))
-
-            result = _result_event(events)
-            assert result.metadata.get("render_type") == "svg"
-
-    @pytest.mark.asyncio
-    async def test_strips_code_fences_around_json(self) -> None:
-        cfg = _fake_llm_config()
-        fenced = '```json\n{"render_type": "mermaid", "code": "graph TD;A-->B"}\n```'
-        with (
-            patch.object(_answer_now, "get_llm_config", return_value=cfg),
-            patch.object(_answer_now, "llm_stream", _make_stream_factory([fenced])),
-        ):
-            from deeptutor.capabilities.visualize import VisualizeCapability
-
-            ctx = _build_context(
-                capability="visualize",
-                payload={"original_user_message": "diagram", "events": []},
-            )
-            bus = StreamBus()
-            cap = VisualizeCapability()
-            events = await _drain(bus, cap.run(ctx, bus))
-
-            result = _result_event(events)
-            assert result.metadata.get("render_type") == "mermaid"
-            assert "graph TD" in (result.metadata.get("code") or {}).get("content", "")
-
-
-class TestMathAnimatorAnswerNow:
-    """Math animator's fast-path keeps the real ``code_generation`` +
-    ``render`` stages — those are the whole point of the capability —
-    while skipping ``concept_analysis``, ``concept_design`` and
-    ``summary``. We verify dispatch and result envelope by mocking the
-    pipeline's two retained stages so we don't actually invoke Manim."""
-
-    @pytest.mark.asyncio
-    async def test_skips_analysis_design_summary_but_calls_codegen_and_render(
-        self,
-    ) -> None:
-        # Skip the whole test cleanly when manim isn't available, since
-        # math_animator.run() short-circuits before we can patch anything.
-        import importlib.util as _ilu
-
-        from deeptutor.agents.math_animator.models import (
-            GeneratedCode,
-            RenderResult,
-        )
-
-        if _ilu.find_spec("manim") is None:
-            pytest.skip("manim not installed; math_animator answer-now test skipped")
-
-        from deeptutor.capabilities.math_animator import MathAnimatorCapability
-
-        analysis_agent_calls: list[Any] = []
-        design_agent_calls: list[Any] = []
-        summary_agent_calls: list[Any] = []
-
-        with patch("deeptutor.agents.math_animator.pipeline.MathAnimatorPipeline") as PipelineCls:
-            pipeline_instance = PipelineCls.return_value
-            pipeline_instance.run_analysis = AsyncMock(
-                side_effect=lambda *a, **k: analysis_agent_calls.append(("a",))
-            )
-            pipeline_instance.run_design = AsyncMock(
-                side_effect=lambda *a, **k: design_agent_calls.append(("d",))
-            )
-            pipeline_instance.run_summary = AsyncMock(
-                side_effect=lambda *a, **k: summary_agent_calls.append(("s",))
-            )
-            pipeline_instance.run_code_generation = AsyncMock(
-                return_value=GeneratedCode(code="from manim import *\nclass S(Scene): pass")
-            )
-            pipeline_instance.run_render = AsyncMock(
-                return_value=(
-                    "from manim import *\nclass S(Scene): pass",
-                    RenderResult(
-                        output_mode="video",
-                        artifacts=[],
-                        public_code_path="",
-                        source_code_path="/tmp/scene.py",
-                        quality="medium",
-                        retry_attempts=0,
-                        retry_history=[],
-                        visual_review=None,
-                    ),
-                )
-            )
-
-            cap = MathAnimatorCapability()
-            ctx = _build_context(
-                capability="math_animator",
-                payload={
-                    "original_user_message": "Animate a sine wave",
-                    "events": [],
-                },
-                config_overrides={"output_mode": "video", "quality": "medium"},
-            )
-            bus = StreamBus()
-            events = await _drain(bus, cap.run(ctx, bus))
-
-            # Skipped stages must NOT have been invoked.
-            assert pipeline_instance.run_analysis.await_count == 0
-            assert pipeline_instance.run_design.await_count == 0
-            assert pipeline_instance.run_summary.await_count == 0
-            # Retained stages MUST have been invoked exactly once.
-            assert pipeline_instance.run_code_generation.await_count == 1
-            assert pipeline_instance.run_render.await_count == 1
-
-            result = _result_event(events)
-            assert result.metadata.get("metadata", {}).get("answer_now") is True
-            assert result.metadata.get("output_mode") == "video"
-            assert result.metadata.get("code", {}).get("language") == "python"
 
 
 # ---------------------------------------------------------------------------

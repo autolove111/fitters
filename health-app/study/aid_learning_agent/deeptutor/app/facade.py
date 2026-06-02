@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import importlib.util
 import json
 from typing import Any, AsyncIterator
 
 from deeptutor.runtime.registry.capability_registry import get_capability_registry
-from deeptutor.services.notebook import get_notebook_manager
 from deeptutor.services.session import get_session_store, get_turn_runtime_manager
+
+try:
+    from deeptutor.services.notebook import get_notebook_manager
+except ImportError:
+    get_notebook_manager = None  # notebook service removed
 
 
 @dataclass(slots=True)
@@ -59,7 +62,7 @@ class DeepTutorApp:
     def __init__(self) -> None:
         self.runtime = get_turn_runtime_manager()
         self.store = get_session_store()
-        self.notebooks = get_notebook_manager()
+        self.notebooks = get_notebook_manager() if get_notebook_manager is not None else None
         self.capabilities = get_capability_registry()
 
     def resolve_capability(self, value: str | None) -> str:
@@ -97,18 +100,6 @@ class DeepTutorApp:
 
     def get_capability_availability(self, capability: str) -> CapabilityAvailability:
         resolved = self.resolve_capability(capability)
-        if resolved == "math_animator":
-            available = importlib.util.find_spec("manim") is not None
-            return CapabilityAvailability(
-                name=resolved,
-                available=available,
-                install_hint=(
-                    ""
-                    if available
-                    else "Install with `pip install -e '.[math-animator]'` "
-                    "or `pip install -r requirements/math-animator.txt`."
-                ),
-            )
         return CapabilityAvailability(name=resolved, available=True)
 
     async def start_turn(
@@ -163,6 +154,8 @@ class DeepTutorApp:
         return await self.store.get_active_turn(session_id)
 
     def list_notebooks(self) -> list[dict[str, Any]]:
+        if self.notebooks is None:
+            return []
         return self.notebooks.list_notebooks()
 
     def create_notebook(
@@ -173,6 +166,8 @@ class DeepTutorApp:
         color: str = "#3B82F6",
         icon: str = "book",
     ) -> dict[str, Any]:
+        if self.notebooks is None:
+            raise RuntimeError("Notebook service is not available")
         return self.notebooks.create_notebook(
             name=name,
             description=description,
@@ -181,22 +176,32 @@ class DeepTutorApp:
         )
 
     def get_notebook(self, notebook_id: str) -> dict[str, Any] | None:
+        if self.notebooks is None:
+            return None
         return self.notebooks.get_notebook(notebook_id)
 
     def add_record(self, **kwargs: Any) -> dict[str, Any]:
+        if self.notebooks is None:
+            raise RuntimeError("Notebook service is not available")
         return self.notebooks.add_record(**kwargs)
 
     def update_record(
         self, notebook_id: str, record_id: str, **kwargs: Any
     ) -> dict[str, Any] | None:
+        if self.notebooks is None:
+            return None
         return self.notebooks.update_record(notebook_id, record_id, **kwargs)
 
     def remove_record(self, notebook_id: str, record_id: str) -> bool:
+        if self.notebooks is None:
+            return False
         return self.notebooks.remove_record(notebook_id, record_id)
 
     def get_records_by_references(
         self, notebook_references: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
+        if self.notebooks is None:
+            return []
         return self.notebooks.get_records_by_references(notebook_references)
 
 

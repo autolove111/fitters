@@ -60,8 +60,6 @@ Multi-stage pipelines that own the turn:
 | `deep_solve`     | planning → reasoning → writing                        |
 | `deep_question`  | ideation → generation                                 |
 | `deep_research`  | rephrasing → decomposing → researching → reporting    |
-| `visualize`      | analyzing → generating → reviewing (SVG / Chart.js / Mermaid / HTML; or routes to Manim sub-stages via `render_type`) |
-| `math_animator`  | concept_analysis → concept_design → code_generation → code_retry → summary → render_output |
 
 All capabilities converge on `emit_capability_result()` in
 `deeptutor/capabilities/_shared.py` so every turn emits the same envelope

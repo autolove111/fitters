@@ -19,11 +19,9 @@ manim code, ...). This module provides the shared plumbing:
 The orchestrator no longer re-routes ``answer_now`` to ``chat``; instead
 each capability that supports it checks for the payload at the top of
 ``run()`` and dispatches to its own answer-now path. ``chat`` keeps its
-original synthesis behavior; ``visualize`` / ``math_animator`` collapse
-their remaining stages into a single LLM call (or a code-gen + render
-pair). ``deep_solve`` / ``deep_question`` / ``deep_research`` deliberately
-do not expose Answer Now — their UI gates the button so this module is
-never invoked for them.
+original synthesis behavior. ``deep_solve`` / ``deep_question`` /
+``deep_research`` deliberately do not expose Answer Now — their UI gates
+the button so this module is never invoked for them.
 """
 
 from __future__ import annotations

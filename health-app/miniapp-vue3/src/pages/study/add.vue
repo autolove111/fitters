@@ -39,7 +39,19 @@
         </view>
       </view>
 
-      <button class="submit-btn" @click="submitPlan">提交学习计划</button>
+      <view class="material-section">
+        <view class="material-header" @click="toggleMaterial">
+          <text class="label" style="margin-bottom:0">学习资料（可选）</text>
+          <text class="material-toggle">{{ showMaterial ? '收起' : '添加学习资料' }}</text>
+        </view>
+        <view v-if="showMaterial" class="material-body">
+          <FileUploader v-model="selectedFiles" label="选择学习资料文件" :count="9" />
+        </view>
+      </view>
+
+      <button class="submit-btn" :loading="submitting" @click="submitPlan">
+        {{ submitting ? submitText : '提交学习计划' }}
+      </button>
     </view>
   </view>
 </template>
@@ -47,10 +59,20 @@
 <script setup>
 import { ref } from 'vue'
 import { studyApi } from '@/utils/api'
+import { knowledgeApi } from '@/pages/study/api/knowledge'
+import FileUploader from '@/pages/study/components/FileUploader.vue'
 
 const content = ref('')
 const start = ref('')
 const end = ref('')
+const showMaterial = ref(false)
+const selectedFiles = ref([])
+const submitting = ref(false)
+const submitText = ref('提交中...')
+
+function toggleMaterial() {
+  showMaterial.value = !showMaterial.value
+}
 
 async function submitPlan() {
   if (!content.value.trim()) {
@@ -62,12 +84,42 @@ async function submitPlan() {
     return
   }
 
+  submitting.value = true
   try {
+    // 1. 保存学习计划
+    submitText.value = '保存计划中...'
     await studyApi.add({ content: content.value, start: start.value, end: end.value })
-    uni.showToast({ title: '学习计划已保存', icon: 'success' })
+
+    // 2. 如果有学习资料，上传到 DeepTutor 知识库
+    if (selectedFiles.value.length > 0) {
+      const kbName = '计划-' + content.value.trim().substring(0, 20)
+      submitText.value = `上传资料到知识库「${kbName}」...`
+
+      try {
+        // 用第一个文件创建知识库
+        await knowledgeApi.create(kbName, selectedFiles.value[0].path)
+
+        // 剩余文件追加上传
+        for (let i = 1; i < selectedFiles.value.length; i++) {
+          submitText.value = `上传第 ${i + 1}/${selectedFiles.value.length} 个文件...`
+          await knowledgeApi.upload(kbName, selectedFiles.value[i].path)
+        }
+
+        uni.showToast({ title: '计划已保存，资料已上传', icon: 'success', duration: 2000 })
+      } catch (uploadErr) {
+        console.warn('知识库上传失败：', uploadErr)
+        uni.showToast({ title: '计划已保存，但资料上传失败', icon: 'none', duration: 2000 })
+      }
+    } else {
+      uni.showToast({ title: '学习计划已保存', icon: 'success' })
+    }
+
     uni.navigateBack()
   } catch (err) {
     uni.showToast({ title: err.message || '提交失败，请稍后重试', icon: 'none' })
+  } finally {
+    submitting.value = false
+    submitText.value = '提交中...'
   }
 }
 </script>
@@ -145,6 +197,28 @@ async function submitPlan() {
 .input {
   height: 104rpx;
   padding: 0 22rpx;
+}
+.material-section {
+  margin-bottom: 28rpx;
+  border-top: 1rpx solid rgba(148, 163, 184, 0.15);
+  padding-top: 28rpx;
+}
+.material-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.material-toggle {
+  font-size: 26rpx;
+  color: #2563eb;
+  font-weight: 600;
+}
+.material-body {
+  border: 1rpx solid rgba(148, 163, 184, 0.15);
+  border-radius: 24rpx;
+  padding: 20rpx;
+  background: #f8fafc;
 }
 .submit-btn {
   width: 100%;

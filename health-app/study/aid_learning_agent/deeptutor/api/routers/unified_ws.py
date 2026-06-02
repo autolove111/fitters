@@ -147,7 +147,7 @@ async def unified_websocket(ws: WebSocket) -> None:
             # message / start_turn — 开始新一轮对话
             # ----------------------------------------------------------
             # 前端发送用户消息时使用此类型，携带完整的上下文：
-            #   capability: 对话模式（chat/deep_solve/deep_question/deep_research/visualize）
+            #   capability: 对话模式（chat/deep_solve/deep_question/deep_research）
             #   tools: 启用的工具列表（web_search/code_execution/brainstorm 等）
             #   knowledge_bases: 知识库列表
             #   attachments: 附件列表（图片/文档）

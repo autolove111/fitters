@@ -1031,9 +1031,15 @@ async def stream_task_logs(task_id: str):
 async def upload_files(
     kb_name: str,
     background_tasks: BackgroundTasks,
-    files: list[UploadFile] = File(...),
+    files: list[UploadFile] | None = File(None),
+    file: UploadFile | None = File(None),
     rag_provider: str = Form(None),
 ):
+    # Support both 'files' (multi) and 'file' (single) field names
+    if not files and file:
+        files = [file]
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
     """Upload files to a knowledge base and process them in background."""
     try:
         manager, kb_name, kb_base_dir = _writable_kb(kb_name)
@@ -1096,9 +1102,15 @@ async def upload_files(
 async def create_knowledge_base(
     background_tasks: BackgroundTasks,
     name: str = Form(...),
-    files: list[UploadFile] = File(...),
+    files: list[UploadFile] | None = File(None),
+    file: UploadFile | None = File(None),
     rag_provider: str = Form(DEFAULT_PROVIDER),
 ):
+    # Support both 'files' (multi) and 'file' (single) field names
+    if not files and file:
+        files = [file]
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
     """Create a new knowledge base and initialize it with files."""
     try:
         try:

@@ -44,14 +44,12 @@ _AGENTS_YAML_CAPABILITY_SECTIONS: dict[str, tuple[str, ...]] = {
     "solve": ("capabilities", "solve"),
     "research": ("capabilities", "research"),
     "question": ("capabilities", "question"),
-    "math_animator": ("plugins", "math_animator"),
 }
 
 _SIMPLE_LLM_DEFAULTS: dict[str, dict[str, Any]] = {
     "solve": {"temperature": 0.3, "max_tokens": 8192},
     "research": {"temperature": 0.5, "max_tokens": 16834},
     "question": {"temperature": 0.7, "max_tokens": 4096},
-    "math_animator": {"temperature": 0.2, "max_tokens": 16834},
 }
 
 # main.yaml subtrees that capabilities read at runtime (besides LLM params).

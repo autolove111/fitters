@@ -7,10 +7,9 @@ Capabilities all converge on the same final emission:
 The basic chat capability also attaches a per-turn ``cost_summary`` so the
 frontend can render ``$cost · tokens · calls`` in its message footer.
 Several other capabilities used to duplicate that merge inline (solve,
-research, question followup) and the rest skipped it entirely (auto,
-visualize, math_animator), so the footer only appeared for some
-capabilities. This module centralizes the merge + emit so every capability
-emits the same envelope shape.
+research, question followup) and the rest skipped it entirely, so the
+footer only appeared for some capabilities. This module centralizes the
+merge + emit so every capability emits the same envelope shape.
 """
 
 from __future__ import annotations

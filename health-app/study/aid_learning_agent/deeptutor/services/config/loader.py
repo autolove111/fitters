@@ -232,7 +232,6 @@ def get_agent_params(module_name: str) -> dict:
         "question": ("capabilities", "question"),
         "co_writer": ("capabilities", "co_writer"),
         "brainstorm": ("tools", "brainstorm"),
-        "math_animator": ("plugins", "math_animator"),
         "llm_probe": ("diagnostics", "llm_probe"),
     }
     path = get_runtime_settings_dir(PROJECT_ROOT) / "agents.yaml"

@@ -36,8 +36,6 @@ AUTO_MOUNTED_TOOLS: frozenset[str] = frozenset(
         "read_source",
         "read_memory",
         "write_memory",
-        "list_notebook",
-        "write_note",
         "ask_user",
         "web_fetch",
         "github",
@@ -68,13 +66,12 @@ class ToolMountFlags:
 
     Each capability resolves these from its own context (chat inspects
     ``UnifiedContext.knowledge_bases``, the source index, the memory
-    service, the notebook manager; quiz reuses the same checks).
+    service; quiz reuses the same checks).
     """
 
     has_kb: bool = False
     has_sources: bool = False
     has_memory: bool = False
-    has_notebooks: bool = False
 
 
 def compose_enabled_tools(
@@ -93,9 +90,8 @@ def compose_enabled_tools(
        ``optional_whitelist`` so only legitimate composer toggles are
        respected).
     2. Conditional auto-mounts (``rag`` if a KB is attached, ``read_source``
-       if a source index exists, ``read_memory`` if memory has content,
-       ``list_notebook`` + ``write_note`` if notebooks exist).
-    3. Always-on auto-mounts (``web_fetch``, ``github``, ``ask_user``).
+       if a source index exists, ``read_memory`` if memory has content).
+    3. Always-on auto-mounts (``write_memory``, ``web_fetch``, ``github``, ``ask_user``).
 
     The result is ordered (no dedup is applied — caller's prerequisite is
     that ``optional_whitelist`` excludes ``AUTO_MOUNTED_TOOLS``, which
@@ -112,9 +108,6 @@ def compose_enabled_tools(
         composed.append("read_source")
     if mount_flags.has_memory:
         composed.append("read_memory")
-    if mount_flags.has_notebooks:
-        composed.append("list_notebook")
-        composed.append("write_note")
     composed.append("write_memory")
     composed.append("web_fetch")
     composed.append("github")
@@ -142,28 +135,10 @@ def user_has_memory() -> bool:
         return False
 
 
-def user_has_notebooks() -> bool:
-    """Whether the active user has at least one notebook.
-
-    Auto-mount gate for ``list_notebook`` + ``write_note``. Same
-    fail-closed posture as :func:`user_has_memory`.
-    """
-    try:
-        from deeptutor.services.notebook import get_notebook_manager
-
-        notebooks = get_notebook_manager().list_notebooks()
-        return isinstance(notebooks, list) and any(
-            nb for nb in notebooks if str(nb.get("id") or "").strip()
-        )
-    except Exception:
-        return False
-
-
 __all__ = [
     "AUTO_MOUNTED_TOOLS",
     "ToolMountFlags",
     "compose_enabled_tools",
     "default_optional_tools",
     "user_has_memory",
-    "user_has_notebooks",
 ]

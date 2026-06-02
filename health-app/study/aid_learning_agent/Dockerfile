@@ -149,7 +149,6 @@ COPY --from=frontend-builder /app/web/public/ ./web/public/
 
 # Copy application source code
 COPY deeptutor/ ./deeptutor/
-COPY deeptutor_cli/ ./deeptutor_cli/
 COPY scripts/ ./scripts/
 COPY pyproject.toml ./
 COPY requirements/ ./requirements/
@@ -167,7 +166,6 @@ RUN mkdir -p \
     data/user/workspace/chat/deep_solve \
     data/user/workspace/chat/deep_question \
     data/user/workspace/chat/deep_research/reports \
-    data/user/workspace/chat/math_animator \
     data/user/workspace/chat/_detached_code_execution \
     data/user/logs \
     data/knowledge_bases
