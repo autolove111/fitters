@@ -38,7 +38,7 @@ dietRouter.get(
     const userId = (req as AuthenticatedRequest).userId;
     const { date, type } = req.query;
     
-    const where: any = { userId };
+    const where: any = { userId, recordType: "diet" };
     if (date) {
       where.recordDate = dateOnly(String(date));
     }
@@ -65,7 +65,7 @@ dietRouter.get(
     }
     
     const record = await prisma.dietRecord.findUnique({ where: { id } });
-    if (!record) {
+    if (!record || record.recordType !== "diet") {
       throw new HttpError(404, "diet record not found");
     }
     
@@ -96,6 +96,7 @@ dietRouter.post(
     const record = await prisma.dietRecord.create({
       data: {
         userId,
+        recordType: "diet",
         type,
         calories: body.calories,
         recordDate: dateOnly(recordDate),
@@ -117,7 +118,7 @@ dietRouter.put(
     }
     
     const record = await prisma.dietRecord.findUnique({ where: { id } });
-    if (!record) {
+    if (!record || record.recordType !== "diet") {
       throw new HttpError(404, "diet record not found");
     }
     
@@ -161,7 +162,7 @@ dietRouter.delete(
     }
     
     const record = await prisma.dietRecord.findUnique({ where: { id } });
-    if (!record) {
+    if (!record || record.recordType !== "diet") {
       throw new HttpError(404, "diet record not found");
     }
     
