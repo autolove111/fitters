@@ -1,5 +1,5 @@
 <template>
-  <scroll-view class="detail-container" scroll-y>
+  <scroll-view class="detail-container" :class="{ dark: isDark }" scroll-y>
     <!-- 顶部 Hero -->
     <view class="hero-section">
       <view class="hero-bg-circle"></view>
@@ -52,6 +52,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const exercise = ref({})
 const instruction = ref('')
@@ -113,7 +116,7 @@ const goBack = () => {
 <style scoped>
 .detail-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 
@@ -145,7 +148,7 @@ const goBack = () => {
 .exercise-name {
   font-size: 52rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 24rpx;
 }
@@ -172,16 +175,16 @@ const goBack = () => {
   padding: 30rpx;
   border-radius: 36rpx;
   backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
 }
 
 .instruction-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(232, 245, 233, 0.98));
+  background: var(--card-bg);
   box-shadow: 0 20rpx 44rpx rgba(34, 197, 94, 0.1);
 }
 
 .tips-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(254, 249, 235, 0.98));
+  background: var(--card-bg);
   box-shadow: 0 20rpx 44rpx rgba(251, 191, 36, 0.1);
 }
 
@@ -211,13 +214,13 @@ const goBack = () => {
 .section-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
 }
 
 .section-subtitle {
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-secondary);
   display: block;
   margin-top: 4rpx;
 }
@@ -254,14 +257,14 @@ const goBack = () => {
   flex: 1;
   font-size: 28rpx;
   line-height: 1.7;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 /* Tips */
 .tips-text {
   font-size: 28rpx;
   line-height: 1.7;
-  color: #334155;
+  color: var(--text-primary);
   padding: 20rpx 24rpx;
   background: rgba(251, 191, 36, 0.08);
   border-radius: 20rpx;

@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :class="{ dark: isDark }">
     <!-- ========= 未登录：显示登录/注册表单 ========= -->
     <view v-if="!isLoggedIn" class="auth-card">
       <!-- 新增 Logo 区域 -->
@@ -112,7 +112,11 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
 import { auth } from '@/utils/api'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { isLoggedIn, state, displayName, setUser, loadAvatar, loadProfile } = userStore
@@ -188,7 +192,9 @@ async function handleLogin() {
   authError.value = ''
   try {
     const res = await auth.login(account.value, password.value)
-    setUser(res.token, res.user.account)
+    setUser(res.token, res.user.account, res.user.nickname || '', res.user.avatar || '')
+    await loadProfile()
+    await loadAvatar()
     uni.showToast({ title: '登录成功', icon: 'success' })
   } catch (e) {
     authError.value = e.message
@@ -232,14 +238,14 @@ function goStudy() {
 .container {
   padding: 32rpx;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
 /* ========= 登录表单样式 - 高级毛玻璃（未修改） ========= */
 .auth-card {
   margin-top: 80rpx;
   padding: 50rpx 40rpx 60rpx;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   border-radius: 60rpx;
   box-shadow: 0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.15), 0 0 0 1rpx rgba(255, 255, 255, 0.6) inset;
@@ -282,17 +288,17 @@ function goStudy() {
   padding: 0 28rpx;
   margin-bottom: 32rpx;
   font-size: 32rpx;
-  background: #f8fafc;
+  background: var(--input-bg);
   border-radius: 48rpx;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--input-border);
   box-sizing: border-box;
   transition: all 0.2s;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .auth-input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 6rpx rgba(59, 130, 246, 0.15);
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .password-wrapper {
@@ -346,13 +352,13 @@ function goStudy() {
   box-shadow: 0 6rpx 16rpx -8rpx rgba(37, 99, 235, 0.5);
 }
 .auth-btn.secondary {
-  background: rgba(255, 255, 255, 0.9);
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
 }
 .auth-btn.secondary:active {
   transform: scale(0.97);
-  background: #f1f5f9;
+  background: var(--card-bg);
 }
 .error {
   color: #ef4444;
@@ -393,7 +399,7 @@ function goStudy() {
   backdrop-filter: blur(20rpx);
   border-radius: 40rpx;
   padding: 20rpx 24rpx 20rpx 20rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
 }
 
@@ -433,14 +439,14 @@ function goStudy() {
 .greeting {
   font-size: 34rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   letter-spacing: -0.3rpx;
   line-height: 1.3;
 }
 
 .today-date {
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 500;
   letter-spacing: 1rpx;
   margin-top: 6rpx;
@@ -456,7 +462,7 @@ function goStudy() {
   color: #2563eb;
   font-weight: 600;
   transition: all 0.2s ease;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
 }
 .logout-btn:active {
   transform: scale(0.96);
@@ -478,7 +484,7 @@ function goStudy() {
   padding: 48rpx 20rpx 40rpx;
   text-align: center;
   transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
   overflow: hidden;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
@@ -548,26 +554,26 @@ function goStudy() {
   display: block;
   margin-bottom: 12rpx;
   letter-spacing: -0.3rpx;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .card-fitness .card-title {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .card-weightloss .card-title {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .card-wellness .card-title {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .card-work .card-title {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .card-desc {
   font-size: 24rpx;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.65);
   display: inline-block;
   padding: 8rpx 22rpx;
@@ -586,7 +592,7 @@ function goStudy() {
   backdrop-filter: blur(20rpx);
   padding: 26rpx 32rpx;
   border-radius: 36rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
   transition: all 0.2s;
 }
@@ -599,7 +605,7 @@ function goStudy() {
 .tip-text {
   font-size: 26rpx;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   letter-spacing: 0.5rpx;
   flex: 1;
   text-align: center;

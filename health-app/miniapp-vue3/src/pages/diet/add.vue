@@ -1,5 +1,5 @@
 <template>
-  <view class="form-page">
+  <view class="form-page" :class="{ dark: isDark }">
     <view class="top-decoration"></view>
 
     <view class="form-container">
@@ -78,6 +78,10 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { dietApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const form = reactive({
   date: new Date().toISOString().slice(0, 10),
@@ -150,7 +154,7 @@ async function submit() {
 /* 页面整体背景 */
 .form-page {
   min-height: 100vh;
-  background: linear-gradient(145deg, #f0f4f8 0%, #e6edf4 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   position: relative;
   overflow-x: hidden;
 }
@@ -210,7 +214,7 @@ async function submit() {
 
 .header-subtitle {
   font-size: 26rpx;
-  color: #8e9eae;
+  color: var(--text-tertiary);
   letter-spacing: 0.5rpx;
 }
 
@@ -218,7 +222,7 @@ async function submit() {
 .form-card {
   width: 100%;
   max-width: 650rpx;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   border-radius: 56rpx;
   box-shadow: 0 24rpx 48rpx rgba(0, 0, 0, 0.08), 0 8rpx 16rpx rgba(0, 0, 0, 0.02);
   padding: 48rpx 40rpx 60rpx;
@@ -233,7 +237,7 @@ async function submit() {
 .form-label {
   font-size: 30rpx;
   font-weight: 600;
-  color: #2c3e4e;
+  color: var(--text-primary);
   line-height: 1.4;
   padding-bottom: 8rpx;
   display: block;
@@ -244,31 +248,31 @@ async function submit() {
 .custom-input {
   width: 100%;
   height: 88rpx;
-  background-color: #f8fafd;
-  border: 2rpx solid #e2e8f0;
+  background-color: var(--input-bg);
+  border: 2rpx solid var(--input-border);
   border-radius: 24rpx;
   padding: 0 28rpx;
   font-size: 30rpx;
-  color: #1e2a3a;
+  color: var(--text-primary);
   transition: all 0.25s;
   box-sizing: border-box;
 }
 
 .custom-input:focus {
   border-color: #3b82f6;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   outline: none;
   box-shadow: 0 0 0 4rpx rgba(59,130,246,0.15);
 }
 
 .input-placeholder {
-  color: #b9c4ce;
+  color: var(--text-tertiary);
   font-size: 28rpx;
 }
 
 .input-hint {
   font-size: 22rpx;
-  color: #9aaebf;
+  color: var(--text-tertiary);
   margin-top: 8rpx;
   margin-left: 12rpx;
 }
@@ -289,7 +293,7 @@ async function submit() {
   top: 50%;
   transform: translateY(-50%);
   font-size: 28rpx;
-  color: #6c86a3;
+  color: var(--text-secondary);
   font-weight: 500;
   pointer-events: none;
   background-color: transparent;

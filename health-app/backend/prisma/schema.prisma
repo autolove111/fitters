@@ -22,6 +22,7 @@ model User {
   account      String          @unique @db.VarChar(64)
   passwordHash String          @map("password_hash") @db.VarChar(255)
   nickname     String?         @db.VarChar(64)
+  avatar       String?         @db.Text
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
   workouts     WorkoutRecord[]
