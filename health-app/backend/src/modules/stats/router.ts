@@ -10,10 +10,14 @@ export const statsRouter = Router();
 
 function toNumber(value: any): number | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'number') return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "number") return value;
   if (value.toNumber) return value.toNumber();
   return Number(value);
+}
+
+function isWorkoutRecord(type: string) {
+  return type !== "wechat_steps" && type !== "wechat_steps_sync";
 }
 
 statsRouter.use(requireAuth);
@@ -25,7 +29,7 @@ statsRouter.get(
     const today = todayUtc();
     const tomorrow = addDays(today, 1);
 
-    const [goal, workoutAggregate, sleepAggregate, mealAggregate] = await Promise.all([
+    const [goal, workoutRecords, sleepAggregate, dietRecords, stepsRecord] = await Promise.all([
       prisma.goal.findUnique({
         where: {
           userId_goalType_period: {
@@ -35,35 +39,51 @@ statsRouter.get(
           },
         },
       }),
-      prisma.workoutRecord.aggregate({
+      prisma.workoutRecord.findMany({
         where: { userId, recordDate: { gte: today, lt: tomorrow } },
-        _sum: { durationMinutes: true, calories: true },
-        _count: true,
       }),
       prisma.sleepRecord.aggregate({
         where: { userId, recordDate: { gte: today, lt: tomorrow } },
         _avg: { quality: true },
         _count: true,
       }),
-      prisma.mealItem.aggregate({
-        where: { meal: { userId, mealDate: { gte: today, lt: tomorrow } } },
-        _sum: { calories: true },
-        _count: true,
+      prisma.dietRecord.findMany({
+        where: {
+          userId,
+          recordDate: { gte: today, lt: tomorrow },
+          recordType: { in: ["diet", "meal_item", "hydration", "weight"] },
+        },
+      }),
+      prisma.workoutRecord.findFirst({
+        where: { userId, type: "wechat_steps", sourceType: "WECHAT_WERUN", recordDate: today },
       }),
     ]);
 
+    const realWorkouts = workoutRecords.filter((record) => isWorkoutRecord(record.type));
     const targetMinutes = goal?.targetValue ?? 0;
-    const completedMinutes = workoutAggregate._sum.durationMinutes ?? 0;
+    const completedMinutes = realWorkouts.reduce((sum, record) => sum + record.durationMinutes, 0);
+    const completedCalories = realWorkouts.reduce((sum, record) => sum + record.calories, 0);
+    const mealCalories = dietRecords
+      .filter((record) => record.recordType === "diet" || record.recordType === "meal_item")
+      .reduce((sum, record) => sum + record.calories, 0);
+    const hydrationMl = dietRecords
+      .filter((record) => record.recordType === "hydration")
+      .reduce((sum, record) => sum + (record.amountMl || 0), 0);
+    const weightRecord = dietRecords.find((record) => record.recordType === "weight");
+
     ok(res, {
       date: formatDate(today),
       targetMinutes,
       completedMinutes,
-      completedCalories: workoutAggregate._sum.calories ?? 0,
-      workoutCount: workoutAggregate._count,
+      completedCalories,
+      workoutCount: realWorkouts.length,
+      steps: stepsRecord?.steps ?? 0,
+      hydrationMl,
+      weightKg: toNumber(weightRecord?.weightKg) ?? null,
       sleepCount: sleepAggregate._count,
       avgSleepQuality: toNumber(sleepAggregate._avg.quality) ?? 0,
-      mealCalories: mealAggregate._sum.calories ?? 0,
-      mealItemCount: mealAggregate._count,
+      mealCalories,
+      mealItemCount: dietRecords.filter((record) => record.recordType === "meal_item").length,
       completionPercent: targetMinutes > 0 ? Math.min(100, Math.round((completedMinutes / targetMinutes) * 100)) : 0,
     });
   }),
@@ -76,30 +96,35 @@ statsRouter.get(
     const end = todayUtc();
     const start = addDays(end, -6);
 
-    const [workoutRecords, sleepRecords, mealItems] = await Promise.all([
+    const [workoutRecords, sleepRecords, dietRecords] = await Promise.all([
       prisma.workoutRecord.findMany({
         where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
-        select: { recordDate: true, durationMinutes: true, calories: true },
+        select: { recordDate: true, type: true, durationMinutes: true, calories: true, steps: true },
       }),
       prisma.sleepRecord.findMany({
         where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
         select: { recordDate: true, quality: true },
       }),
-      prisma.mealItem.findMany({
-        where: { meal: { userId, mealDate: { gte: start, lt: addDays(end, 1) } } },
-        select: { meal: { select: { mealDate: true } }, calories: true },
+      prisma.dietRecord.findMany({
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) }, recordType: { in: ["diet", "meal_item"] } },
+        select: { recordDate: true, calories: true },
       }),
     ]);
 
     const minutesByDate = new Map<string, number>();
     const caloriesByDate = new Map<string, number>();
+    const stepsByDate = new Map<string, number>();
     const sleepQualityByDate = new Map<string, { sum: number; count: number }>();
     const mealCaloriesByDate = new Map<string, number>();
 
     for (const record of workoutRecords) {
       const date = formatDate(record.recordDate);
-      minutesByDate.set(date, (minutesByDate.get(date) || 0) + record.durationMinutes);
-      caloriesByDate.set(date, (caloriesByDate.get(date) || 0) + record.calories);
+      if (record.type === "wechat_steps") {
+        stepsByDate.set(date, record.steps || 0);
+      } else if (isWorkoutRecord(record.type)) {
+        minutesByDate.set(date, (minutesByDate.get(date) || 0) + record.durationMinutes);
+        caloriesByDate.set(date, (caloriesByDate.get(date) || 0) + record.calories);
+      }
     }
 
     for (const record of sleepRecords) {
@@ -108,9 +133,9 @@ statsRouter.get(
       sleepQualityByDate.set(date, { sum: current.sum + record.quality, count: current.count + 1 });
     }
 
-    for (const item of mealItems) {
-      const date = formatDate(item.meal.mealDate);
-      mealCaloriesByDate.set(date, (mealCaloriesByDate.get(date) || 0) + item.calories);
+    for (const record of dietRecords) {
+      const date = formatDate(record.recordDate);
+      mealCaloriesByDate.set(date, (mealCaloriesByDate.get(date) || 0) + record.calories);
     }
 
     const days = Array.from({ length: 7 }, (_, index) => {
@@ -120,6 +145,7 @@ statsRouter.get(
         date,
         workoutMinutes: minutesByDate.get(date) || 0,
         workoutCalories: caloriesByDate.get(date) || 0,
+        steps: stepsByDate.get(date) || 0,
         avgSleepQuality: sleepStats ? Math.round(sleepStats.sum / sleepStats.count) : 0,
         mealCalories: mealCaloriesByDate.get(date) || 0,
       };
@@ -168,29 +194,32 @@ statsRouter.get(
       }),
       prisma.workoutRecord.findMany({
         where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
-        select: { recordDate: true, durationMinutes: true, calories: true },
+        select: { recordDate: true, type: true, durationMinutes: true, calories: true, steps: true },
       }),
       prisma.sleepRecord.findMany({
         where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
         select: { recordDate: true, durationHours: true },
       }),
       prisma.dietRecord.findMany({
-        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
-        select: { recordDate: true, calories: true },
+        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) }, recordType: { in: ["diet", "meal_item", "hydration", "weight"] } },
+        select: { recordDate: true, recordType: true, calories: true, amountMl: true, weightKg: true },
       }),
     ]);
 
-    const workoutByDate = new Map<string, { minutes: number; calories: number }>();
+    const workoutByDate = new Map<string, { minutes: number; calories: number; steps: number }>();
     const sleepByDate = new Map<string, number>();
-    const dietByDate = new Map<string, number>();
+    const dietByDate = new Map<string, { calories: number; hydrationMl: number; weightKg: number | null }>();
 
     for (const record of workoutRecords) {
       const date = formatDate(record.recordDate);
-      const current = workoutByDate.get(date) || { minutes: 0, calories: 0 };
-      workoutByDate.set(date, {
-        minutes: current.minutes + record.durationMinutes,
-        calories: current.calories + record.calories,
-      });
+      const current = workoutByDate.get(date) || { minutes: 0, calories: 0, steps: 0 };
+      if (record.type === "wechat_steps") {
+        current.steps = record.steps || 0;
+      } else if (isWorkoutRecord(record.type)) {
+        current.minutes += record.durationMinutes;
+        current.calories += record.calories;
+      }
+      workoutByDate.set(date, current);
     }
 
     for (const record of sleepRecords) {
@@ -200,7 +229,15 @@ statsRouter.get(
 
     for (const record of dietRecords) {
       const date = formatDate(record.recordDate);
-      dietByDate.set(date, (dietByDate.get(date) || 0) + record.calories);
+      const current = dietByDate.get(date) || { calories: 0, hydrationMl: 0, weightKg: null };
+      if (record.recordType === "diet" || record.recordType === "meal_item") {
+        current.calories += record.calories;
+      } else if (record.recordType === "hydration") {
+        current.hydrationMl += record.amountMl || 0;
+      } else if (record.recordType === "weight") {
+        current.weightKg = toNumber(record.weightKg);
+      }
+      dietByDate.set(date, current);
     }
 
     const workoutTarget = workoutGoal?.targetValue ?? 30;
@@ -209,12 +246,17 @@ statsRouter.get(
 
     const daysList = Array.from({ length: days }, (_, index) => {
       const date = formatDate(addDays(start, index));
+      const workout = workoutByDate.get(date) || { minutes: 0, calories: 0, steps: 0 };
+      const diet = dietByDate.get(date) || { calories: 0, hydrationMl: 0, weightKg: null };
       return {
         date,
-        workoutMinutes: workoutByDate.get(date)?.minutes ?? 0,
-        workoutCalories: workoutByDate.get(date)?.calories ?? 0,
+        workoutMinutes: workout.minutes,
+        workoutCalories: workout.calories,
+        steps: workout.steps,
         sleepHours: sleepByDate.get(date) ?? 0,
-        dietCalories: dietByDate.get(date) ?? 0,
+        dietCalories: diet.calories,
+        hydrationMl: diet.hydrationMl,
+        weightKg: diet.weightKg,
         workoutTarget,
         sleepTarget,
         dietTarget,
@@ -229,38 +271,35 @@ statsRouter.get(
   "/summary",
   asyncHandler(async (req, res) => {
     const userId = (req as AuthenticatedRequest).userId;
-    
-    const [workoutAggregate, sleepAggregate, mealAggregate, dietAggregate] = await Promise.all([
-      prisma.workoutRecord.aggregate({
-        where: { userId },
-        _sum: { durationMinutes: true, calories: true },
-        _count: true,
-      }),
+
+    const [workouts, sleepAggregate, dietAggregate, mealItemAggregate] = await Promise.all([
+      prisma.workoutRecord.findMany({ where: { userId } }),
       prisma.sleepRecord.aggregate({
         where: { userId },
         _avg: { quality: true },
         _count: true,
       }),
-      prisma.mealItem.aggregate({
-        where: { meal: { userId } },
+      prisma.dietRecord.aggregate({
+        where: { userId, recordType: "diet" },
         _sum: { calories: true },
         _count: true,
       }),
       prisma.dietRecord.aggregate({
-        where: { userId },
+        where: { userId, recordType: "meal_item" },
         _sum: { calories: true },
         _count: true,
       }),
     ]);
 
+    const realWorkouts = workouts.filter((record) => isWorkoutRecord(record.type));
     ok(res, {
-      workoutCount: workoutAggregate._count,
-      totalWorkoutMinutes: workoutAggregate._sum.durationMinutes ?? 0,
-      totalWorkoutCalories: workoutAggregate._sum.calories ?? 0,
+      workoutCount: realWorkouts.length,
+      totalWorkoutMinutes: realWorkouts.reduce((sum, record) => sum + record.durationMinutes, 0),
+      totalWorkoutCalories: realWorkouts.reduce((sum, record) => sum + record.calories, 0),
       sleepCount: sleepAggregate._count,
       avgSleepQuality: toNumber(sleepAggregate._avg.quality) ?? 0,
-      mealItemCount: mealAggregate._count,
-      totalMealCalories: mealAggregate._sum.calories ?? 0,
+      mealItemCount: mealItemAggregate._count,
+      totalMealCalories: mealItemAggregate._sum.calories ?? 0,
       dietRecordCount: dietAggregate._count,
       totalDietCalories: dietAggregate._sum.calories ?? 0,
     });
@@ -274,7 +313,7 @@ statsRouter.get(
     const today = todayUtc();
     const tomorrow = addDays(today, 1);
 
-    const [goal, aggregate] = await Promise.all([
+    const [goal, records] = await Promise.all([
       prisma.goal.findUnique({
         where: {
           userId_goalType_period: {
@@ -290,18 +329,16 @@ statsRouter.get(
       }),
     ]);
 
-    const records = aggregate.map((record) => ({
-      id: record.id,
-      sleepTime: record.sleepTime.toISOString(),
-      wakeTime: record.wakeTime.toISOString(),
-      quality: record.quality,
-      durationHours: toNumber(record.durationHours) ?? 0,
-    }));
-
     ok(res, {
       date: formatDate(today),
       targetHours: goal?.targetValue ?? 8,
-      records,
+      records: records.map((record) => ({
+        id: record.id,
+        sleepTime: record.sleepTime.toISOString(),
+        wakeTime: record.wakeTime.toISOString(),
+        quality: record.quality,
+        durationHours: toNumber(record.durationHours) ?? 0,
+      })),
     });
   }),
 );
@@ -324,21 +361,20 @@ statsRouter.get(
         },
       }),
       prisma.dietRecord.findMany({
-        where: { userId, recordDate: { gte: today, lt: tomorrow } },
+        where: { userId, recordType: "diet", recordDate: { gte: today, lt: tomorrow } },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.meal.findMany({
-        where: { userId, mealDate: { gte: today, lt: tomorrow } },
-        include: { items: true },
+      prisma.dietRecord.findMany({
+        where: { userId, recordType: "meal", recordDate: { gte: today, lt: tomorrow } },
+        include: { children: { where: { recordType: "meal_item" } } },
         orderBy: { createdAt: "desc" },
       }),
     ]);
 
     const dietCalories = dietRecords.reduce((sum, record) => sum + record.calories, 0);
     const mealCalories = meals.reduce((sum, meal) => {
-      return sum + meal.items.reduce((itemSum, item) => itemSum + item.calories, 0);
+      return sum + meal.children.reduce((itemSum, item) => itemSum + item.calories, 0);
     }, 0);
-
     const totalCalories = dietCalories + mealCalories;
     const targetCalories = goal?.targetValue ?? 2000;
 
@@ -358,71 +394,9 @@ statsRouter.get(
       meals: meals.map((m) => ({
         id: m.id,
         mealType: m.mealType,
-        calories: m.items.reduce((sum, item) => sum + item.calories, 0),
-        items: m.items.length,
+        calories: m.children.reduce((sum, item) => sum + item.calories, 0),
+        items: m.children.length,
       })),
     });
-  }),
-);
-
-statsRouter.get(
-  "/history",
-  asyncHandler(async (req, res) => {
-    const userId = (req as AuthenticatedRequest).userId;
-    const days = parseInt((req as any).query.days) || 30;
-    
-    const end = todayUtc();
-    const start = addDays(end, -days + 1);
-
-    const [workoutRecords, sleepRecords, mealItems] = await Promise.all([
-      prisma.workoutRecord.findMany({
-        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
-        select: { recordDate: true, durationMinutes: true },
-      }),
-      prisma.sleepRecord.findMany({
-        where: { userId, recordDate: { gte: start, lt: addDays(end, 1) } },
-        select: { recordDate: true, durationHours: true },
-      }),
-      prisma.mealItem.findMany({
-        where: { meal: { userId, mealDate: { gte: start, lt: addDays(end, 1) } } },
-        select: { meal: { select: { mealDate: true } }, calories: true },
-      }),
-    ]);
-
-    const workoutMinutesByDate = new Map<string, number>();
-    const sleepHoursByDate = new Map<string, number>();
-    const mealCaloriesByDate = new Map<string, number>();
-
-    for (const record of workoutRecords) {
-      const date = formatDate(record.recordDate);
-      workoutMinutesByDate.set(date, (workoutMinutesByDate.get(date) || 0) + record.durationMinutes);
-    }
-
-    for (const record of sleepRecords) {
-      const date = formatDate(record.recordDate);
-      sleepHoursByDate.set(date, (sleepHoursByDate.get(date) || 0) + (toNumber(record.durationHours) ?? 0));
-    }
-
-    for (const item of mealItems) {
-      const date = formatDate(item.meal.mealDate);
-      mealCaloriesByDate.set(date, (mealCaloriesByDate.get(date) || 0) + item.calories);
-    }
-
-    const result = [];
-    for (let i = 0; i < days; i++) {
-      const date = addDays(start, i);
-      const dateStr = formatDate(date);
-      result.push({
-        date: dateStr,
-        workoutMinutes: workoutMinutesByDate.get(dateStr) || 0,
-        sleepHours: sleepHoursByDate.get(dateStr) || 0,
-        dietCalories: mealCaloriesByDate.get(dateStr) || 0,
-        workoutTarget: 30,
-        sleepTarget: 8,
-        dietTarget: 2000,
-      });
-    }
-
-    ok(res, result);
   }),
 );
