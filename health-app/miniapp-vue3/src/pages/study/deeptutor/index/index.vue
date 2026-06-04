@@ -794,6 +794,8 @@ export default {
 
   .main-panel {
     padding-top: 40rpx;
+    margin-left: 300rpx;
+    width: calc(100% - 300rpx);
   }
 
   .menu-item {
@@ -816,6 +818,7 @@ export default {
 
   .composer-toolbar {
     align-items: stretch;
+    gap: 20rpx;
   }
 
   .left-actions {
@@ -824,12 +827,14 @@ export default {
 
   .composer-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-left: 0;
+    gap: 20rpx;
   }
 
   .model-pill {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
 }
 </style>

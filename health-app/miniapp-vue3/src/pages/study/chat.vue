@@ -1,5 +1,5 @@
 <template>
-  <view class="chat-container">
+  <view class="chat-container" :class="{ dark: isDark }">
     <view class="chat-header">
       <text class="title">{{ planTitle || '个人知识助手' }}</text>
     </view>
@@ -20,6 +20,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { assistantApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const inputText = ref('')
 const messages = ref([])
@@ -59,12 +62,12 @@ async function send() {
 .chat-container { display:flex; flex-direction:column; height:100vh; }
 .chat-header { padding: 36rpx 24rpx; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-bottom: 1rpx solid #1d4ed8; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 2rpx 8rpx rgba(59,130,246,0.18); }
 .chat-header .title { font-size: 40rpx; font-weight:800; color: #ffffff; letter-spacing: 1rpx; }
-.messages { flex:1; padding: 20rpx; background: #f7fbff; }
+.messages { flex:1; padding: 20rpx; background: var(--bg-primary); }
 .message { padding: 16rpx; border-radius: 18rpx; margin-bottom: 12rpx; max-width: 80%; }
 .message.user { background: #dbeafe; align-self: flex-end; }
-.message.assistant { background: #ffffff; align-self: flex-start; }
-.message.system { background: transparent; color: #374151; font-weight:600; }
-.composer { display:flex; gap:12rpx; padding: 16rpx; background: #fff; border-top:1rpx solid #eee }
-.input { flex:1; height: 68rpx; padding: 14rpx; border-radius: 34rpx; background: #f1f5f9 }
+.message.assistant { background: var(--card-bg); align-self: flex-start; }
+.message.system { background: transparent; color: var(--text-primary); font-weight:600; }
+.composer { display:flex; gap:12rpx; padding: 16rpx; background: var(--card-bg); border-top:1rpx solid var(--divider) }
+.input { flex:1; height: 68rpx; padding: 14rpx; border-radius: 34rpx; background: var(--input-bg) }
 .send { background: #06b6d4; color:#fff; padding: 14rpx 20rpx; border-radius: 34rpx }
 </style>

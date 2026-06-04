@@ -1,5 +1,5 @@
 <template>
-  <view class="add-container">
+  <view class="add-container" :class="{ dark: isDark }">
     <view class="page-header">
       <text class="page-title">添加学习计划</text>
       <text class="page-note">填写计划内容与时间后，提交到后端保存。</text>
@@ -47,6 +47,9 @@
 <script setup>
 import { ref } from 'vue'
 import { studyApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const content = ref('')
 const start = ref('')
@@ -76,7 +79,7 @@ async function submitPlan() {
 .add-container {
   min-height: 100vh;
   padding: 32rpx;
-  background: linear-gradient(180deg, #f4f8ff 0%, #eef4ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 .page-header {
@@ -89,18 +92,18 @@ async function submitPlan() {
 .page-title {
   font-size: 38rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .page-note {
   display: block;
   margin-top: 14rpx;
   font-size: 26rpx;
-  color: #475569;
+  color: var(--text-secondary);
 }
 .form-card {
   padding: 30rpx;
   border-radius: 40rpx;
-  background: #ffffff;
+  background: var(--card-bg);
   box-shadow: 0 24rpx 50rpx rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
   width: 100%;
@@ -123,7 +126,7 @@ async function submitPlan() {
 }
 .label {
   font-size: 26rpx;
-  color: #334155;
+  color: var(--text-primary);
   margin-bottom: 16rpx;
   display: block;
 }
@@ -132,10 +135,10 @@ async function submitPlan() {
   width: 100%;
   box-sizing: border-box;
   font-size: 28rpx;
-  color: #0f172a;
-  border: 1rpx solid rgba(148, 163, 184, 0.2);
+  color: var(--text-primary);
+  border: 1rpx solid var(--input-border);
   border-radius: 32rpx;
-  background: #f8fafc;
+  background: var(--input-bg);
 }
 .textarea {
   min-height: 170rpx;

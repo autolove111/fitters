@@ -1,5 +1,5 @@
 <template>
-  <view class="register-container">
+  <view class="register-container" :class="{ dark: isDark }">
     <view class="register-card">
       <view class="logo-area">
         <text class="logo-icon">📝</text>
@@ -43,7 +43,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
 import { auth } from '@/utils/api'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { setUser } = userStore
@@ -66,7 +70,7 @@ async function handleRegister() {
   }
   try {
     const res = await auth.register(account.value, password.value)
-    setUser(res.token, res.user.account)
+    setUser(res.token, res.user.account, res.user.nickname || '', res.user.avatar || '')
     uni.showToast({ title: '注册成功', icon: 'success' })
     uni.navigateBack()
   } catch (e) {
@@ -92,12 +96,12 @@ function goBackToLogin() {
 }
 .register-card {
   width: 100%;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--card-bg);
   backdrop-filter: blur(24px);
   border-radius: 72rpx;
   padding: 40rpx 44rpx 60rpx;
   box-shadow: 0 30rpx 50rpx -20rpx rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--card-border);
 }
 .logo-area {
   text-align: center;
@@ -118,7 +122,7 @@ function goBackToLogin() {
 }
 .logo-sub {
   font-size: 26rpx;
-  color: #5b6e8c;
+  color: var(--text-secondary);
   margin-top: 12rpx;
   display: block;
 }
@@ -127,16 +131,16 @@ function goBackToLogin() {
   height: 96rpx;
   padding: 0 28rpx;
   margin-bottom: 32rpx;
-  background: #f8fafc;
+  background: var(--input-bg);
   border-radius: 56rpx;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--input-border);
   font-size: 32rpx;
   box-sizing: border-box;
   transition: all 0.2s;
 }
 .input-field:focus {
   border-color: #3b82f6;
-  background: white;
+  background: var(--card-bg);
   box-shadow: 0 0 0 6rpx rgba(59, 130, 246, 0.1);
 }
 .pwd-toggle {
@@ -183,6 +187,6 @@ function goBackToLogin() {
   opacity: 0.6;
 }
 .placeholder {
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 </style>
