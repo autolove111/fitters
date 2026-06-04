@@ -2,7 +2,6 @@
   <view class="container" :class="{ dark: isDark }">
     <!-- ========= 未登录：显示登录/注册表单 ========= -->
     <view v-if="!isLoggedIn" class="auth-card">
-      <!-- 新增 Logo 区域 -->
       <view class="logo-area">
         <text class="logo-icon">✨</text>
         <text class="logo-title">Fitters 健康管家</text>
@@ -34,7 +33,7 @@
       <text v-if="authError" class="error">{{ authError }}</text>
     </view>
 
-    <!-- ========= 已登录：缤纷卡片仪表板 ========= -->
+    <!-- ========= 已登录：卡片仪表板 ========= -->
     <view v-else class="dashboard">
       <!-- 顶部用户栏 -->
       <view class="user-bar">
@@ -48,61 +47,60 @@
             <text class="today-date">{{ currentDate }}</text>
           </view>
         </view>
-        <button class="logout-btn" @click="goProfile">个人中心</button>
+        <button class="profile-btn" @click="goProfile">个人中心</button>
       </view>
 
-      <!-- 四色功能卡片网格 -->
+      <!-- 功能卡片网格（2列） -->
       <view class="menu-grid">
         <view class="menu-card card-fitness" @click="goFitness">
           <view class="card-glow"></view>
-          <!-- <view class="card-icon-wrapper">
+          <view class="card-icon-wrapper">
             <text class="card-icon">❤️</text>
-          </view> -->
+          </view>
           <text class="card-title">健康</text>
           <text class="card-desc">综合健康管理</text>
         </view>
-        <!-- <view class="menu-card card-weightloss" @click="goWeightLoss">
-          <view class="card-glow"></view> -->
-          <!-- <view class="card-icon-wrapper">
+        <view class="menu-card card-weightloss" @click="goWeightLoss">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
             <text class="card-icon">🥗</text>
-          </view> -->
-          <!-- <text class="card-title">减肥</text>
+          </view>
+          <text class="card-title">减肥</text>
           <text class="card-desc">科学减脂计划</text>
         </view>
         <view class="menu-card card-wellness" @click="goWellness">
-          <view class="card-glow"></view> -->
-          <!-- <view class="card-icon-wrapper">
+          <view class="card-glow"></view>
+          <view class="card-icon-wrapper">
             <text class="card-icon">🧘</text>
-          </view> -->
-          <!-- <text class="card-title">养生</text>
+          </view>
+          <text class="card-title">养生</text>
           <text class="card-desc">调养身心</text>
-        </view> -->
+        </view>
         <view class="menu-card card-work" @click="goWork">
           <view class="card-glow"></view>
-          <!-- <view class="card-icon-wrapper">
+          <view class="card-icon-wrapper">
             <text class="card-icon">💼</text>
-          </view> -->
+          </view>
           <text class="card-title">工作</text>
           <text class="card-desc">效率与专注</text>
         </view>
         <view class="menu-card card-study" @click="goStudy">
           <view class="card-glow"></view>
-          <!-- <view class="card-icon-wrapper">
+          <view class="card-icon-wrapper">
             <text class="card-icon">📚</text>
-          </view> -->
+          </view>
           <text class="card-title">学习</text>
           <text class="card-desc">学习计划与个人助手</text>
         </view>
       </view>
 
-      <!-- 动态健康小贴士（每天更新不同内容） -->
+      <!-- 动态健康小贴士 -->
       <view class="health-tip">
         <text class="tip-icon">🌱</text>
         <text class="tip-text">{{ dailyTip }}</text>
         <text class="tip-spark">✨</text>
       </view>
 
-      <!-- 底部装饰光晕 -->
       <view class="dashboard-ambient"></view>
     </view>
   </view>
@@ -145,7 +143,7 @@ const password = ref('demo123')
 const authError = ref('')
 const showPassword = ref(false)
 
-// 当前日期（用于展示）
+// 当前日期
 const currentDate = computed(() => {
   const now = new Date()
   const month = now.getMonth() + 1
@@ -155,7 +153,7 @@ const currentDate = computed(() => {
   return `${month}.${day} · ${weekday}`
 })
 
-// ---------- 每日健康小贴士库（每天自动轮换） ----------
+// 每日健康小贴士库
 const tipsList = [
   '深呼吸三次，感受当下的平静',
   '喝一杯温水，唤醒身体活力',
@@ -170,10 +168,8 @@ const tipsList = [
   '睡前冥想五分钟，提高睡眠质量',
   '主动夸奖一个人，温暖彼此',
   '整理桌面，清爽心情',
-  '步行或骑行代替短途驾车'
-]
+  '步行或骑行代替短途驾车']
 
-// 根据当前日期（年积日）选择一条提示，确保每天固定且不同
 const dailyTip = computed(() => {
   const today = new Date()
   const startOfYear = new Date(today.getFullYear(), 0, 0)
@@ -182,12 +178,10 @@ const dailyTip = computed(() => {
   return '今日微习惯：' + tipsList[index]
 })
 
-// 切换密码可见性
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
 
-// 登录
 async function handleLogin() {
   authError.value = ''
   try {
@@ -202,27 +196,24 @@ async function handleLogin() {
   }
 }
 
-// 注册
-async function handleRegister() {
+function handleRegister() {
   uni.navigateTo({ url: '/pages/register/register' })
 }
 
-// 个人中心
 function goProfile() {
   uni.navigateTo({ url: '/pages/profile/index' })
 }
 
-// 功能跳转
 function goFitness() {
   uni.navigateTo({ url: '/pages/workout/workout' })
 }
 
 function goWeightLoss() {
-  uni.navigateTo({ url: '/pages/weightloss/weightloss' })
+  uni.showToast({ title: '减肥功能开发中', icon: 'none' })
 }
 
 function goWellness() {
-  uni.navigateTo({ url: '/pages/wellness/wellness' })
+  uni.showToast({ title: '养生功能开发中', icon: 'none' })
 }
 
 function goWork() {
@@ -235,20 +226,45 @@ function goStudy() {
 </script>
 
 <style scoped>
+/* ========= CSS 变量（亮色模式） ========= */
+:root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(255, 255, 255, 0.6);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+}
+
+/* ========= 暗色模式变量 ========= */
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --input-bg: rgba(51, 65, 85, 0.9);
+  --input-border: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+}
+
 .container {
   padding: 32rpx;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  transition: background 0.3s ease;
 }
 
-/* ========= 登录表单样式 - 高级毛玻璃（未修改） ========= */
+/* ========= 登录表单 ========= */
 .auth-card {
   margin-top: 80rpx;
   padding: 50rpx 40rpx 60rpx;
   background: var(--card-bg);
   backdrop-filter: blur(20px);
   border-radius: 60rpx;
-  box-shadow: 0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.15), 0 0 0 1rpx rgba(255, 255, 255, 0.6) inset;
+  box-shadow: 0 25rpx 50rpx -12rpx rgba(0, 0, 0, 0.15), 0 0 0 1rpx var(--card-border) inset;
 }
 
 .logo-area {
@@ -267,7 +283,7 @@ function goStudy() {
 .logo-title {
   font-size: 44rpx;
   font-weight: 800;
-  background: linear-gradient(135deg, #1e293b, #2d3e5f);
+  background: linear-gradient(135deg, var(--text-primary), #3b82f6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -276,7 +292,7 @@ function goStudy() {
 }
 .logo-sub {
   font-size: 24rpx;
-  color: #5b6e8c;
+  color: var(--text-secondary);
   margin-top: 12rpx;
   display: block;
   letter-spacing: 2rpx;
@@ -298,7 +314,6 @@ function goStudy() {
 .auth-input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 6rpx rgba(59, 130, 246, 0.15);
-  background: var(--card-bg);
 }
 
 .password-wrapper {
@@ -320,11 +335,10 @@ function goStudy() {
   font-size: 26rpx;
   color: #3b82f6;
   font-weight: 600;
-  transition: all 0.2s;
 }
-.toggle-pwd-btn:active {
-  background: #d9e6ff;
-  transform: translateY(-50%) scale(0.96);
+.dark .toggle-pwd-btn {
+  background: #334155;
+  color: #60a5fa;
 }
 
 .auth-actions {
@@ -340,7 +354,6 @@ function goStudy() {
   font-size: 32rpx;
   font-weight: 600;
   border: none;
-  transition: all 0.2s;
 }
 .auth-btn.primary {
   background: linear-gradient(105deg, #2563eb, #1e40af);
@@ -349,36 +362,30 @@ function goStudy() {
 }
 .auth-btn.primary:active {
   transform: scale(0.97);
-  box-shadow: 0 6rpx 16rpx -8rpx rgba(37, 99, 235, 0.5);
 }
 .auth-btn.secondary {
   background: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--input-border);
 }
-.auth-btn.secondary:active {
-  transform: scale(0.97);
-  background: var(--card-bg);
-}
 .error {
   color: #ef4444;
   font-size: 26rpx;
   margin-top: 24rpx;
-  display: block;
   text-align: center;
-  font-weight: 500;
 }
 
-/* ========= 已登录仪表板 ———— 丰富色彩 ========= */
+/* ========= 仪表板 ========= */
 .dashboard {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 44rpx;
+  gap: 36rpx;
   animation: fadeUp 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   padding-bottom: 40rpx;
+  position: relative;
   z-index: 2;
 }
+
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -395,12 +402,12 @@ function goStudy() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
+  background: var(--card-bg);
   backdrop-filter: blur(20rpx);
   border-radius: 40rpx;
-  padding: 20rpx 24rpx 20rpx 20rpx;
+  padding: 20rpx 24rpx;
   border: 1rpx solid var(--card-border);
-  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
 }
 
 .user-info {
@@ -412,12 +419,12 @@ function goStudy() {
 .avatar-ring {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #fff5e6, #ffffff);
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   border-radius: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 16rpx -6rpx rgba(0, 0, 0, 0.05), 0 0 0 2rpx rgba(255, 255, 255, 0.8) inset;
+  box-shadow: 0 8rpx 16rpx -6rpx rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 .avatar-img {
@@ -425,85 +432,88 @@ function goStudy() {
   height: 80rpx;
   border-radius: 60rpx;
 }
-
 .avatar-emoji {
   font-size: 44rpx;
-  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
 }
 
 .user-text {
   display: flex;
   flex-direction: column;
 }
-
 .greeting {
   font-size: 34rpx;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.3rpx;
-  line-height: 1.3;
 }
-
 .today-date {
   font-size: 24rpx;
   color: var(--text-secondary);
-  font-weight: 500;
-  letter-spacing: 1rpx;
   margin-top: 6rpx;
 }
 
-.logout-btn {
+.profile-btn {
   background: rgba(59, 130, 246, 0.12);
-  backdrop-filter: blur(12rpx);
   border: none;
-  border-radius: 999rpx;
+  border-radius: 60rpx;
   padding: 12rpx 32rpx;
   font-size: 26rpx;
-  color: #2563eb;
+  color: #3b82f6;
   font-weight: 600;
-  transition: all 0.2s ease;
-  border: 1rpx solid var(--card-border);
+  backdrop-filter: blur(8rpx);
 }
-.logout-btn:active {
+.dark .profile-btn {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+}
+.profile-btn:active {
   transform: scale(0.96);
-  background: rgba(59, 130, 246, 0.2);
 }
 
-/* 功能卡片网格 */
+/* 功能卡片网格 - 2列布局 */
 .menu-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 32rpx;
-  margin: 8rpx 0;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28rpx;
 }
 
 .menu-card {
   position: relative;
   backdrop-filter: blur(20rpx);
   border-radius: 40rpx;
-  padding: 48rpx 20rpx 40rpx;
+  padding: 36rpx 16rpx 32rpx;
   text-align: center;
-  transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.2);
   border: 1rpx solid var(--card-border);
-  box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
 }
 
+/* 卡片背景色（亮色模式柔和高亮） */
 .card-fitness {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(96, 165, 250, 0.25));
 }
 .card-weightloss {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(56, 189, 248, 0.18));
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(56, 189, 248, 0.2));
 }
 .card-wellness {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(56, 189, 248, 0.18));
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(56, 189, 248, 0.2));
 }
 .card-work {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(20, 184, 166, 0.18));
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(20, 184, 166, 0.22));
 }
 .card-study {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(34, 197, 94, 0.18));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(34, 197, 94, 0.2));
+}
+
+/* 暗色模式下卡片背景 */
+.dark .card-fitness,
+.dark .card-weightloss,
+.dark .card-wellness,
+.dark .card-work,
+.dark .card-study {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(20rpx);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .menu-card .card-glow {
@@ -512,121 +522,98 @@ function goStudy() {
   left: -20%;
   width: 140%;
   height: 140%;
-  background: radial-gradient(circle, rgba(255,255,245,0.4) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(255,255,245,0.3) 0%, rgba(255,255,255,0) 70%);
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.3s ease;
   pointer-events: none;
-  border-radius: 50%;
 }
-
 .menu-card:active {
   transform: scale(0.96);
-  box-shadow: 0 28rpx 50rpx rgba(59, 130, 246, 0.18);
 }
 .menu-card:active .card-glow {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .card-icon-wrapper {
-  margin-bottom: 28rpx;
+  margin-bottom: 20rpx;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 120rpx;
-  height: 120rpx;
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: 80rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 60rpx;
   backdrop-filter: blur(4rpx);
-  transition: transform 0.2s ease;
 }
-.menu-card:active .card-icon-wrapper {
-  transform: scale(0.94);
+.dark .card-icon-wrapper {
+  background: rgba(255, 255, 255, 0.1);
 }
-
 .card-icon {
-  font-size: 80rpx;
-  filter: drop-shadow(0 8rpx 14rpx rgba(0, 0, 0, 0.1));
+  font-size: 64rpx;
 }
 
 .card-title {
-  font-size: 40rpx;
+  font-size: 36rpx;
   font-weight: 800;
   display: block;
   margin-bottom: 12rpx;
-  letter-spacing: -0.3rpx;
   color: var(--text-primary);
 }
-
-.card-fitness .card-title {
-  color: var(--text-primary);
-}
-.card-weightloss .card-title {
-  color: var(--text-primary);
-}
-.card-wellness .card-title {
-  color: var(--text-primary);
-}
-.card-work .card-title {
-  color: var(--text-primary);
-}
-
 .card-desc {
-  font-size: 24rpx;
-  font-weight: 600;
+  font-size: 22rpx;
+  font-weight: 500;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.5);
   display: inline-block;
-  padding: 8rpx 22rpx;
-  border-radius: 26rpx;
-  backdrop-filter: blur(4rpx);
+  padding: 6rpx 20rpx;
+  border-radius: 30rpx;
+}
+.dark .card-desc {
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* 健康小贴士 - 学习页面风格 */
+/* 健康小贴士 */
 .health-tip {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16rpx;
-  margin-top: 10rpx;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
+  background: var(--card-bg);
   backdrop-filter: blur(20rpx);
   padding: 26rpx 32rpx;
-  border-radius: 36rpx;
+  border-radius: 48rpx;
   border: 1rpx solid var(--card-border);
-  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
-  transition: all 0.2s;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
 }
-
 .tip-icon {
   font-size: 36rpx;
-  filter: drop-shadow(0 2rpx 6rpx rgba(80, 120, 80, 0.2));
 }
-
 .tip-text {
   font-size: 26rpx;
   font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: 0.5rpx;
   flex: 1;
   text-align: center;
 }
-
 .tip-spark {
   font-size: 28rpx;
   opacity: 0.7;
 }
 
-/* 底部环境光晕 */
+/* 底部氛围光晕 */
 .dashboard-ambient {
   position: fixed;
-  bottom: -10%;
+  bottom: -5%;
   left: -20%;
   width: 140%;
-  height: 240rpx;
-  background: radial-gradient(ellipse, rgba(150, 180, 210, 0.3), transparent 70%);
+  height: 300rpx;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.2), transparent 70%);
   border-radius: 50%;
   pointer-events: none;
   z-index: -1;
-  filter: blur(50rpx);
+  filter: blur(60rpx);
+}
+.dark .dashboard-ambient {
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.1), transparent 70%);
 }
 </style>
