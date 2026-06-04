@@ -2,83 +2,108 @@
   <view class="container" :class="{ dark: isDark }">
     <!-- ========= 未登录：显示登录/注册表单 ========= -->
     <view v-if="!isLoggedIn" class="auth-card">
-      <view class="auth-bg-glow"></view>
-      <view class="logo-section">
-        <view class="logo-circle">
-          <text class="logo-emoji">✨</text>
+      <!-- 新增 Logo 区域 -->
+      <view class="logo-area">
+        <text class="logo-icon">✨</text>
+        <text class="logo-title">Fitters 健康管家</text>
+        <text class="logo-sub">极致 · 平衡 · 生命力</text>
+      </view>
+
+      <input 
+        class="auth-input" 
+        v-model="account" 
+        placeholder="账号 / 邮箱" 
+        placeholder-class="input-placeholder"
+      />
+      <view class="password-wrapper">
+        <input 
+          class="auth-input password-input" 
+          v-model="password" 
+          :password="!showPassword"
+          placeholder="密码" 
+          placeholder-class="input-placeholder"
+        />
+        <view class="toggle-pwd-btn" @click="togglePasswordVisibility">
+          <text>{{ showPassword ? '隐藏' : '显示' }}</text>
         </view>
-        <text class="logo-text">Fitters</text>
-        <text class="logo-caption">健康 · 平衡 · 生命力</text>
       </view>
-
-      <view class="input-field">
-        <text class="field-icon">📧</text>
-        <input v-model="account" placeholder="账号 / 邮箱" placeholder-class="placeholder-light" />
+      <view class="auth-actions">
+        <button class="auth-btn primary" @click="handleLogin">登录</button>
+        <button class="auth-btn secondary" @click="handleRegister">注册</button>
       </view>
-      <view class="input-field">
-        <text class="field-icon">🔒</text>
-        <input v-model="password" :password="!showPassword" placeholder="密码" placeholder-class="placeholder-light" />
-        <text class="pwd-toggle" @click="togglePasswordVisibility">{{ showPassword ? '🙈' : '👁️' }}</text>
-      </view>
-
-      <view class="auth-buttons">
-        <button class="btn-primary" @click="handleLogin">登录</button>
-        <button class="btn-outline" @click="handleRegister">注册</button>
-      </view>
-      <text v-if="authError" class="error-tip">{{ authError }}</text>
+      <text v-if="authError" class="error">{{ authError }}</text>
     </view>
 
-    <!-- ========= 已登录：高级仪表板 ========= -->
+    <!-- ========= 已登录：缤纷卡片仪表板 ========= -->
     <view v-else class="dashboard">
-      <!-- 背景装饰层 -->
-      <view class="bg-blur"></view>
-      <view class="bg-orbs">
-        <view class="orb o1"></view>
-        <view class="orb o2"></view>
-        <view class="orb o3"></view>
+      <!-- 顶部用户栏 -->
+      <view class="user-bar">
+        <view class="user-info">
+          <view class="avatar-ring" @click="viewAvatar">
+            <image v-if="userAvatar" class="avatar-img" :src="userAvatar" mode="aspectFill" />
+            <text v-else class="avatar-emoji">🧘</text>
+          </view>
+          <view class="user-text">
+            <text class="greeting">🌿 你好，{{ displayName }}</text>
+            <text class="today-date">{{ currentDate }}</text>
+          </view>
+        </view>
+        <button class="logout-btn" @click="goProfile">个人中心</button>
       </view>
 
-      <!-- 顶部用户卡片 -->
-      <view class="user-card">
-        <view class="user-avatar" @click="viewAvatar">
-          <image v-if="userAvatar" :src="userAvatar" mode="aspectFill" />
-          <text v-else class="avatar-placeholder">🧘</text>
-        </view>
-        <view class="user-details">
-          <text class="greeting">🌿 你好，{{ displayName }}</text>
-          <text class="date">{{ currentDate }}</text>
-        </view>
-        <view class="settings-btn" @click="goProfile">
-          <text>⚙️</text>
-        </view>
-      </view>
-
-      <!-- 2x2 功能网格 -->
+      <!-- 四色功能卡片网格 -->
       <view class="menu-grid">
-        <view class="menu-item" v-for="item in menuItems" :key="item.id" @click="item.handler">
-          <view class="item-glow"></view>
-          <view class="item-icon" :style="{ background: item.gradient }">
-            <text>{{ item.emoji }}</text>
-          </view>
-          <text class="item-title">{{ item.title }}</text>
-          <text class="item-desc">{{ item.desc }}</text>
+        <view class="menu-card card-fitness" @click="goFitness">
+          <view class="card-glow"></view>
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">❤️</text>
+          </view> -->
+          <text class="card-title">健康</text>
+          <text class="card-desc">综合健康管理</text>
+        </view>
+        <!-- <view class="menu-card card-weightloss" @click="goWeightLoss">
+          <view class="card-glow"></view> -->
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">🥗</text>
+          </view> -->
+          <!-- <text class="card-title">减肥</text>
+          <text class="card-desc">科学减脂计划</text>
+        </view>
+        <view class="menu-card card-wellness" @click="goWellness">
+          <view class="card-glow"></view> -->
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">🧘</text>
+          </view> -->
+          <!-- <text class="card-title">养生</text>
+          <text class="card-desc">调养身心</text>
+        </view> -->
+        <view class="menu-card card-work" @click="goWork">
+          <view class="card-glow"></view>
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">💼</text>
+          </view> -->
+          <text class="card-title">工作</text>
+          <text class="card-desc">效率与专注</text>
+        </view>
+        <view class="menu-card card-study" @click="goStudy">
+          <view class="card-glow"></view>
+          <!-- <view class="card-icon-wrapper">
+            <text class="card-icon">📚</text>
+          </view> -->
+          <text class="card-title">学习</text>
+          <text class="card-desc">学习计划与个人助手</text>
         </view>
       </view>
 
-      <!-- 今日微习惯卡片 -->
-      <view class="habit-card">
-        <view class="habit-left">
-          <text class="habit-icon">🌱</text>
-          <view class="habit-text">
-            <text class="habit-label">今日微习惯</text>
-            <text class="habit-content">{{ dailyTip }}</text>
-          </view>
-        </view>
-        <view class="habit-sparkle">✨</view>
+      <!-- 动态健康小贴士（每天更新不同内容） -->
+      <view class="health-tip">
+        <text class="tip-icon">🌱</text>
+        <text class="tip-text">{{ dailyTip }}</text>
+        <text class="tip-spark">✨</text>
       </view>
 
-      <!-- 底部装饰文字 -->
-      <view class="footer-note">每一次微小坚持，都在塑造更好的你</view>
+      <!-- 底部装饰光晕 -->
+      <view class="dashboard-ambient"></view>
     </view>
   </view>
 </template>
@@ -95,6 +120,7 @@ const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { isLoggedIn, state, displayName, setUser, loadAvatar, loadProfile } = userStore
+
 const userAvatar = computed(() => state.avatar || '')
 
 onShow(() => {
@@ -107,7 +133,10 @@ const viewAvatar = () => {
     uni.showToast({ title: '暂无头像', icon: 'none' })
     return
   }
-  uni.previewImage({ urls: [userAvatar.value], current: userAvatar.value })
+  uni.previewImage({
+    urls: [userAvatar.value],
+    current: userAvatar.value
+  })
 }
 
 // 登录表单
@@ -116,34 +145,49 @@ const password = ref('demo123')
 const authError = ref('')
 const showPassword = ref(false)
 
+// 当前日期（用于展示）
 const currentDate = computed(() => {
   const now = new Date()
   const month = now.getMonth() + 1
   const day = now.getDate()
   const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-  return `${month}.${day} · ${weekdays[now.getDay()]}`
+  const weekday = weekdays[now.getDay()]
+  return `${month}.${day} · ${weekday}`
 })
 
+// ---------- 每日健康小贴士库（每天自动轮换） ----------
 const tipsList = [
-  '深呼吸三次，感受当下的平静', '喝一杯温水，唤醒身体活力', '伸展四肢五分钟，缓解久坐疲劳',
-  '放下手机十分钟，让眼睛休息', '微笑一下，释放积极能量', '走楼梯代替电梯，多消耗卡路里',
-  '记录一件感恩的小事', '午餐细嚼慢咽，专注每一口', '站立办公半小时，改善体态',
-  '眺望远方，给眼睛放个假', '睡前冥想五分钟，提高睡眠质量', '主动夸奖一个人，温暖彼此'
+  '深呼吸三次，感受当下的平静',
+  '喝一杯温水，唤醒身体活力',
+  '伸展四肢五分钟，缓解久坐疲劳',
+  '放下手机十分钟，让眼睛休息',
+  '微笑一下，释放积极能量',
+  '走楼梯代替电梯，多消耗卡路里',
+  '记录一件感恩的小事',
+  '午餐细嚼慢咽，专注每一口',
+  '站立办公半小时，改善体态',
+  '眺望远方，给眼睛放个假',
+  '睡前冥想五分钟，提高睡眠质量',
+  '主动夸奖一个人，温暖彼此',
+  '整理桌面，清爽心情',
+  '步行或骑行代替短途驾车'
 ]
+
+// 根据当前日期（年积日）选择一条提示，确保每天固定且不同
 const dailyTip = computed(() => {
-  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
-  return tipsList[dayOfYear % tipsList.length]
+  const today = new Date()
+  const startOfYear = new Date(today.getFullYear(), 0, 0)
+  const dayOfYear = Math.floor((today - startOfYear) / (24 * 60 * 60 * 1000))
+  const index = dayOfYear % tipsList.length
+  return '今日微习惯：' + tipsList[index]
 })
 
-// 菜单配置（2x2网格，对应原有功能）
-const menuItems = [
-  { id: 1, title: '健康', desc: '综合健康管理', emoji: '❤️‍🔥', gradient: 'linear-gradient(135deg, #3b82f6, #1e3a8a)', handler: () => uni.navigateTo({ url: '/pages/workout/workout' }) },
-  { id: 2, title: '减肥', desc: '科学减脂计划', emoji: '🥗', gradient: 'linear-gradient(135deg, #10b981, #047857)', handler: () => uni.navigateTo({ url: '/pages/weightloss/weightloss' }) },
-  { id: 3, title: '工作', desc: '效率与专注', emoji: '💼', gradient: 'linear-gradient(135deg, #f59e0b, #b45309)', handler: () => uni.navigateTo({ url: '/pages/work/work' }) },
-  { id: 4, title: '学习', desc: '学习计划与助手', emoji: '📚', gradient: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', handler: () => uni.navigateTo({ url: '/pages/study/index' }) }
-]
+// 切换密码可见性
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
+}
 
-function togglePasswordVisibility() { showPassword.value = !showPassword.value }
+// 登录
 async function handleLogin() {
   authError.value = ''
   try {
@@ -157,19 +201,47 @@ async function handleLogin() {
     uni.showToast({ title: e.message, icon: 'none' })
   }
 }
-function handleRegister() { uni.navigateTo({ url: '/pages/register/register' }) }
-function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }) }
+
+// 注册
+async function handleRegister() {
+  uni.navigateTo({ url: '/pages/register/register' })
+}
+
+// 个人中心
+function goProfile() {
+  uni.navigateTo({ url: '/pages/profile/index' })
+}
+
+// 功能跳转
+function goFitness() {
+  uni.navigateTo({ url: '/pages/workout/workout' })
+}
+
+function goWeightLoss() {
+  uni.navigateTo({ url: '/pages/weightloss/weightloss' })
+}
+
+function goWellness() {
+  uni.navigateTo({ url: '/pages/wellness/wellness' })
+}
+
+function goWork() {
+  uni.navigateTo({ url: '/pages/work/work' })
+}
+
+function goStudy() {
+  uni.navigateTo({ url: '/pages/study/index' })
+}
 </script>
 
 <style scoped>
-/* 全局变量 */
 .container {
   padding: 32rpx;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
-/* ========= 登录卡片 ========= */
+/* ========= 登录表单样式 - 高级毛玻璃（未修改） ========= */
 .auth-card {
   margin-top: 80rpx;
   padding: 50rpx 40rpx 60rpx;
@@ -436,49 +508,45 @@ function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }) }
 
 .menu-card .card-glow {
   position: absolute;
-  top: -30%;
+  top: -20%;
   left: -20%;
   width: 140%;
   height: 140%;
-  background: radial-gradient(circle, rgba(59,130,246,0.15), transparent);
+  background: radial-gradient(circle, rgba(255,255,245,0.4) 0%, rgba(255,255,255,0) 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
   pointer-events: none;
+  border-radius: 50%;
 }
-.logo-section { text-align: center; margin-bottom: 60rpx; }
-.logo-circle {
+
+.menu-card:active {
+  transform: scale(0.96);
+  box-shadow: 0 28rpx 50rpx rgba(59, 130, 246, 0.18);
+}
+.menu-card:active .card-glow {
+  opacity: 0.5;
+}
+
+.card-icon-wrapper {
+  margin-bottom: 28rpx;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
   width: 120rpx;
   height: 120rpx;
-  background: linear-gradient(145deg, #3b82f6, #1e3a8a);
-  border-radius: 60rpx;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 20rpx 30rpx -10rpx rgba(59,130,246,0.4);
-  margin-bottom: 24rpx;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 80rpx;
+  backdrop-filter: blur(4rpx);
+  transition: transform 0.2s ease;
 }
-.logo-emoji { font-size: 64rpx; }
-.logo-text { font-size: 56rpx; font-weight: 800; background: linear-gradient(135deg, #1e293b, #2d3e5f); -webkit-background-clip: text; background-clip: text; color: transparent; display: block; }
-.logo-caption { font-size: 24rpx; color: #6b7280; margin-top: 12rpx; letter-spacing: 2rpx; }
+.menu-card:active .card-icon-wrapper {
+  transform: scale(0.94);
+}
 
-.input-field {
-  position: relative;
-  margin-bottom: 32rpx;
-  background: rgba(255,255,255,0.9);
-  border-radius: 60rpx;
-  height: 100rpx;
-  display: flex;
-  align-items: center;
-  padding: 0 24rpx;
-  border: 1rpx solid rgba(0,0,0,0.05);
-  transition: all 0.2s;
+.card-icon {
+  font-size: 80rpx;
+  filter: drop-shadow(0 8rpx 14rpx rgba(0, 0, 0, 0.1));
 }
-.input-field:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 6rpx rgba(59,130,246,0.1);
-}
-.field-icon { font-size: 36rpx; margin-right: 20rpx; opacity: 0.6; }
-.input-field input { flex: 1; font-size: 32rpx; color: #1f2937; }
-.pwd-toggle { font-size: 36rpx; padding: 10rpx; }
-.placeholder-light { color: #9ca3af; }
 
 .card-title {
   font-size: 40rpx;
@@ -513,23 +581,8 @@ function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }) }
   backdrop-filter: blur(4rpx);
 }
 
-/* 用户卡片 */
-.user-card {
-  background: rgba(255,255,255,0.75);
-  backdrop-filter: blur(30rpx);
-  border-radius: 48rpx;
-  padding: 24rpx;
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  border: 1rpx solid rgba(255,255,255,0.8);
-  box-shadow: 0 15rpx 35rpx -12rpx rgba(0,0,0,0.05);
-}
-.user-avatar {
-  width: 96rpx;
-  height: 96rpx;
-  background: linear-gradient(145deg, #e0e7ff, #ffffff);
-  border-radius: 48rpx;
+/* 健康小贴士 - 学习页面风格 */
+.health-tip {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -543,13 +596,10 @@ function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }) }
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
   transition: all 0.2s;
 }
-.settings-btn:active { transform: scale(0.92); background: rgba(0,0,0,0.08); }
 
-/* 2x2 网格菜单 */
-.menu-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28rpx;
+.tip-icon {
+  font-size: 36rpx;
+  filter: drop-shadow(0 2rpx 6rpx rgba(80, 120, 80, 0.2));
 }
 
 .tip-text {
@@ -559,66 +609,24 @@ function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }) }
   letter-spacing: 0.5rpx;
   flex: 1;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.2,0.9,0.4,1.2);
-  border: 1rpx solid rgba(255,255,255,0.9);
-  box-shadow: 0 12rpx 30rpx -10rpx rgba(0,0,0,0.05);
-  overflow: hidden;
 }
-.menu-item:active {
-  transform: scale(0.96);
-  box-shadow: 0 6rpx 16rpx -8rpx rgba(0,0,0,0.1);
+
+.tip-spark {
+  font-size: 28rpx;
+  opacity: 0.7;
 }
-.item-glow {
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.4), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
+
+/* 底部环境光晕 */
+.dashboard-ambient {
+  position: fixed;
+  bottom: -10%;
+  left: -20%;
+  width: 140%;
+  height: 240rpx;
+  background: radial-gradient(ellipse, rgba(150, 180, 210, 0.3), transparent 70%);
+  border-radius: 50%;
   pointer-events: none;
-}
-.menu-item:active .item-glow { opacity: 0.6; }
-.item-icon {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 36rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24rpx;
-  box-shadow: 0 8rpx 20rpx -6rpx rgba(0,0,0,0.15);
-}
-.item-icon text { font-size: 56rpx; }
-.item-title { font-size: 34rpx; font-weight: 800; color: #111827; margin-bottom: 8rpx; }
-.item-desc { font-size: 22rpx; color: #6b7280; font-weight: 500; }
-
-/* 习惯卡片 */
-.habit-card {
-  background: rgba(255,255,255,0.8);
-  backdrop-filter: blur(30rpx);
-  border-radius: 48rpx;
-  padding: 28rpx 32rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1rpx solid rgba(255,255,255,0.8);
-  box-shadow: 0 15rpx 35rpx -12rpx rgba(0,0,0,0.05);
-}
-.habit-left { display: flex; align-items: center; gap: 20rpx; flex: 1; }
-.habit-icon { font-size: 48rpx; background: linear-gradient(135deg, #34d399, #10b981); width: 72rpx; height: 72rpx; border-radius: 36rpx; display: flex; align-items: center; justify-content: center; }
-.habit-text { flex: 1; }
-.habit-label { font-size: 22rpx; font-weight: 600; color: #10b981; display: block; margin-bottom: 6rpx; letter-spacing: 1rpx; }
-.habit-content { font-size: 28rpx; font-weight: 600; color: #1f2937; display: block; }
-.habit-sparkle { font-size: 40rpx; animation: float 2s infinite; }
-
-/* 底部文字 */
-.footer-note {
-  text-align: center;
-  font-size: 24rpx;
-  color: #9ca3af;
-  padding: 20rpx 0 40rpx;
-  letter-spacing: 1rpx;
+  z-index: -1;
+  filter: blur(50rpx);
 }
 </style>
