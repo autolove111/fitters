@@ -13,12 +13,12 @@
         <view class="nav-section">
           <view class="primary-action" @click="startNewChat">
             <u-icon name="plus" size="30" color="#f3ece7" />
-            <text>New Chat</text>
+            <text>新建对话</text>
           </view>
         </view>
 
         <view class="nav-section">
-          <text class="section-label">Chat</text>
+          <text class="section-label">对话</text>
           <view class="session-group">
             <text class="group-label">{{ sessionGroupTitle }}</text>
             <view
@@ -28,9 +28,9 @@
               @click="openSession(session.id)"
             >
               <view class="session-dot" />
-              <text class="session-text">{{ session.title || 'New chat' }}</text>
+              <text class="session-text">{{ session.title || '新对话' }}</text>
             </view>
-            <text v-if="recentSessions.length === 0" class="session-empty">No chat history yet</text>
+            <text v-if="recentSessions.length === 0" class="session-empty">暂无对话记录</text>
           </view>
         </view>
 
@@ -58,8 +58,8 @@
           <view class="hero-badge">
             <u-icon name="bookmark" size="34" color="#7d736d" />
           </view>
-          <text class="hero-title">What would you like to learn?</text>
-          <text class="hero-subtitle">Plan, explore, and start a new tutoring conversation from one place.</text>
+          <text class="hero-title">今天想学点什么？</text>
+          <text class="hero-subtitle">制定计划、探索知识、开始你的专属学习对话</text>
         </view>
 
         <scroll-view
@@ -74,7 +74,7 @@
           </view>
           <view v-if="chatStore.state.isStreaming" class="streaming-row">
             <view class="streaming-bubble">
-              <text>{{ chatStore.state.streamingContent || 'Thinking...' }}</text>
+              <text>{{ chatStore.state.streamingContent || '思考中...' }}</text>
             </view>
           </view>
           <view id="msg-bottom" class="msg-bottom" />
@@ -103,9 +103,8 @@
           <textarea
             v-model="draft"
             class="composer-textarea"
-            auto-height
             maxlength="8000"
-            placeholder="How can I help you today?"
+            placeholder="输入你的问题..."
             placeholder-class="composer-placeholder"
             @confirm="submitDraft"
           />
@@ -114,11 +113,11 @@
             <view class="composer-toolbar">
               <view class="tool-pill" @click="goKnowledge">
                 <u-icon name="file-text" size="22" color="#a59a92" />
-                <text>Knowledge</text>
+                <text>知识库</text>
               </view>
               <view class="tool-pill" @click="goSkills">
                 <u-icon name="star" size="22" color="#a59a92" />
-                <text>Skill</text>
+                <text>技能</text>
               </view>
               <view class="send-button" @click="submitDraft">
                 <u-icon
@@ -145,37 +144,37 @@ const capabilityOptions = [
   {
     key: 'chat',
     value: 'chat',
-    label: 'Chat',
+    label: '对话',
     icon: 'chat',
-    description: 'Flexible conversation with any tool',
+    description: '灵活对话，支持多种工具',
   },
   {
     key: 'solve',
     value: 'deep_solve',
-    label: 'Solve',
+    label: '解题',
     icon: 'grid',
-    description: 'Multi-step reasoning & problem solving',
+    description: '多步骤推理与问题求解',
   },
   {
     key: 'quiz',
     value: 'deep_question',
-    label: 'Quiz',
+    label: '出题',
     icon: 'edit-pen',
-    description: 'Auto-validated question generation',
+    description: '自动生成练习题目',
   },
   {
     key: 'research',
     value: 'deep_research',
-    label: 'Research',
+    label: '研究',
     icon: 'search',
-    description: 'Comprehensive multi-agent research',
+    description: '多智能体深度研究',
   },
   {
     key: 'visualize',
     value: 'visualize',
-    label: 'Visualize',
+    label: '可视化',
     icon: 'bar-chart',
-    description: 'Generate charts, diagrams, and visual explanations',
+    description: '生成图表与可视化解释',
   },
 ]
 
@@ -190,11 +189,11 @@ export default {
       showCapabilityMenu: false,
       capabilityOptions,
       menuItems: [
-        // { label: 'Sessions', icon: 'clock', route: '/pages/study/deeptutor/chat/session' },
-        { label: 'Knowledge', icon: 'bookmark', route: '/pages/study/deeptutor/knowledge/list' },
-        { label: 'Skills', icon: 'star', route: '/pages/study/deeptutor/skills/list' },
-        // { label: 'Memory', icon: 'heart', route: '/pages/study/deeptutor/memory/overview' },
-        { label: 'Settings', icon: 'setting', route: '/pages/study/deeptutor/settings/index' },
+        // { label: '会话', icon: 'clock', route: '/pages/study/deeptutor/chat/session' },
+        { label: '知识库', icon: 'bookmark', route: '/pages/study/deeptutor/knowledge/list' },
+        { label: '技能', icon: 'star', route: '/pages/study/deeptutor/skills/list' },
+        // { label: '记忆', icon: 'heart', route: '/pages/study/deeptutor/memory/overview' },
+        { label: '设置', icon: 'setting', route: '/pages/study/deeptutor/settings/index' },
       ],
       isSidebarOpen: false,
     }
@@ -204,13 +203,13 @@ export default {
       return this.chatStore.state.messages
     },
     sessionGroupTitle() {
-      if (!this.recentSessions.length) return 'RECENT'
+      if (!this.recentSessions.length) return '最近'
       const latest = this.recentSessions[0]?.updated_at
-      if (!latest) return 'RECENT'
+      if (!latest) return '最近'
       const latestKey = dayjs(latest).format('YYYY-MM-DD')
-      if (latestKey === dayjs().format('YYYY-MM-DD')) return 'TODAY'
-      if (latestKey === dayjs().subtract(1, 'day').format('YYYY-MM-DD')) return 'YESTERDAY'
-      return dayjs(latest).format('MMM DD').toUpperCase()
+      if (latestKey === dayjs().format('YYYY-MM-DD')) return '今天'
+      if (latestKey === dayjs().subtract(1, 'day').format('YYYY-MM-DD')) return '昨天'
+      return dayjs(latest).format('MM月DD日')
     },
     selectedCapability() {
       return this.capabilityOptions.find((item) => item.value === this.chatStore.state.capability) || this.capabilityOptions[0]
@@ -269,7 +268,7 @@ export default {
         this.isSidebarOpen = false
         this.scrollToBottom()
       } catch (e) {
-        uni.showToast({ title: 'Failed to open session', icon: 'none' })
+        uni.showToast({ title: '打开对话失败', icon: 'none' })
       }
     },
     toggleCapabilityMenu() {
@@ -351,7 +350,7 @@ export default {
   padding: 28rpx 24rpx 32rpx;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
-  z-index: 110;
+  z-index: 900;
   overflow-y: auto;
 }
 
@@ -363,7 +362,7 @@ export default {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
-  z-index: 100;
+  z-index: 850;
 }
 
 .brand-block {
@@ -506,13 +505,14 @@ export default {
   min-height: 0;
   position: relative;
   z-index: 1;
+  isolation: isolate;
 }
 
 .page-topbar {
   position: fixed;
   top: 24rpx;
   right: 24rpx;
-  z-index: 130;
+  z-index: 1000;
 }
 
 .menu-toggle-btn {
@@ -671,7 +671,7 @@ export default {
 
 .composer-textarea {
   width: 100%;
-  min-height: 180rpx;
+  height: 180rpx;
   max-height: 320rpx;
   padding: 34rpx 34rpx 22rpx;
   color: #0f172a;
@@ -679,6 +679,7 @@ export default {
   line-height: 1.65;
   background: transparent;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .composer-placeholder {
@@ -768,7 +769,7 @@ export default {
   }
 
   .composer-textarea {
-    min-height: 160rpx;
+    height: 160rpx;
     font-size: 28rpx;
   }
 
