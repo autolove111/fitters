@@ -112,38 +112,20 @@
 
           <view class="composer-footer">
             <view class="composer-toolbar">
-              <view class="left-actions">
-                <view class="capability-pill active" @click="toggleCapabilityMenu">
-                  <u-icon :name="selectedCapability.icon" size="22" color="#ea8f57" />
-                  <text>{{ selectedCapability.label }}</text>
-                  <u-icon :name="showCapabilityMenu ? 'arrow-up' : 'arrow-down'" size="18" color="#ea8f57" />
-                </view>
-                <view class="tool-pill" @click="goKnowledge">
-                  <u-icon name="file-text" size="22" color="#a59a92" />
-                  <text>Knowledge</text>
-                </view>
-                <view class="tool-pill" @click="goSkills">
-                  <u-icon name="star" size="22" color="#a59a92" />
-                  <text>Skill</text>
-                </view>
-                <view class="tool-pill" @click="goMemory">
-                  <u-icon name="bookmark" size="22" color="#a59a92" />
-                  <text>Memory</text>
-                </view>
+              <view class="tool-pill" @click="goKnowledge">
+                <u-icon name="file-text" size="22" color="#a59a92" />
+                <text>Knowledge</text>
               </view>
-
-              <view class="composer-actions">
-                <view class="model-pill">
-                  <u-icon name="grid" size="22" color="#8f8178" />
-                  <text>{{ selectedModelLabel }}</text>
-                </view>
-                <view class="send-button" @click="submitDraft">
-                  <u-icon
-                    :name="chatStore.state.isStreaming ? 'close-circle' : 'arrow-up'"
-                    size="28"
-                    :color="chatStore.state.isStreaming ? '#f6d6d1' : '#201d1a'"
-                  />
-                </view>
+              <view class="tool-pill" @click="goSkills">
+                <u-icon name="star" size="22" color="#a59a92" />
+                <text>Skill</text>
+              </view>
+              <view class="send-button" @click="submitDraft">
+                <u-icon
+                  :name="chatStore.state.isStreaming ? 'close-circle' : 'arrow-up'"
+                  size="28"
+                  :color="chatStore.state.isStreaming ? '#f6d6d1' : '#201d1a'"
+                />
               </view>
             </view>
           </view>
@@ -208,10 +190,10 @@ export default {
       showCapabilityMenu: false,
       capabilityOptions,
       menuItems: [
-        { label: 'Sessions', icon: 'clock', route: '/pages/study/deeptutor/chat/session' },
+        // { label: 'Sessions', icon: 'clock', route: '/pages/study/deeptutor/chat/session' },
         { label: 'Knowledge', icon: 'bookmark', route: '/pages/study/deeptutor/knowledge/list' },
         { label: 'Skills', icon: 'star', route: '/pages/study/deeptutor/skills/list' },
-        { label: 'Memory', icon: 'heart', route: '/pages/study/deeptutor/memory/overview' },
+        // { label: 'Memory', icon: 'heart', route: '/pages/study/deeptutor/memory/overview' },
         { label: 'Settings', icon: 'setting', route: '/pages/study/deeptutor/settings/index' },
       ],
       isSidebarOpen: false,
@@ -522,6 +504,8 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .page-topbar {
@@ -709,16 +693,7 @@ export default {
 .composer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-  flex-wrap: wrap;
-}
-
-.left-actions {
-  display: flex;
-  align-items: center;
   gap: 12rpx;
-  flex-wrap: wrap;
 }
 
 .capability-pill,
@@ -743,26 +718,6 @@ export default {
   box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.12);
 }
 
-.composer-actions {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-left: auto;
-}
-
-.model-pill {
-  flex: 0 0 auto;
-  min-width: 0;
-  height: 64rpx;
-  border-radius: 18rpx;
-  padding: 0 18rpx;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0f172a;
-  font-size: 24rpx;
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-}
 
 .send-button {
   width: 72rpx;
@@ -772,6 +727,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
 }
 
 @media screen and (min-width: 960px) {
@@ -816,25 +772,5 @@ export default {
     font-size: 28rpx;
   }
 
-  .composer-toolbar {
-    align-items: stretch;
-    gap: 20rpx;
-  }
-
-  .left-actions {
-    width: 100%;
-  }
-
-  .composer-actions {
-    width: 100%;
-    justify-content: flex-end;
-    margin-left: 0;
-    gap: 20rpx;
-  }
-
-  .model-pill {
-    flex: 1;
-    min-width: 0;
-  }
 }
 </style>
