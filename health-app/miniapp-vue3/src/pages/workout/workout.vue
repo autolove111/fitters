@@ -281,7 +281,7 @@ async function loadDashboard() {
     const waterMl = waterTodayData.totalMl ?? 0
     const waterTarget = waterTodayData.targetMl ?? 2000
     // 6. 体重数据
-    const weightKg = weightTodayData.weightKg ?? 0
+    const weightKg = weightTodayData?.weightKg ?? 0
 
     todayStats.value = {
       workoutMinutes,

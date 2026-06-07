@@ -7,11 +7,11 @@ import { statsRouter } from "./modules/stats/router.js";
 import { workoutsRouter } from "./modules/workouts/router.js";
 import { sleepRouter } from "./modules/sleep/router.js";
 import { dietRouter } from "./modules/diet/router.js";
-import { foodRouter } from "./modules/food/router.js";
-import { mealRouter } from "./modules/meal/router.js";
 import { usersRouter } from "./modules/users/router.js";
 import { plansRouter } from "./modules/plans/router.js";
 import { workRouter } from "./modules/work/router.js";
+import { waterRouter } from "./modules/water/router.js";
+import { weightRouter } from "./modules/weight/router.js";
 import { errorHandler } from "./common/errors.js";
 
 const UPLOADS_DIR = "uploads";
@@ -38,10 +38,10 @@ export function createApp() {
   app.use("/api/stats", statsRouter);
   app.use("/api/sleeps", sleepRouter);
   app.use("/api/diets", dietRouter);
-  app.use("/api/foods", foodRouter);
-  app.use("/api/meals", mealRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/work", workRouter);
+  app.use("/api/waters", waterRouter);
+  app.use("/api/weights", weightRouter);
   app.use(errorHandler);
 
   return app;

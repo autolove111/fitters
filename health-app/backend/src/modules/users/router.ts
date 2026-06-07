@@ -254,3 +254,40 @@ usersRouter.delete(
     ok(res, null, "account deleted");
   }),
 );
+
+usersRouter.get(
+  "/theme",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { theme: true },
+    });
+
+    if (!user) {
+      throw new HttpError(404, "user not found");
+    }
+
+    ok(res, { theme: user.theme || "light" });
+  }),
+);
+
+usersRouter.put(
+  "/theme",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const { mode } = req.body as { mode: string };
+
+    if (!["light", "dark", "auto"].includes(mode)) {
+      throw new HttpError(400, "invalid theme mode");
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { theme: mode },
+    });
+
+    ok(res, { theme: mode }, "theme updated");
+  }),
+);
