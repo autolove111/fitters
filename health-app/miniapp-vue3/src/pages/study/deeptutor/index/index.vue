@@ -1,13 +1,13 @@
 <template>
   <view class="workspace-page">
     <view class="shell">
-      <view :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
+      <view :class="['sidebar', { 'sidebar-open': isSidebarOpen }]" :style="{ top: navBarHeight + 'px' }">
         <view class="brand-block">
           <view class="brand-row">
             <view class="brand-mark">A</view>
             <text class="brand-name">AidLearning</text>
           </view>
-          <!-- <view class="brand-badge">v1.4.0</view> -->
+          <!-- <view class="brand-badge">v1.0.0</view> -->
         </view>
 
         <view class="nav-section">
@@ -47,13 +47,13 @@
         </view>
       </view>
 
-      <view class="page-topbar">
+      <view class="page-topbar" :style="{ top: (navBarHeight + 12) + 'px' }">
         <button class="menu-toggle-btn" @click="toggleSidebar">
           <u-icon name="menu" color="#0f172a" />
         </button>
       </view>
 
-      <view class="main-panel">
+      <view class="main-panel" :style="{ paddingTop: (navBarHeight + 60) + 'px' }">
         <view v-if="!messages.length" class="hero">
           <view class="hero-badge">
             <u-icon name="bookmark" size="34" color="#7d736d" />
@@ -196,6 +196,7 @@ export default {
         { label: '设置', icon: 'setting', route: '/pages/study/deeptutor/settings/index' },
       ],
       isSidebarOpen: false,
+      navBarHeight: 0,
     }
   },
   computed: {
@@ -235,6 +236,8 @@ export default {
     },
   },
   onShow() {
+    const sys = uni.getSystemInfoSync()
+    this.navBarHeight = sys.statusBarHeight + 44
     this.chatStore.ensureConnected()
     if (!this.chatStore.state.capability || this.chatStore.state.capability === 'tutor') {
       this.chatStore.state.capability = 'chat'
@@ -340,17 +343,15 @@ export default {
 
 .sidebar {
   position: fixed;
-  top: 0;
   left: 0;
   bottom: 0;
   width: 300rpx;
-  background: linear-gradient(180deg, rgba(243, 249, 255, 0.98), rgba(238, 245, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(180deg, #f3f9ff, #eef5ff);
   border-right: 1rpx solid rgba(255, 255, 255, 0.7);
   padding: 28rpx 24rpx 32rpx;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
-  z-index: 900;
+  z-index: 100;
   overflow-y: auto;
 }
 
@@ -362,7 +363,7 @@ export default {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
-  z-index: 850;
+  z-index: 99;
 }
 
 .brand-block {
@@ -499,20 +500,16 @@ export default {
 
 .main-panel {
   flex: 1;
-  padding: 120rpx 24rpx 40rpx;
+  padding: 24rpx 24rpx 40rpx;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  position: relative;
-  z-index: 1;
-  isolation: isolate;
 }
 
 .page-topbar {
   position: fixed;
-  top: 24rpx;
   right: 24rpx;
-  z-index: 1000;
+  z-index: 101;
 }
 
 .menu-toggle-btn {
@@ -545,8 +542,7 @@ export default {
   height: 88rpx;
   border-radius: 28rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(96, 165, 250, 0.22));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -583,8 +579,7 @@ export default {
 
 .streaming-bubble {
   max-width: 85%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   padding: 24rpx 30rpx;
   border-radius: 28rpx 28rpx 28rpx 4rpx;
   font-size: 28rpx;
@@ -603,8 +598,7 @@ export default {
   max-width: 1100rpx;
   align-self: center;
   border-radius: 40rpx;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   border: 1rpx solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 28rpx 50rpx rgba(15, 23, 42, 0.06);
   overflow: hidden;
@@ -615,8 +609,7 @@ export default {
   border-radius: 36rpx;
   overflow: hidden;
   border: 1rpx solid rgba(255, 255, 255, 0.85);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
@@ -750,7 +743,6 @@ export default {
   }
 
   .main-panel {
-    padding-top: 40rpx;
     margin-left: 300rpx;
     width: calc(100% - 300rpx);
   }
