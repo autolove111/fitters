@@ -345,7 +345,7 @@ export default {
   position: fixed;
   left: 0;
   bottom: 0;
-  width: 300rpx;
+  width: 340rpx;
   background: linear-gradient(180deg, #f3f9ff, #eef5ff);
   border-right: 1rpx solid rgba(255, 255, 255, 0.7);
   padding: 28rpx 24rpx 32rpx;
@@ -730,8 +730,8 @@ export default {
   }
 
   .sidebar {
-    width: 300rpx;
-    min-width: 300rpx;
+    width: 340rpx;
+    min-width: 340rpx;
     min-height: 100vh;
     border-bottom: none;
     border-right: 1rpx solid rgba(255, 255, 255, 0.7);
@@ -743,8 +743,8 @@ export default {
   }
 
   .main-panel {
-    margin-left: 300rpx;
-    width: calc(100% - 300rpx);
+    margin-left: 340rpx;
+    width: calc(100% - 340rpx);
   }
 
   .menu-item {
