@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from deeptutor.services.llm import openai_http_client
-from deeptutor.services.llm.exceptions import LLMConfigError
+from aidlearning.services.llm import openai_http_client
+from aidlearning.services.llm.exceptions import LLMConfigError
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,7 @@ def test_openai_client_kwargs_rejects_production(monkeypatch: pytest.MonkeyPatch
 
 
 def test_provider_core_passes_disable_ssl_http_client(monkeypatch: pytest.MonkeyPatch) -> None:
-    from deeptutor.services.llm.provider_core import openai_compat_provider as provider_mod
+    from aidlearning.services.llm.provider_core import openai_compat_provider as provider_mod
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, provider_mod)
@@ -72,7 +72,7 @@ def test_provider_core_passes_disable_ssl_http_client(monkeypatch: pytest.Monkey
 
 
 def test_azure_provider_passes_disable_ssl_http_client(monkeypatch: pytest.MonkeyPatch) -> None:
-    from deeptutor.services.llm.provider_core import azure_openai_provider as azure_mod
+    from aidlearning.services.llm.provider_core import azure_openai_provider as azure_mod
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, azure_mod)
@@ -90,7 +90,7 @@ def test_azure_provider_passes_disable_ssl_http_client(monkeypatch: pytest.Monke
 def test_tutorbot_provider_passes_disable_ssl_http_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from deeptutor.tutorbot.providers import openai_compat_provider as tutorbot_mod
+    from aidlearning.tutorbot.providers import openai_compat_provider as tutorbot_mod
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, tutorbot_mod)
@@ -105,7 +105,7 @@ def test_tutorbot_provider_passes_disable_ssl_http_client(
 async def test_sdk_complete_passes_disable_ssl_http_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from deeptutor.services.llm import executors
+    from aidlearning.services.llm import executors
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, executors)
@@ -135,7 +135,7 @@ async def test_sdk_complete_passes_disable_ssl_http_client(
 async def test_sdk_stream_passes_disable_ssl_http_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from deeptutor.services.llm import executors
+    from aidlearning.services.llm import executors
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, executors)
@@ -181,7 +181,7 @@ async def test_sdk_stream_passes_disable_ssl_http_client(
 def test_embedding_sdk_passes_disable_ssl_http_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from deeptutor.services.embedding.adapters import openai_sdk as embedding_mod
+    from aidlearning.services.embedding.adapters import openai_sdk as embedding_mod
 
     clients = _enable_ssl_override(monkeypatch)
     captured = _capture_async_openai(monkeypatch, embedding_mod)

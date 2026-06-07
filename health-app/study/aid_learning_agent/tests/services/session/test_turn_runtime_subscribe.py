@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from deeptutor.services.session.sqlite_store import SQLiteSessionStore
-from deeptutor.services.session.turn_runtime import TurnRuntimeManager, _TurnExecution
+from aidlearning.services.session.sqlite_store import SQLiteSessionStore
+from aidlearning.services.session.turn_runtime import TurnRuntimeManager, _TurnExecution
 
 
 @pytest.mark.asyncio

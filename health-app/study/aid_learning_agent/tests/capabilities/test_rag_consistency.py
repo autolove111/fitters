@@ -21,9 +21,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 
 async def _drain(bus: StreamBus, task) -> list[StreamEvent]:
@@ -47,7 +47,7 @@ def _fake_llm_config() -> MagicMock:
 
 @pytest.mark.asyncio
 async def test_deep_solve_omits_rag_when_no_knowledge_base() -> None:
-    from deeptutor.capabilities.deep_solve import DeepSolveCapability
+    from aidlearning.capabilities.deep_solve import DeepSolveCapability
 
     captured_kwargs: dict[str, Any] = {}
 
@@ -74,11 +74,11 @@ async def test_deep_solve_omits_rag_when_no_knowledge_base() -> None:
 
     with (
         patch(
-            "deeptutor.capabilities.deep_solve.SolvePipeline",
+            "aidlearning.capabilities.deep_solve.SolvePipeline",
             new=_FakePipeline,
         ),
         patch(
-            "deeptutor.services.llm.config.get_llm_config",
+            "aidlearning.services.llm.config.get_llm_config",
             return_value=_fake_llm_config(),
         ),
     ):
@@ -91,7 +91,7 @@ async def test_deep_solve_omits_rag_when_no_knowledge_base() -> None:
 
 @pytest.mark.asyncio
 async def test_deep_solve_forwards_kb_when_knowledge_base_attached() -> None:
-    from deeptutor.capabilities.deep_solve import DeepSolveCapability
+    from aidlearning.capabilities.deep_solve import DeepSolveCapability
 
     captured_kwargs: dict[str, Any] = {}
 
@@ -116,11 +116,11 @@ async def test_deep_solve_forwards_kb_when_knowledge_base_attached() -> None:
 
     with (
         patch(
-            "deeptutor.capabilities.deep_solve.SolvePipeline",
+            "aidlearning.capabilities.deep_solve.SolvePipeline",
             new=_FakePipeline,
         ),
         patch(
-            "deeptutor.services.llm.config.get_llm_config",
+            "aidlearning.services.llm.config.get_llm_config",
             return_value=_fake_llm_config(),
         ),
     ):
@@ -144,7 +144,7 @@ async def test_deep_research_forwards_enabled_tools_and_kb_unchanged() -> None:
     and the attached KB (``kb_name``) through to the pipeline as-is. There
     is no per-source gating: ``compose_enabled_tools`` (run inside the
     pipeline) is the single arbiter of what the block loop sees."""
-    from deeptutor.capabilities.deep_research import DeepResearchCapability
+    from aidlearning.capabilities.deep_research import DeepResearchCapability
 
     captured_kwargs: dict[str, Any] = {}
 
@@ -177,15 +177,15 @@ async def test_deep_research_forwards_enabled_tools_and_kb_unchanged() -> None:
 
     with (
         patch(
-            "deeptutor.capabilities.deep_research.ResearchPipeline",
+            "aidlearning.capabilities.deep_research.ResearchPipeline",
             new=_FakePipeline,
         ),
         patch(
-            "deeptutor.services.llm.config.get_llm_config",
+            "aidlearning.services.llm.config.get_llm_config",
             return_value=_fake_llm_config(),
         ),
         patch(
-            "deeptutor.capabilities.deep_research.load_config_with_main",
+            "aidlearning.capabilities.deep_research.load_config_with_main",
             return_value={},
         ),
     ):

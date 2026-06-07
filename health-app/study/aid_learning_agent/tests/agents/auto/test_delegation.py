@@ -1,4 +1,4 @@
-"""Unit tests for ``deeptutor/agents/auto/delegation.py``.
+"""Unit tests for ``aidlearning/agents/auto/delegation.py``.
 
 Covers:
 * ``build_child_context`` correctly derives a child UnifiedContext via
@@ -16,14 +16,14 @@ from unittest.mock import patch
 
 import pytest
 
-from deeptutor.agents.auto.delegation import (
+from aidlearning.agents.auto.delegation import (
     build_child_context,
     delegate_to_capability,
 )
-from deeptutor.core.capability_protocol import BaseCapability, CapabilityManifest
-from deeptutor.core.context import Attachment, UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.core.capability_protocol import BaseCapability, CapabilityManifest
+from aidlearning.core.context import Attachment, UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 # --------------------------------------------------------------------------- #
 # Test fixtures                                                                #
@@ -173,7 +173,7 @@ async def test_delegate_happy_path_forwards_events_with_metadata():
             _evt(StreamEventType.RESULT, metadata={"response": "ok"}),
         ],
     )
-    with patch("deeptutor.agents.auto.delegation.get_capability_registry") as mock_get_reg:
+    with patch("aidlearning.agents.auto.delegation.get_capability_registry") as mock_get_reg:
         mock_get_reg.return_value.get.return_value = fake
 
         result = await delegate_to_capability(
@@ -215,7 +215,7 @@ async def test_delegate_injects_call_id_into_content_without_one():
             ),
         ],
     )
-    with patch("deeptutor.agents.auto.delegation.get_capability_registry") as mock_get_reg:
+    with patch("aidlearning.agents.auto.delegation.get_capability_registry") as mock_get_reg:
         mock_get_reg.return_value.get.return_value = fake
         result = await delegate_to_capability(
             cap_name="deep_solve",
@@ -238,7 +238,7 @@ async def test_delegate_injects_call_id_into_content_without_one():
 async def test_delegate_captures_raise_as_failure():
     parent_bus = StreamBus()
     fake = _FakeCapability(name="boom", raise_exc=RuntimeError("kaboom"))
-    with patch("deeptutor.agents.auto.delegation.get_capability_registry") as mock_get_reg:
+    with patch("aidlearning.agents.auto.delegation.get_capability_registry") as mock_get_reg:
         mock_get_reg.return_value.get.return_value = fake
         result = await delegate_to_capability(
             cap_name="boom",
@@ -259,7 +259,7 @@ async def test_delegate_marks_failure_on_error_event():
         name="errorful",
         events=[_evt(StreamEventType.ERROR, content="problem")],
     )
-    with patch("deeptutor.agents.auto.delegation.get_capability_registry") as mock_get_reg:
+    with patch("aidlearning.agents.auto.delegation.get_capability_registry") as mock_get_reg:
         mock_get_reg.return_value.get.return_value = fake
         result = await delegate_to_capability(
             cap_name="errorful",
@@ -275,7 +275,7 @@ async def test_delegate_marks_failure_on_error_event():
 @pytest.mark.asyncio
 async def test_delegate_unknown_capability_returns_failure():
     parent_bus = StreamBus()
-    with patch("deeptutor.agents.auto.delegation.get_capability_registry") as mock_get_reg:
+    with patch("aidlearning.agents.auto.delegation.get_capability_registry") as mock_get_reg:
         mock_get_reg.return_value.get.return_value = None
         result = await delegate_to_capability(
             cap_name="nonexistent",

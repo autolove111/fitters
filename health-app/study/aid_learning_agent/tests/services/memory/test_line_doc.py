@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from deeptutor.services.memory.consolidator.line_doc import (
+from aidlearning.memory.consolidator.line_doc import (
     DeleteLinesOp,
     InsertAfterOp,
     ReplaceLineOp,
@@ -10,8 +10,8 @@ from deeptutor.services.memory.consolidator.line_doc import (
     parse_edits_payload,
     render_view,
 )
-from deeptutor.services.memory.document import Document, Entry, serialize
-from deeptutor.services.memory.ids import new_entry_id
+from aidlearning.memory.long_term.document import Document, Entry, serialize
+from aidlearning.memory.shared.ids import new_entry_id
 
 
 def _doc_with_three_entries() -> tuple[Document, list[str]]:

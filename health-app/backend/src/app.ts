@@ -11,6 +11,7 @@ import { mealRouter } from "./modules/meal/router.js";
 import { usersRouter } from "./modules/users/router.js";
 import { plansRouter } from "./modules/plans/router.js";
 import { workRouter } from "./modules/work/router.js";
+import { studyRouter } from "./modules/study/router.js";
 import { errorHandler } from "./common/errors.js";
 
 export function createApp() {
@@ -34,6 +35,7 @@ export function createApp() {
   app.use("/api/meals", mealRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/work", workRouter);
+  app.use("/api/study", studyRouter);
   app.use(errorHandler);
 
   return app;

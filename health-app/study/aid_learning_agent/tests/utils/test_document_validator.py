@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from deeptutor.services.rag.file_routing import FileTypeRouter
-from deeptutor.utils.document_validator import DocumentValidator
+from aidlearning.services.rag.file_routing import FileTypeRouter
+from aidlearning.utils.document_validator import DocumentValidator
 
 
 def test_validate_upload_safety_preserves_unicode_and_lowercases_extension() -> None:

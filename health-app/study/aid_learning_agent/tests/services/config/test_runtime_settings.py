@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from deeptutor.services.config.runtime_settings import (
+from aidlearning.services.config.runtime_settings import (
     RuntimeSettingsService,
     ensure_runtime_settings_files,
 )
@@ -146,8 +146,8 @@ def test_startup_ensure_creates_missing_runtime_jsons_with_defaults(
     _clear_runtime_env(monkeypatch)
     settings_dir = tmp_path / "settings"
 
-    from deeptutor.services.config import model_catalog as model_catalog_module
-    from deeptutor.services.config import runtime_settings as runtime_settings_module
+    from aidlearning.services.config import model_catalog as model_catalog_module
+    from aidlearning.services.config import runtime_settings as runtime_settings_module
 
     runtime_settings_module.RuntimeSettingsService._instances.clear()
     model_catalog_module.ModelCatalogService._instances.clear()
@@ -178,7 +178,7 @@ def test_runtime_settings_can_ignore_process_overrides(tmp_path: Path) -> None:
     service = RuntimeSettingsService(
         tmp_path / "settings",
         process_env={
-            "DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES": "1",
+            "AIDLEARNING_IGNORE_PROCESS_ENV_OVERRIDES": "1",
             "BACKEND_PORT": "9901",
             "AUTH_ENABLED": "true",
         },

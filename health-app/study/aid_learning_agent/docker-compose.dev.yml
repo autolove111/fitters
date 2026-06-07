@@ -1,5 +1,5 @@
 # ============================================
-# DeepTutor Docker Compose - Development Override
+# AidLearning Docker Compose - Development Override
 # ============================================
 # Use with: python scripts/docker_compose.py -f docker-compose.yml -f docker-compose.dev.yml up
 #
@@ -14,13 +14,13 @@ services:
     volumes:
       - ./data/pocketbase:/pb/pb_data
 
-  deeptutor:
+  aidlearning:
     build:
       target: development
 
     volumes:
       # Mount backend source code for hot-reload
-      - ./deeptutor:/app/deeptutor:ro
+      - ./aidlearning:/app/aidlearning:ro
       - ./scripts:/app/scripts:ro
 
       # Mount frontend source for hot-reload
@@ -47,4 +47,4 @@ services:
     #     max-file: "3"
 
     networks:
-      - deeptutor-network
+      - aidlearning-network

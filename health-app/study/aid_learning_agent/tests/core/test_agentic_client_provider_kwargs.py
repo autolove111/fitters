@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from deeptutor.core.agentic.client import build_completion_kwargs
+from aidlearning.core.agentic.client import build_completion_kwargs
 
 
 def test_agentic_kwargs_disable_deepseek_flash_thinking_by_default() -> None:

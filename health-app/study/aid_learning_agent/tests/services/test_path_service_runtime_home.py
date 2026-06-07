@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from deeptutor.services.path_service import PathService
+from aidlearning.services.path_service import PathService
 
 
-def test_path_service_defaults_to_deeptutor_home(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("DEEPTUTOR_HOME", str(tmp_path))
+def test_path_service_defaults_to_aidlearning_home(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("AIDLEARNING_HOME", str(tmp_path))
     PathService.reset_instance()
 
     service = PathService.get_instance()

@@ -5,9 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from deeptutor.services.memory import paths, store
-from deeptutor.services.memory.store import MemoryStore, migrate_v1_if_needed
-from deeptutor.services.memory.trace import TraceEvent
+from aidlearning.memory.shared import paths
+from aidlearning.memory import store
+from aidlearning.memory.store import MemoryStore, migrate_v1_if_needed
+from aidlearning.memory.shared.trace import TraceEvent
 
 
 @pytest.fixture

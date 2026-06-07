@@ -30,6 +30,7 @@ model User {
   sleeps       SleepRecord[]
   diets        DietRecord[]
   workRecords  WorkRecord[]
+  studyPlans   StudyPlan[]
 
   @@map("users")
 }
@@ -138,4 +139,19 @@ model WorkRecord {
   @@index([userId, recordType, recordDate], map: "idx_work_records_user_type_date")
   @@index([userId, startTime], map: "idx_work_records_user_start")
   @@map("work_records")
+}
+
+model StudyPlan {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.VarChar(500)
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  status    String   @default("pending") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt], map: "idx_study_plans_user_created")
+  @@map("study_plans")
 }

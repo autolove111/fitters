@@ -1,22 +1,22 @@
-# DeepTutor CLI Skill
+# AidLearning CLI Skill
 
-> Teach your AI agent to configure, manage, and use DeepTutor — an intelligent learning platform — entirely through the command line.
+> Teach your AI agent to configure, manage, and use AidLearning — an intelligent learning platform — entirely through the command line.
 
 ## When to Use
 
 Use this skill when the user wants to:
-- Set up or configure DeepTutor
-- Chat with DeepTutor or run a capability (deep solve, quiz generation, deep research, math animation)
+- Set up or configure AidLearning
+- Chat with AidLearning or run a capability (deep solve, quiz generation, deep research, math animation)
 - Create, manage, or search knowledge bases
 - Manage TutorBot instances
 - View or manage learning memory, sessions, or notebooks
-- Start the DeepTutor API server
+- Start the AidLearning API server
 
 ## Prerequisites
 
 - Python 3.11+
-- DeepTutor installed: `pip install deeptutor` for the full Web app, `pip install deeptutor-cli` for CLI-only, or `pip install -e .` from a source checkout
-- Run `deeptutor init` for first-time interactive setup (configures LLM, embedding, and search providers under `data/user/settings`)
+- AidLearning installed: `pip install aidlearning` for the full Web app, `pip install aidlearning-cli` for CLI-only, or `pip install -e .` from a source checkout
+- Run `aidlearning init` for first-time interactive setup (configures LLM, embedding, and search providers under `data/user/settings`)
 
 ## Commands
 
@@ -24,14 +24,14 @@ Use this skill when the user wants to:
 
 ```bash
 # Interactive REPL
-deeptutor chat
-deeptutor chat --capability deep_solve --kb my-kb --tool rag --tool web_search
+aidlearning chat
+aidlearning chat --capability deep_solve --kb my-kb --tool rag --tool web_search
 
 # One-shot capability execution
-deeptutor run chat "Explain Fourier transform"
-deeptutor run deep_solve "Solve x^2 = 4" --tool rag --kb textbook
-deeptutor run deep_question "Linear algebra" --config num_questions=5
-deeptutor run deep_research "Attention mechanisms" --kb papers
+aidlearning run chat "Explain Fourier transform"
+aidlearning run deep_solve "Solve x^2 = 4" --tool rag --kb textbook
+aidlearning run deep_question "Linear algebra" --config num_questions=5
+aidlearning run deep_research "Attention mechanisms" --kb papers
 
 # Options for `run`:
 #   --session <id>         Resume existing session
@@ -48,65 +48,65 @@ deeptutor run deep_research "Attention mechanisms" --kb papers
 ### Knowledge Bases
 
 ```bash
-deeptutor kb list                              # List all knowledge bases
-deeptutor kb info <name>                       # Show knowledge base details
-deeptutor kb create <name> --doc file.pdf      # Create from documents (--doc repeatable)
-deeptutor kb add <name> --doc more.pdf         # Add documents incrementally
-deeptutor kb search <name> "query text"        # Search a knowledge base
-deeptutor kb set-default <name>                # Set as default KB
-deeptutor kb delete <name> [--force]           # Delete a knowledge base
+aidlearning kb list                              # List all knowledge bases
+aidlearning kb info <name>                       # Show knowledge base details
+aidlearning kb create <name> --doc file.pdf      # Create from documents (--doc repeatable)
+aidlearning kb add <name> --doc more.pdf         # Add documents incrementally
+aidlearning kb search <name> "query text"        # Search a knowledge base
+aidlearning kb set-default <name>                # Set as default KB
+aidlearning kb delete <name> [--force]           # Delete a knowledge base
 ```
 
 ### TutorBot
 
 ```bash
-deeptutor bot list                             # List all TutorBot instances
-deeptutor bot create <id> --name "My Tutor"    # Create and start a new bot
-deeptutor bot start <id>                       # Start a bot
-deeptutor bot stop <id>                        # Stop a bot
+aidlearning bot list                             # List all TutorBot instances
+aidlearning bot create <id> --name "My Tutor"    # Create and start a new bot
+aidlearning bot start <id>                       # Start a bot
+aidlearning bot stop <id>                        # Stop a bot
 ```
 
 ### Memory
 
 ```bash
-deeptutor memory show [summary|profile|all]    # View learning memory
-deeptutor memory clear [summary|profile|all]   # Clear memory (--force to skip confirm)
+aidlearning memory show [summary|profile|all]    # View learning memory
+aidlearning memory clear [summary|profile|all]   # Clear memory (--force to skip confirm)
 ```
 
 ### Sessions
 
 ```bash
-deeptutor session list [--limit 20]            # List sessions
-deeptutor session show <id>                    # View session messages
-deeptutor session open <id>                    # Resume session in REPL
-deeptutor session rename <id> --title "..."    # Rename a session
-deeptutor session delete <id>                  # Delete a session
+aidlearning session list [--limit 20]            # List sessions
+aidlearning session show <id>                    # View session messages
+aidlearning session open <id>                    # Resume session in REPL
+aidlearning session rename <id> --title "..."    # Rename a session
+aidlearning session delete <id>                  # Delete a session
 ```
 
 ### Notebooks
 
 ```bash
-deeptutor notebook list                        # List notebooks
-deeptutor notebook create <name>               # Create a notebook
-deeptutor notebook show <id>                   # View notebook records
-deeptutor notebook add-md <id> <file.md>       # Import markdown as record
-deeptutor notebook replace-md <id> <rec> <f>   # Replace a markdown record
-deeptutor notebook remove-record <id> <rec>    # Remove a record
+aidlearning notebook list                        # List notebooks
+aidlearning notebook create <name>               # Create a notebook
+aidlearning notebook show <id>                   # View notebook records
+aidlearning notebook add-md <id> <file.md>       # Import markdown as record
+aidlearning notebook replace-md <id> <rec> <f>   # Replace a markdown record
+aidlearning notebook remove-record <id> <rec>    # Remove a record
 ```
 
 ### System
 
 ```bash
-deeptutor config show                          # Print current configuration
-deeptutor plugin list                          # List registered tools and capabilities
-deeptutor plugin info <name>                   # Show tool/capability details
-deeptutor provider login <provider>            # OAuth login (openai-codex, github-copilot)
-deeptutor serve [--port 8001] [--reload]       # Start API server
+aidlearning config show                          # Print current configuration
+aidlearning plugin list                          # List registered tools and capabilities
+aidlearning plugin info <name>                   # Show tool/capability details
+aidlearning provider login <provider>            # OAuth login (openai-codex, github-copilot)
+aidlearning serve [--port 8001] [--reload]       # Start API server
 ```
 
 ## REPL Slash Commands
 
-Inside `deeptutor chat`, use these:
+Inside `aidlearning chat`, use these:
 
 | Command | Effect |
 |:---|:---|
@@ -125,23 +125,23 @@ Inside `deeptutor chat`, use these:
 
 **First-time setup:**
 ```bash
-cd DeepTutor
+cd AidLearning
 pip install -e .
-deeptutor init    # Interactive guided setup
+aidlearning init    # Interactive guided setup
 ```
 
 **Daily learning:**
 ```bash
-deeptutor chat --kb textbook --tool rag --tool web_search
+aidlearning chat --kb textbook --tool rag --tool web_search
 ```
 
 **Build a knowledge base from documents:**
 ```bash
-deeptutor kb create physics --doc ch1.pdf --doc ch2.pdf
-deeptutor run chat "Explain Newton's third law" --kb physics --tool rag
+aidlearning kb create physics --doc ch1.pdf --doc ch2.pdf
+aidlearning run chat "Explain Newton's third law" --kb physics --tool rag
 ```
 
 **Generate quiz questions:**
 ```bash
-deeptutor run deep_question "Thermodynamics" --kb physics --config num_questions=5
+aidlearning run deep_question "Thermodynamics" --kb physics --config num_questions=5
 ```

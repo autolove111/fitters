@@ -5,15 +5,15 @@ from typing import Any
 
 import pytest
 
-from deeptutor.api.routers import settings as settings_router
-from deeptutor.services.config.provider_runtime import (
+from aidlearning.api.routers import settings as settings_router
+from aidlearning.services.config.provider_runtime import (
     ResolvedEmbeddingConfig,
     ResolvedLLMConfig,
 )
-from deeptutor.services.embedding import client as embedding_client_module
-from deeptutor.services.embedding import config as embedding_config_module
-from deeptutor.services.llm import client as llm_client_module
-from deeptutor.services.llm import config as llm_config_module
+from aidlearning.services.embedding import client as embedding_client_module
+from aidlearning.services.embedding import config as embedding_config_module
+from aidlearning.services.llm import client as llm_client_module
+from aidlearning.services.llm import config as llm_config_module
 
 
 class _FakeEmbeddingAdapter:

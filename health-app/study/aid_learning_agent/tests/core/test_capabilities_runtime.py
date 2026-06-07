@@ -10,13 +10,13 @@ from typing import Any
 
 import pytest
 
-from deeptutor.capabilities.chat import ChatCapability
-from deeptutor.capabilities.deep_question import DeepQuestionCapability
-from deeptutor.capabilities.deep_research import DeepResearchCapability
-from deeptutor.capabilities.deep_solve import DeepSolveCapability
-from deeptutor.core.context import Attachment, UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.capabilities.chat import ChatCapability
+from aidlearning.capabilities.deep_question import DeepQuestionCapability
+from aidlearning.capabilities.deep_research import DeepResearchCapability
+from aidlearning.capabilities.deep_solve import DeepSolveCapability
+from aidlearning.core.context import Attachment, UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 
 def _install_module(
@@ -91,7 +91,7 @@ async def test_chat_capability_streams_content_and_geogebra_context(
             )
             await stream.content("assistant output", source="chat", stage="responding")
 
-    monkeypatch.setattr("deeptutor.capabilities.chat.AgenticChatPipeline", FakePipeline)
+    monkeypatch.setattr("aidlearning.capabilities.chat.AgenticChatPipeline", FakePipeline)
 
     context = UnifiedContext(
         user_message="analyze triangle",
@@ -152,7 +152,7 @@ async def test_deep_solve_capability_forwards_to_pipeline(
             await stream.result(payload, source="deep_solve")
             return payload
 
-    monkeypatch.setattr("deeptutor.capabilities.deep_solve.SolvePipeline", FakePipeline)
+    monkeypatch.setattr("aidlearning.capabilities.deep_solve.SolvePipeline", FakePipeline)
 
     context = UnifiedContext(
         user_message="solve x^2=4",
@@ -228,17 +228,17 @@ async def test_deep_question_capability_uses_single_call_followup_agent(
 
     _install_module(
         monkeypatch,
-        "deeptutor.agents.question.coordinator",
+        "aidlearning.agents.question.coordinator",
         AgentCoordinator=FakeCoordinator,
     )
     _install_module(
         monkeypatch,
-        "deeptutor.agents.question.agents.followup_agent",
+        "aidlearning.agents.question.agents.followup_agent",
         FollowupAgent=FakeFollowupAgent,
     )
     _install_module(
         monkeypatch,
-        "deeptutor.services.llm.config",
+        "aidlearning.services.llm.config",
         get_llm_config=lambda: SimpleNamespace(api_key="k", base_url="u", api_version="v1"),
     )
 
@@ -286,8 +286,8 @@ async def test_deep_research_capability_delegates_to_pipeline(
     in the capability module so we can assert what it was called with
     without spinning up real LLM I/O.
     """
-    import deeptutor.agents.research.request_config  # noqa: F401
-    import deeptutor.capabilities.deep_research as deep_research_mod
+    import aidlearning.agents.research.request_config  # noqa: F401
+    import aidlearning.capabilities.deep_research as deep_research_mod
 
     captured: dict[str, Any] = {}
 

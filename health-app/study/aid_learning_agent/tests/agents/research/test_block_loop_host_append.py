@@ -17,8 +17,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from deeptutor.agents.research.data_structures import DynamicTopicQueue, ToolTrace
-from deeptutor.agents.research.pipeline import (
+from aidlearning.agents.research.data_structures import DynamicTopicQueue, ToolTrace
+from aidlearning.agents.research.pipeline import (
     LABEL_APPEND,
     LABEL_FINISH,
     LABEL_THINK,
@@ -26,10 +26,10 @@ from deeptutor.agents.research.pipeline import (
     ResearchPipeline,
     _BlockLoopHost,
 )
-from deeptutor.agents.research.utils.citation_manager import CitationManager
-from deeptutor.core.agentic.tool_dispatch import DispatchOutcome
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.agents.research.utils.citation_manager import CitationManager
+from aidlearning.tools.dispatch import DispatchOutcome
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream_bus import StreamBus
 
 
 def _make_pipeline(monkeypatch: pytest.MonkeyPatch) -> ResearchPipeline:
@@ -43,9 +43,9 @@ def _make_pipeline(monkeypatch: pytest.MonkeyPatch) -> ResearchPipeline:
         api_version = None
         extra_headers = {}
 
-    monkeypatch.setattr("deeptutor.agents.research.pipeline.get_llm_config", lambda: _FakeLLM())
+    monkeypatch.setattr("aidlearning.agents.research.pipeline.get_llm_config", lambda: _FakeLLM())
     monkeypatch.setattr(
-        "deeptutor.agents.research.pipeline.get_tool_registry", lambda: _FakeRegistry()
+        "aidlearning.agents.research.pipeline.get_tool_registry", lambda: _FakeRegistry()
     )
     return ResearchPipeline(language="en", runtime_config={"queue": {"max_length": 5}})
 
@@ -154,10 +154,10 @@ def _make_pipeline_with_registry(
         api_version = None
         extra_headers = {}
 
-    monkeypatch.setattr("deeptutor.agents.research.pipeline.get_llm_config", lambda: _FakeLLM())
-    monkeypatch.setattr("deeptutor.agents.research.pipeline.get_tool_registry", lambda: registry)
-    monkeypatch.setattr("deeptutor.agents.research.pipeline.user_has_memory", lambda: False)
-    monkeypatch.setattr("deeptutor.agents.research.pipeline.user_has_notebooks", lambda: False)
+    monkeypatch.setattr("aidlearning.agents.research.pipeline.get_llm_config", lambda: _FakeLLM())
+    monkeypatch.setattr("aidlearning.agents.research.pipeline.get_tool_registry", lambda: registry)
+    monkeypatch.setattr("aidlearning.agents.research.pipeline.user_has_memory", lambda: False)
+    monkeypatch.setattr("aidlearning.agents.research.pipeline.user_has_notebooks", lambda: False)
     return ResearchPipeline(
         language="en",
         runtime_config={"queue": {"max_length": 5}},

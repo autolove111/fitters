@@ -14,14 +14,14 @@ from typing import Any
 import httpx
 import pytest
 
-from deeptutor.services.embedding.adapters.base import EmbeddingRequest
-from deeptutor.services.embedding.adapters.cohere import CohereEmbeddingAdapter
-from deeptutor.services.embedding.adapters.jina import JinaEmbeddingAdapter
-from deeptutor.services.embedding.adapters.ollama import OllamaEmbeddingAdapter
-from deeptutor.services.embedding.adapters.openai_compatible import (
+from aidlearning.services.embedding.adapters.base import EmbeddingRequest
+from aidlearning.services.embedding.adapters.cohere import CohereEmbeddingAdapter
+from aidlearning.services.embedding.adapters.jina import JinaEmbeddingAdapter
+from aidlearning.services.embedding.adapters.ollama import OllamaEmbeddingAdapter
+from aidlearning.services.embedding.adapters.openai_compatible import (
     OpenAICompatibleEmbeddingAdapter,
 )
-from deeptutor.services.llm import openai_http_client
+from aidlearning.services.llm import openai_http_client
 
 
 @pytest.fixture(autouse=True)

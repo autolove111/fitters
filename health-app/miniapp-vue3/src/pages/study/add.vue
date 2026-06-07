@@ -90,7 +90,7 @@ async function submitPlan() {
     submitText.value = '保存计划中...'
     await studyApi.add({ content: content.value, start: start.value, end: end.value })
 
-    // 2. 如果有学习资料，上传到 DeepTutor 知识库
+    // 2. 如果有学习资料，上传到 AidLearning 知识库
     if (selectedFiles.value.length > 0) {
       const kbName = '计划-' + content.value.trim().substring(0, 20)
       submitText.value = `上传资料到知识库「${kbName}」...`

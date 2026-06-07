@@ -1,5 +1,5 @@
 """Tests for the pre-label ``<think>...</think>`` prelude handling in
-:func:`deeptutor.core.agentic.labeled_step.run_labeled_step`.
+:func:`aidlearning.core.agentic.labeled_step.run_labeled_step`.
 
 Reasoning models (Qwen, Deepseek-R1 via certain proxies, …) sometimes
 emit a literal ``<think>...</think>`` block *before* the protocol label.
@@ -24,9 +24,9 @@ from typing import Any
 
 import pytest
 
-from deeptutor.core.agentic.labeled_step import run_labeled_step
-from deeptutor.core.stream import StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.core.agentic.labeled_step import run_labeled_step
+from aidlearning.core.stream import StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 
 def _chunk(content: str | None = None, tool_calls: Any = None) -> SimpleNamespace:
@@ -412,14 +412,14 @@ async def test_wrapped_finish_with_adjacent_body_routes_to_final_not_reasoning()
     final_meta = {"label": "Final", "trace_id": "final-1"}
     events, result = await _run(
         [
-            _chunk("``FINISH``你好！我是 DeepTutor。"),
+            _chunk("``FINISH``你好！我是 AidLearning。"),
         ],
         final_meta=final_meta,
     )
 
     assert result.label == "FINISH"
-    assert result.text == "你好！我是 DeepTutor。"
-    assert "你好！我是 DeepTutor。" in "".join(_content_texts(events))
+    assert result.text == "你好！我是 AidLearning。"
+    assert "你好！我是 AidLearning。" in "".join(_content_texts(events))
     assert _thinking_texts(events) == []
 
 

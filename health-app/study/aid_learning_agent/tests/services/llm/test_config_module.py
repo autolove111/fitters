@@ -6,10 +6,10 @@ import os
 
 import pytest
 
-from deeptutor.services.config.provider_runtime import ResolvedLLMConfig
-from deeptutor.services.llm import config as config_module
-from deeptutor.services.llm.config import LLMConfig
-from deeptutor.services.llm.exceptions import LLMConfigError
+from aidlearning.services.config.provider_runtime import ResolvedLLMConfig
+from aidlearning.services.llm import config as config_module
+from aidlearning.services.llm.config import LLMConfig
+from aidlearning.services.llm.exceptions import LLMConfigError
 
 
 def _reset_config_cache() -> None:

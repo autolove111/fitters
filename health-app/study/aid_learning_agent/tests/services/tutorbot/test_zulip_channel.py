@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from deeptutor.tutorbot.bus.queue import MessageBus
-from deeptutor.tutorbot.channels.zulip import ZulipChannel, ZulipConfig
+from aidlearning.tutorbot.bus.queue import MessageBus
+from aidlearning.tutorbot.channels.zulip import ZulipChannel, ZulipConfig
 
 
 def _make_channel(**overrides) -> ZulipChannel:
@@ -288,10 +288,10 @@ class TestDownloadAttachments:
                 return_value=[("img.png", "/user_uploads/2/ce/abc/img.png")],
             ),
             patch(
-                "deeptutor.tutorbot.channels.zulip.get_media_dir",
+                "aidlearning.tutorbot.channels.zulip.get_media_dir",
                 return_value=tmp_path,
             ),
-            patch("deeptutor.tutorbot.channels.zulip.requests.get") as mock_get,
+            patch("aidlearning.tutorbot.channels.zulip.requests.get") as mock_get,
         ):
             mock_resp = MagicMock()
             mock_resp.raise_for_status = MagicMock()
@@ -325,7 +325,7 @@ class TestDownloadAttachments:
                 return_value=[("img.png", "/user_uploads/2/ce/abc/img.png")],
             ),
             patch(
-                "deeptutor.tutorbot.channels.zulip.get_media_dir",
+                "aidlearning.tutorbot.channels.zulip.get_media_dir",
                 return_value=tmp_path,
             ),
         ):
@@ -660,7 +660,7 @@ class TestSend:
         mock_client.call_endpoint.return_value = {"result": "success"}
         ch._client = mock_client
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -685,7 +685,7 @@ class TestSend:
         typing_task = asyncio.create_task(asyncio.sleep(100))
         ch._typing_tasks["pm:42"] = typing_task
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -706,7 +706,7 @@ class TestSend:
         typing_task = asyncio.create_task(asyncio.sleep(100))
         ch._typing_tasks["pm:42"] = typing_task
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -722,7 +722,7 @@ class TestSend:
         ch = _make_channel()
         ch._client = None
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -750,7 +750,7 @@ class TestUploadAndSend:
         mock_client.call_endpoint.side_effect = fake_call_endpoint
         ch._client = mock_client
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -833,7 +833,7 @@ class TestResolveMediaPath:
         path_id = "/user_uploads/2/ce/abc123/photo.png"
 
         with patch(
-            "deeptutor.tutorbot.channels.zulip.get_media_dir",
+            "aidlearning.tutorbot.channels.zulip.get_media_dir",
             return_value=tmp_path,
         ):
             dest = ZulipChannel._attachment_destination(tmp_path, "photo.png", path_id, 0)
@@ -849,10 +849,10 @@ class TestResolveMediaPath:
 
         with (
             patch(
-                "deeptutor.tutorbot.channels.zulip.get_media_dir",
+                "aidlearning.tutorbot.channels.zulip.get_media_dir",
                 return_value=tmp_path,
             ),
-            patch("deeptutor.tutorbot.channels.zulip.requests.get") as mock_get,
+            patch("aidlearning.tutorbot.channels.zulip.requests.get") as mock_get,
         ):
             mock_resp = MagicMock()
             mock_resp.raise_for_status = MagicMock()
@@ -870,10 +870,10 @@ class TestResolveMediaPath:
 
         with (
             patch(
-                "deeptutor.tutorbot.channels.zulip.get_media_dir",
+                "aidlearning.tutorbot.channels.zulip.get_media_dir",
                 return_value=tmp_path,
             ),
-            patch("deeptutor.tutorbot.channels.zulip.requests.get") as mock_get,
+            patch("aidlearning.tutorbot.channels.zulip.requests.get") as mock_get,
         ):
             mock_resp = MagicMock()
             mock_resp.raise_for_status = MagicMock()
@@ -889,10 +889,10 @@ class TestResolveMediaPath:
 
         with (
             patch(
-                "deeptutor.tutorbot.channels.zulip.get_media_dir",
+                "aidlearning.tutorbot.channels.zulip.get_media_dir",
                 return_value=tmp_path,
             ),
-            patch("deeptutor.tutorbot.channels.zulip.requests.get") as mock_get,
+            patch("aidlearning.tutorbot.channels.zulip.requests.get") as mock_get,
         ):
             mock_resp = MagicMock()
             mock_resp.raise_for_status = MagicMock()
@@ -923,7 +923,7 @@ class TestSendMetadataEnrichment:
             "sender_email": "user@example.com",
         }
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -949,7 +949,7 @@ class TestSendMetadataEnrichment:
             "recipient_user_id": "42",
         }
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -971,7 +971,7 @@ class TestSendToolHints:
         mock_client.call_endpoint.return_value = {"result": "success"}
         ch._client = mock_client
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -995,7 +995,7 @@ class TestSendToolHints:
         mock_client.call_endpoint.return_value = {"result": "success"}
         ch._client = mock_client
 
-        from deeptutor.tutorbot.bus.events import OutboundMessage
+        from aidlearning.tutorbot.bus.events import OutboundMessage
 
         msg = OutboundMessage(
             channel="zulip",
@@ -1120,7 +1120,7 @@ class TestSubscribeStreams:
         }
         ch._client = mock_client
 
-        with patch("deeptutor.tutorbot.channels.zulip.logger.warning") as mock_warning:
+        with patch("aidlearning.tutorbot.channels.zulip.logger.warning") as mock_warning:
             ch._subscribe_to_streams()
 
         mock_client.add_subscriptions.assert_called_once()
@@ -1137,8 +1137,8 @@ class TestSubscribeStreams:
         ch._client = mock_client
 
         with (
-            patch("deeptutor.tutorbot.channels.zulip.logger.warning") as mock_warning,
-            patch("deeptutor.tutorbot.channels.zulip.logger.debug") as mock_debug,
+            patch("aidlearning.tutorbot.channels.zulip.logger.warning") as mock_warning,
+            patch("aidlearning.tutorbot.channels.zulip.logger.debug") as mock_debug,
         ):
             ch._subscribe_to_streams()
 
@@ -1226,7 +1226,7 @@ class TestStart:
         ch = _make_channel()
         fake_zulip = SimpleNamespace(Client=MagicMock())
         monkeypatch.setitem(sys.modules, "zulip", fake_zulip)
-        with patch("deeptutor.tutorbot.channels.zulip.ZulipChannel._call_with_retry") as mock_retry:
+        with patch("aidlearning.tutorbot.channels.zulip.ZulipChannel._call_with_retry") as mock_retry:
             mock_retry.return_value = {"result": "error"}
             await ch.start()
 

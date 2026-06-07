@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from deeptutor.services.config.knowledge_base_config import (
+from aidlearning.services.config.knowledge_base_config import (
     KnowledgeBaseConfigService,
 )
 

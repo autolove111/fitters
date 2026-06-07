@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from deeptutor.services.rag.index_versioning import EmbeddingSignature
+from aidlearning.services.rag.index_versioning import EmbeddingSignature
 
 
 def _signature() -> EmbeddingSignature:
@@ -23,8 +23,8 @@ async def test_incremental_add_migrates_matching_legacy_index_to_flat_version(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import storage as storage_module
-    from deeptutor.services.rag.pipelines.llamaindex.pipeline import LlamaIndexPipeline
+    from aidlearning.services.rag.pipelines.llamaindex import storage as storage_module
+    from aidlearning.services.rag.pipelines.llamaindex.pipeline import LlamaIndexPipeline
 
     sig = _signature()
     kb_dir = tmp_path / "kb"
@@ -100,8 +100,8 @@ async def test_incremental_add_migrates_matching_legacy_index_to_flat_version(
 def test_hybrid_retriever_uses_official_query_fusion_when_bm25_available(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import retrievers as retriever_module
-    from deeptutor.services.rag.pipelines.llamaindex.config import RetrievalConfig
+    from aidlearning.services.rag.pipelines.llamaindex import retrievers as retriever_module
+    from aidlearning.services.rag.pipelines.llamaindex.config import RetrievalConfig
 
     captured: dict[str, object] = {}
 
@@ -145,8 +145,8 @@ def test_hybrid_retriever_uses_official_query_fusion_when_bm25_available(
 def test_hybrid_retriever_falls_back_to_vector_when_bm25_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import retrievers as retriever_module
-    from deeptutor.services.rag.pipelines.llamaindex.config import RetrievalConfig
+    from aidlearning.services.rag.pipelines.llamaindex import retrievers as retriever_module
+    from aidlearning.services.rag.pipelines.llamaindex.config import RetrievalConfig
 
     calls: list[int] = []
 
@@ -171,7 +171,7 @@ def test_hybrid_retriever_falls_back_to_vector_when_bm25_missing(
 def test_bm25_retriever_overrides_persisted_top_k(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import retrievers as retriever_module
+    from aidlearning.services.rag.pipelines.llamaindex import retrievers as retriever_module
 
     persist_dir = tmp_path / retriever_module.BM25_PERSIST_DIRNAME
     persist_dir.mkdir()
@@ -195,7 +195,7 @@ def test_bm25_retriever_overrides_persisted_top_k(
 def test_bm25_persistence_drops_stale_sidecar_on_rebuild_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import retrievers as retriever_module
+    from aidlearning.services.rag.pipelines.llamaindex import retrievers as retriever_module
 
     persist_dir = tmp_path / retriever_module.BM25_PERSIST_DIRNAME
     persist_dir.mkdir()
@@ -213,9 +213,9 @@ def test_bm25_persistence_drops_stale_sidecar_on_rebuild_failure(
 
 
 def test_retrieval_config_reads_profile_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    from deeptutor.services.rag.pipelines.llamaindex import config as config_module
+    from aidlearning.services.rag.pipelines.llamaindex import config as config_module
 
-    monkeypatch.setenv("DEEPTUTOR_RAG_RETRIEVAL_PROFILE", " vector ")
+    monkeypatch.setenv("AIDLEARNING_RAG_RETRIEVAL_PROFILE", " vector ")
 
     config = config_module.retrieval_config_from_env()
 

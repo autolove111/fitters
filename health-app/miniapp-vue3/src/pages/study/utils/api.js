@@ -36,7 +36,7 @@ export const request = (url, options = {}) => {
         } else if (res.statusCode === 401) {
           clearAuthStorage()
           if (!isDevAuthBypass()) {
-            uni.reLaunch({ url: '/pages/study/deeptutor/login/login' })
+            uni.reLaunch({ url: '/pages/study/aidlearning/login/login' })
           }
           reject(new Error(isDevAuthBypass() ? '开发模式下已跳过登录跳转，但接口仍返回未授权' : '未授权，请重新登录'))
         } else {

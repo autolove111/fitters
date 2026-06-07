@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from deeptutor.runtime import launcher
+from aidlearning.runtime import launcher
 
 
 def test_packaged_web_cache_replaces_next_public_placeholders(tmp_path: Path) -> None:

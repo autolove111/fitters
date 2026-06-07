@@ -1,4 +1,4 @@
-"""CLI smoke tests for the standalone ``deeptutor-cli`` package."""
+"""CLI smoke tests for the standalone ``aidlearning-cli`` package."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import Any
 
 from typer.testing import CliRunner
 
-from deeptutor.app import TurnRequest
-from deeptutor_cli.main import app
+from aidlearning.app import TurnRequest
+from aidlearning_cli.main import app
 
 runner = CliRunner()
 
@@ -27,8 +27,8 @@ def _install_fake_runtime(monkeypatch, captured_requests: list[TurnRequest]) -> 
         yield {"type": "result", "metadata": {"response": "response body"}}
         yield {"type": "done"}
 
-    monkeypatch.setattr("deeptutor.app.facade.DeepTutorApp.start_turn", _start_turn)
-    monkeypatch.setattr("deeptutor.app.facade.DeepTutorApp.stream_turn", _stream_turn)
+    monkeypatch.setattr("aidlearning.app.facade.AidLearningApp.start_turn", _start_turn)
+    monkeypatch.setattr("aidlearning.app.facade.AidLearningApp.stream_turn", _stream_turn)
 
 
 def test_run_command_json_mode(monkeypatch) -> None:
@@ -169,7 +169,7 @@ def test_session_list_command_uses_shared_store(monkeypatch) -> None:
             }
         ]
 
-    monkeypatch.setattr("deeptutor.app.facade.DeepTutorApp.list_sessions", _list_sessions)
+    monkeypatch.setattr("aidlearning.app.facade.AidLearningApp.list_sessions", _list_sessions)
 
     result = runner.invoke(app, ["session", "list"])
 
@@ -184,7 +184,7 @@ def test_start_command_delegates_to_runtime_launcher(monkeypatch) -> None:
     def _fake_start(home=None):  # noqa: ANN001
         calls.append(home)
 
-    monkeypatch.setattr("deeptutor.runtime.launcher.start", _fake_start)
+    monkeypatch.setattr("aidlearning.runtime.launcher.start", _fake_start)
 
     result = runner.invoke(app, ["start"])
 

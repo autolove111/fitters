@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.services.session.turn_runtime import (
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.services.session.turn_runtime import (
     _clip_text,
     _extract_followup_question_context,
     _extract_memory_references,

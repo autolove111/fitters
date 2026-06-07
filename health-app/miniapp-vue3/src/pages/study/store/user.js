@@ -92,14 +92,14 @@ const register = async (username, password) => {
 const logout = async () => {
   if (isDevAuthBypass()) {
     clearUser()
-    uni.reLaunch({ url: '/pages/study/deeptutor/index/index' })
+    uni.reLaunch({ url: '/pages/study/aidlearning/index/index' })
     return
   }
   try {
     await request('/api/v1/auth/logout', { method: 'POST' })
   } catch (e) {}
   clearUser()
-  uni.reLaunch({ url: '/pages/study/deeptutor/login/login' })
+  uni.reLaunch({ url: '/pages/study/aidlearning/login/login' })
 }
 
 const fetchStatus = async () => {

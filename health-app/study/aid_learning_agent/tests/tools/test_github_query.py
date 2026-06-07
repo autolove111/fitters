@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from deeptutor.tools.github_query import (
+from aidlearning.tools.github_query import (
     MAX_OUTPUT_CHARS,
     GithubOutcome,
     run_github_query,

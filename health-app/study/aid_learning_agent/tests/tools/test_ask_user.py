@@ -6,7 +6,7 @@ shorthand which auto-wraps into a one-element list.
 
 from __future__ import annotations
 
-from deeptutor.tools.ask_user import (
+from aidlearning.tools.ask_user import (
     MAX_OPTION_CHARS,
     MAX_OPTIONS,
     MAX_QUESTION_CHARS,

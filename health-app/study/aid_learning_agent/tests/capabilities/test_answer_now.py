@@ -16,8 +16,8 @@ turn being re-routed to ``chat``). These tests pin the contract:
   ``visualize``).
 
 The tests deliberately avoid touching the real LLM stack: we patch
-``deeptutor.capabilities._answer_now.llm_stream`` (the alias the helper
-imports) and ``deeptutor.capabilities._answer_now.get_llm_config`` so
+``aidlearning.capabilities._answer_now.llm_stream`` (the alias the helper
+imports) and ``aidlearning.capabilities._answer_now.get_llm_config`` so
 the fast-paths run end-to-end without network or API keys.
 """
 
@@ -28,17 +28,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from deeptutor.capabilities import _answer_now
-from deeptutor.capabilities._answer_now import (
+from aidlearning.capabilities import _answer_now
+from aidlearning.capabilities._answer_now import (
     extract_answer_now_context,
     format_trace_summary,
     join_chunks,
     labeled_block,
     make_skip_notice,
 )
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -232,7 +232,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_synthesises_final_answer_from_partial_trace(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("Hello", " ", "world"):
@@ -247,11 +247,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -273,7 +273,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_answer_now_strips_protocol_label(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("``FI", "NISH``\n", "Hello now"):
@@ -288,11 +288,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -314,7 +314,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_answer_now_strips_bare_protocol_label(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("FI", "NISH\n", "Hello bare"):
@@ -329,11 +329,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -355,7 +355,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_answer_now_strips_variable_backtick_protocol_label(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("```FI", "NISH```\n", "Hello fenced"):
@@ -370,11 +370,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -396,7 +396,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_answer_now_strips_spaced_protocol_label(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("\u200b`` FI", "NISH ``\n", "Hello spaced"):
@@ -411,11 +411,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -437,7 +437,7 @@ class TestChatAnswerNow:
 
     @pytest.mark.asyncio
     async def test_chat_answer_now_preserves_normal_word_prefix(self) -> None:
-        from deeptutor.agents.chat import agentic_pipeline as ap_module
+        from aidlearning.agents.chat import agentic_pipeline as ap_module
 
         async def _fake_stream(self: Any, _messages: Any, **_kwargs: Any):
             for chunk in ("FIN", "ISHED tasks stay visible."):
@@ -452,11 +452,11 @@ class TestChatAnswerNow:
                 _fake_stream,
             ),
             patch(
-                "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+                "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
                 return_value=cfg,
             ),
         ):
-            from deeptutor.capabilities.chat import ChatCapability
+            from aidlearning.capabilities.chat import ChatCapability
 
             ctx = _build_context(
                 capability="chat",
@@ -488,14 +488,14 @@ class TestNormalPathWhenNoAnswerNow:
 
     @pytest.mark.asyncio
     async def test_deep_solve_without_payload_calls_pipeline(self) -> None:
-        from deeptutor.capabilities.deep_solve import DeepSolveCapability
+        from aidlearning.capabilities.deep_solve import DeepSolveCapability
 
         # Without an answer_now payload the capability must go through the
         # normal SolvePipeline path (not the fast-path), and forward its
         # ``stream.result`` payload to the consumer.
         with (
-            patch("deeptutor.capabilities.deep_solve.SolvePipeline") as PipelineCls,
-            patch("deeptutor.services.llm.config.get_llm_config", return_value=_fake_llm_config()),
+            patch("aidlearning.capabilities.deep_solve.SolvePipeline") as PipelineCls,
+            patch("aidlearning.services.llm.config.get_llm_config", return_value=_fake_llm_config()),
         ):
             pipeline = PipelineCls.return_value
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from deeptutor.services.memory.document import Document, Entry, parse, serialize
+from aidlearning.memory.long_term.document import Document, Entry, parse, serialize
 
 _SAMPLE = """\
 # Chat memory

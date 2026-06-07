@@ -12,8 +12,8 @@ from typing import Any
 
 import pytest
 
-from deeptutor.services.llm import openai_http_client
-from deeptutor.services.llm.provider_core import openai_codex_provider
+from aidlearning.services.llm import openai_http_client
+from aidlearning.services.llm.provider_core import openai_codex_provider
 
 
 @pytest.fixture(autouse=True)

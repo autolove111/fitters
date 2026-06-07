@@ -51,7 +51,7 @@ def _make_pptx(texts: list[str]) -> bytes:
 
 def test_loader_extracts_chat_supported_office_files(tmp_path: Path) -> None:
     pytest.importorskip("llama_index.core")
-    from deeptutor.services.rag.pipelines.llamaindex.document_loader import (
+    from aidlearning.services.rag.pipelines.llamaindex.document_loader import (
         LlamaIndexDocumentLoader,
     )
 
@@ -83,7 +83,7 @@ def test_loader_skips_images_when_embedding_provider_is_text_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     pytest.importorskip("llama_index.core")
-    from deeptutor.services.rag.pipelines.llamaindex import document_loader as loader_module
+    from aidlearning.services.rag.pipelines.llamaindex import document_loader as loader_module
 
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"\x89PNG\r\n")
@@ -107,7 +107,7 @@ def test_loader_embeds_images_when_embedding_provider_is_multimodal(
     pytest.importorskip("llama_index.core")
     from llama_index.core.schema import ImageNode
 
-    from deeptutor.services.rag.pipelines.llamaindex import document_loader as loader_module
+    from aidlearning.services.rag.pipelines.llamaindex import document_loader as loader_module
 
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"\x89PNG\r\n")
@@ -153,7 +153,7 @@ def test_loader_skips_images_when_llm_is_text_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     pytest.importorskip("llama_index.core")
-    from deeptutor.services.rag.pipelines.llamaindex import document_loader as loader_module
+    from aidlearning.services.rag.pipelines.llamaindex import document_loader as loader_module
 
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"\x89PNG\r\n")
@@ -182,7 +182,7 @@ def test_loader_logs_all_missing_multimodal_image_requirements(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     pytest.importorskip("llama_index.core")
-    from deeptutor.services.rag.pipelines.llamaindex import document_loader as loader_module
+    from aidlearning.services.rag.pipelines.llamaindex import document_loader as loader_module
 
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"\x89PNG\r\n")

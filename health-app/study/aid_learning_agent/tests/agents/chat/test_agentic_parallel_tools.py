@@ -7,12 +7,12 @@ from typing import Any
 
 import pytest
 
-from deeptutor.agents.chat.agentic_pipeline import AgenticChatPipeline
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.core.tool_protocol import ToolResult
-from deeptutor.core.trace import build_trace_metadata
+from aidlearning.agents.chat.agentic_pipeline import AgenticChatPipeline
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
+from aidlearning.tools.protocol import ToolResult
+from aidlearning.core.trace import build_trace_metadata
 
 
 async def _collect_bus_events(bus: StreamBus) -> tuple[list[StreamEvent], asyncio.Task[Any]]:
@@ -84,7 +84,7 @@ async def test_execute_tool_call_streams_retrieve_progress_for_rag(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -110,7 +110,7 @@ async def test_execute_tool_call_streams_retrieve_progress_for_rag(
 
     registry = FakeRegistry()
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_tool_registry", lambda: registry
+        "aidlearning.agents.chat.agentic_pipeline.get_tool_registry", lambda: registry
     )
 
     pipeline = AgenticChatPipeline(language="en")
@@ -176,11 +176,11 @@ def _stub_optional_services(monkeypatch: pytest.MonkeyPatch) -> None:
     memory / notebook contents could non-deterministically inject extra
     tools and flake the assertions."""
     monkeypatch.setattr(
-        "deeptutor.services.memory.get_memory_store",
+        "aidlearning.memory.get_memory_store",
         lambda: SimpleNamespace(read_raw=lambda *_args, **_kwargs: ""),
     )
     monkeypatch.setattr(
-        "deeptutor.services.notebook.get_notebook_manager",
+        "aidlearning.services.notebook.get_notebook_manager",
         lambda: SimpleNamespace(list_notebooks=lambda: []),
     )
 
@@ -232,11 +232,11 @@ def test_compose_enabled_tools_auto_mounts_read_memory(
 ) -> None:
     """``read_memory`` joins the tool set iff the active user has memory."""
     monkeypatch.setattr(
-        "deeptutor.services.memory.get_memory_store",
+        "aidlearning.memory.get_memory_store",
         lambda: SimpleNamespace(read_raw=lambda *_args, **_kwargs: "some content"),
     )
     monkeypatch.setattr(
-        "deeptutor.services.notebook.get_notebook_manager",
+        "aidlearning.services.notebook.get_notebook_manager",
         lambda: SimpleNamespace(list_notebooks=lambda: []),
     )
     pipeline = AgenticChatPipeline.__new__(AgenticChatPipeline)
@@ -259,11 +259,11 @@ def test_compose_enabled_tools_auto_mounts_notebook_pair(
 ) -> None:
     """``list_notebook`` + ``write_note`` mount together iff user has notebooks."""
     monkeypatch.setattr(
-        "deeptutor.services.memory.get_memory_store",
+        "aidlearning.memory.get_memory_store",
         lambda: SimpleNamespace(read_raw=lambda *_args, **_kwargs: ""),
     )
     monkeypatch.setattr(
-        "deeptutor.services.notebook.get_notebook_manager",
+        "aidlearning.services.notebook.get_notebook_manager",
         lambda: SimpleNamespace(list_notebooks=lambda: [{"id": "nb-1", "name": "Math"}]),
     )
     pipeline = AgenticChatPipeline.__new__(AgenticChatPipeline)
@@ -287,7 +287,7 @@ def test_augment_tool_kwargs_injects_geogebra_image(
     may have hallucinated) before the tool runs. Without this, the
     underlying VisionSolverAgent fails fast with 'No image provided.'.
     """
-    from deeptutor.core.context import Attachment
+    from aidlearning.core.context import Attachment
 
     pipeline = AgenticChatPipeline.__new__(AgenticChatPipeline)
     pipeline.language = "zh"
@@ -364,7 +364,7 @@ async def test_dispatch_records_pause_when_tool_emits_pause_for_user(
     mutually exclusive — pause does NOT set the terminate flag.
     """
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -432,7 +432,7 @@ async def test_dispatch_collapses_duplicate_parallel_tool_calls(
     ``ask_user`` calls are hidden from the user-facing trace stream.
     """
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -521,7 +521,7 @@ async def test_dispatch_allows_only_one_parallel_ask_user_even_with_different_ar
     tool messages to preserve API protocol pairing.
     """
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -600,14 +600,14 @@ async def test_await_user_reply_overwrites_matching_tool_message(
     """The waiter result must land in the *paused* tool message, not the
     sibling ones — matched by ``tool_call_id``."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
     )
     pipeline = AgenticChatPipeline(language="en")
 
-    from deeptutor.agents.chat.agentic_pipeline import _DispatchOutcome
+    from aidlearning.agents.chat.agentic_pipeline import _DispatchOutcome
 
     paused_msg = {
         "role": "tool",
@@ -670,13 +670,13 @@ async def test_await_user_reply_handles_structured_v2_answers(
     ``- <prompt>\\n  → <answer>`` line per question and skipped answers
     surface as ``(skipped)``."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
     )
     pipeline = AgenticChatPipeline(language="en")
-    from deeptutor.agents.chat.agentic_pipeline import _DispatchOutcome
+    from aidlearning.agents.chat.agentic_pipeline import _DispatchOutcome
 
     paused_msg = {
         "role": "tool",
@@ -757,13 +757,13 @@ async def test_await_user_reply_falls_back_to_terminator_without_waiter(
 ) -> None:
     """Direct unit-test invocation has no runtime → emit terminator fallback."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
     )
     pipeline = AgenticChatPipeline(language="en")
-    from deeptutor.agents.chat.agentic_pipeline import _DispatchOutcome
+    from aidlearning.agents.chat.agentic_pipeline import _DispatchOutcome
 
     dispatch = _DispatchOutcome(
         sources=[],
@@ -801,7 +801,7 @@ async def test_run_does_not_finish_on_unlabeled_reply_after_ask_user(
     """After ask_user resumes, plain unlabeled text is a protocol violation,
     not a final answer. The loop must repair and keep going until FINISH."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -915,7 +915,7 @@ async def test_run_forces_finish_after_iteration_budget_ends_on_think(
 ) -> None:
     """The loop must not end on a THINK trace when max_iterations is hit."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -956,7 +956,7 @@ async def test_run_repairs_multiple_labels_in_one_llm_reply(
 ) -> None:
     """A single LLM call may not say THINK and then TOOL/FINISH in the body."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -1001,7 +1001,7 @@ async def test_invalid_finish_body_is_not_streamed_before_protocol_repair(
 ) -> None:
     """A FINISH reply containing another label is rejected before answer streaming."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),
@@ -1038,7 +1038,7 @@ async def test_run_emits_final_fallback_if_forced_finish_never_complies(
 ) -> None:
     """Even pathological non-compliance should not leave THINK as the last UI artefact."""
     monkeypatch.setattr(
-        "deeptutor.agents.chat.agentic_pipeline.get_llm_config",
+        "aidlearning.agents.chat.agentic_pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai", model="gpt-test", api_key="k", base_url="u", api_version=None
         ),

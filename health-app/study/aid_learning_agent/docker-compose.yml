@@ -1,7 +1,7 @@
 # ============================================
-# DeepTutor Docker Compose Configuration
+# AidLearning Docker Compose Configuration
 # ============================================
-# This file provides orchestration for DeepTutor services
+# This file provides orchestration for AidLearning services
 #
 # Usage:
 #   Production:  python scripts/docker_compose.py up -d
@@ -29,11 +29,11 @@ services:
     container_name: pocketbase
     restart: unless-stopped
     ports:
-      - "${DEEPTUTOR_DOCKER_POCKETBASE_PORT:-8090}:8090"
+      - "${AIDLEARNING_DOCKER_POCKETBASE_PORT:-8090}:8090"
     volumes:
       - ./data/pocketbase:/pb/pb_data
     networks:
-      - deeptutor-network
+      - aidlearning-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/api/health"]
       interval: 10s
@@ -42,18 +42,18 @@ services:
       start_period: 10s
 
   # ============================================
-  # All-in-One DeepTutor Service
+  # All-in-One AidLearning Service
   # ============================================
-  deeptutor:
+  aidlearning:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: deeptutor
+    container_name: aidlearning
     restart: unless-stopped
     ports:
-      - "${DEEPTUTOR_DOCKER_BACKEND_PORT:-8001}:${DEEPTUTOR_DOCKER_BACKEND_PORT:-8001}"
-      - "${DEEPTUTOR_DOCKER_FRONTEND_PORT:-3782}:${DEEPTUTOR_DOCKER_FRONTEND_PORT:-3782}"
+      - "${AIDLEARNING_DOCKER_BACKEND_PORT:-8001}:${AIDLEARNING_DOCKER_BACKEND_PORT:-8001}"
+      - "${AIDLEARNING_DOCKER_FRONTEND_PORT:-3782}:${AIDLEARNING_DOCKER_FRONTEND_PORT:-3782}"
 
     volumes:
       # Mount local data directory for persistence (read-write)
@@ -63,7 +63,7 @@ services:
       - ./data/knowledge_bases:/app/data/knowledge_bases
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${DEEPTUTOR_DOCKER_BACKEND_PORT:-8001}/"]
+      test: ["CMD", "curl", "-f", "http://localhost:${AIDLEARNING_DOCKER_BACKEND_PORT:-8001}/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,11 +74,11 @@ services:
         condition: service_healthy
 
     networks:
-      - deeptutor-network
+      - aidlearning-network
 
 # ============================================
 # Networks
 # ============================================
 networks:
-  deeptutor-network:
+  aidlearning-network:
     driver: bridge

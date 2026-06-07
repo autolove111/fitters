@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from deeptutor.services.memory.consolidator import (
+from aidlearning.memory.consolidator import (
     _filter_banned,
     _has_banned,
     _parse_ops_response,
 )
-from deeptutor.services.memory.ops import AddOp, DeleteOp, EditOp
+from aidlearning.memory.long_term.ops import AddOp, DeleteOp, EditOp
 
 
 def test_has_banned_catches_english_absolutes() -> None:

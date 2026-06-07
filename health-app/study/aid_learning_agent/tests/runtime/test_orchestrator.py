@@ -7,11 +7,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from deeptutor.core.capability_protocol import BaseCapability, CapabilityManifest
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.runtime.orchestrator import ChatOrchestrator
+from aidlearning.core.capability_protocol import BaseCapability, CapabilityManifest
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
+from aidlearning.runtime.orchestrator import ChatOrchestrator
 
 
 @pytest.fixture(autouse=True)
@@ -19,9 +19,9 @@ def _patch_event_bus():
     """Prevent EventBus background processor from running during tests."""
     mock_bus = MagicMock()
     mock_bus.publish = AsyncMock()
-    with patch("deeptutor.runtime.orchestrator.get_event_bus", return_value=mock_bus):
+    with patch("aidlearning.runtime.orchestrator.get_event_bus", return_value=mock_bus):
         yield
-    from deeptutor.events.event_bus import EventBus
+    from aidlearning.events.event_bus import EventBus
 
     EventBus.reset()
 

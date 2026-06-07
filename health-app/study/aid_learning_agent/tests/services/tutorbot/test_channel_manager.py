@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from deeptutor.tutorbot.bus.events import OutboundMessage
-from deeptutor.tutorbot.channels.manager import ChannelManager
-from deeptutor.tutorbot.config.schema import ChannelsConfig
+from aidlearning.tutorbot.bus.events import OutboundMessage
+from aidlearning.tutorbot.channels.manager import ChannelManager
+from aidlearning.tutorbot.config.schema import ChannelsConfig
 
 
 class _OneShotBus:

@@ -5,7 +5,7 @@ Unit tests for the unified PromptManager.
 
 import pytest
 
-from deeptutor.services.prompt import PromptManager, get_prompt_manager
+from aidlearning.services.prompt import PromptManager, get_prompt_manager
 
 
 class TestPromptManager:

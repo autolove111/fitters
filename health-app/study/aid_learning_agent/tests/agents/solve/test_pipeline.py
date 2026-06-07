@@ -20,16 +20,16 @@ from typing import Any
 
 import pytest
 
-from deeptutor.agents.solve.pipeline import (
+from aidlearning.agents.solve.pipeline import (
     _PROTOCOL_STEP,
     Plan,
     PlanStep,
     SolvePipeline,
     StepFinish,
 )
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream import StreamEvent, StreamEventType
-from deeptutor.core.stream_bus import StreamBus
+from aidlearning.core.context import UnifiedContext
+from aidlearning.core.stream import StreamEvent, StreamEventType
+from aidlearning.core.stream_bus import StreamBus
 
 # ---------------------------------------------------------------------------
 # Plumbing
@@ -101,7 +101,7 @@ class _ScriptedChatClient:
 
 def _stub_llm_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "deeptutor.agents.solve.pipeline.get_llm_config",
+        "aidlearning.agents.solve.pipeline.get_llm_config",
         lambda: SimpleNamespace(
             binding="openai",
             model="gpt-test",
@@ -121,7 +121,7 @@ def _stub_empty_tool_registry(monkeypatch: pytest.MonkeyPatch) -> None:
         build_prompt_text=lambda *_args, **_kwargs: "",
     )
     monkeypatch.setattr(
-        "deeptutor.agents.solve.pipeline.get_tool_registry",
+        "aidlearning.agents.solve.pipeline.get_tool_registry",
         lambda: registry,
     )
 
@@ -209,7 +209,7 @@ def test_resolved_tools_auto_mounts_rag_with_kb(monkeypatch: pytest.MonkeyPatch)
         build_prompt_text=lambda *_a, **_k: "",
     )
     monkeypatch.setattr(
-        "deeptutor.agents.solve.pipeline.get_tool_registry",
+        "aidlearning.agents.solve.pipeline.get_tool_registry",
         lambda: registry,
     )
     pipeline = SolvePipeline(kb_name="course-kb", enabled_tools=[])

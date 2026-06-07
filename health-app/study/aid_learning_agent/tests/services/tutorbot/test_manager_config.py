@@ -10,8 +10,8 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from deeptutor.services.tutorbot.manager import BotConfig, TutorBotInstance, TutorBotManager
-from deeptutor.services.tutorbot.model_runtime import resolve_tutorbot_llm_config
+from aidlearning.services.tutorbot.manager import BotConfig, TutorBotInstance, TutorBotManager
+from aidlearning.services.tutorbot.model_runtime import resolve_tutorbot_llm_config
 
 
 @pytest.fixture
@@ -294,7 +294,7 @@ class TestTutorBotModelRuntime:
             return SimpleNamespace(model="selected-model")
 
         monkeypatch.setattr(
-            "deeptutor.services.tutorbot.model_runtime.resolve_llm_config_for_selection",
+            "aidlearning.services.tutorbot.model_runtime.resolve_llm_config_for_selection",
             fake_resolve,
         )
 
@@ -317,7 +317,7 @@ class TestTutorBotModelRuntime:
                 return SimpleNamespace(model=update["model"])
 
         monkeypatch.setattr(
-            "deeptutor.services.tutorbot.model_runtime.resolve_llm_config_for_selection",
+            "aidlearning.services.tutorbot.model_runtime.resolve_llm_config_for_selection",
             lambda selection: FakeConfig(),
         )
 
@@ -405,24 +405,24 @@ def test_start_bot_passes_shared_memory_dir(
         async def start(self) -> None:
             return None
 
-    monkeypatch.setattr("deeptutor.tutorbot.agent.loop.AgentLoop", FakeAgentLoop)
+    monkeypatch.setattr("aidlearning.tutorbot.agent.loop.AgentLoop", FakeAgentLoop)
     monkeypatch.setattr(
-        "deeptutor.tutorbot.providers.deeptutor_adapter.create_deeptutor_provider",
+        "aidlearning.tutorbot.providers.aidlearning_adapter.create_aidlearning_provider",
         lambda *_args, **_kwargs: object(),
     )
     monkeypatch.setattr(
-        "deeptutor.services.tutorbot.model_runtime.resolve_tutorbot_llm_config",
+        "aidlearning.services.tutorbot.model_runtime.resolve_tutorbot_llm_config",
         lambda _cfg: SimpleNamespace(model="selected-model", context_window=123456),
     )
     monkeypatch.setattr(
-        "deeptutor.services.tutorbot.manager.TutorBotManager._build_channel_manager",
+        "aidlearning.services.tutorbot.manager.TutorBotManager._build_channel_manager",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "deeptutor.services.tutorbot.manager.TutorBotManager._outbound_router",
+        "aidlearning.services.tutorbot.manager.TutorBotManager._outbound_router",
         lambda *_args, **_kwargs: _done(),
     )
-    monkeypatch.setattr("deeptutor.tutorbot.heartbeat.HeartbeatService", FakeHeartbeat)
+    monkeypatch.setattr("aidlearning.tutorbot.heartbeat.HeartbeatService", FakeHeartbeat)
 
     async def run_start() -> None:
         instance = await manager.start_bot("shared-memory-bot", BotConfig(name="bot"))
@@ -466,11 +466,11 @@ def test_reload_llm_updates_running_agent_loop(
 
     selected_provider = object()
     monkeypatch.setattr(
-        "deeptutor.services.tutorbot.model_runtime.resolve_tutorbot_llm_config",
+        "aidlearning.services.tutorbot.model_runtime.resolve_tutorbot_llm_config",
         lambda _cfg: SimpleNamespace(model="alt-model", context_window=999),
     )
     monkeypatch.setattr(
-        "deeptutor.tutorbot.providers.deeptutor_adapter.create_deeptutor_provider",
+        "aidlearning.tutorbot.providers.aidlearning_adapter.create_aidlearning_provider",
         lambda _cfg: selected_provider,
     )
 
