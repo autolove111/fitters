@@ -12,6 +12,7 @@ import { plansRouter } from "./modules/plans/router.js";
 import { workRouter } from "./modules/work/router.js";
 import { waterRouter } from "./modules/water/router.js";
 import { weightRouter } from "./modules/weight/router.js";
+import { studyRouter } from "./modules/study/router.js";
 import { errorHandler } from "./common/errors.js";
 
 const UPLOADS_DIR = "uploads";
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/api/work", workRouter);
   app.use("/api/waters", waterRouter);
   app.use("/api/weights", weightRouter);
+  app.use("/api/study", studyRouter);
   app.use(errorHandler);
 
   return app;
