@@ -18,21 +18,22 @@ enum GoalPeriod {
 }
 
 model User {
-  id           Int             @id @default(autoincrement())
-  account      String          @unique @db.VarChar(64)
-  passwordHash String          @map("password_hash") @db.VarChar(255)
-  nickname     String?         @db.VarChar(64)
-  avatar       String?         @db.Text
-  theme        String          @default("light") @db.VarChar(16)
-  createdAt    DateTime        @default(now()) @map("created_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
-  workouts     WorkoutRecord[]
-  goals        Goal[]
-  sleeps       SleepRecord[]
-  diets        DietRecord[]
-  workRecords  WorkRecord[]
-  waterRecords WaterRecord[]
+  id            Int             @id @default(autoincrement())
+  account       String          @unique @db.VarChar(64)
+  passwordHash  String          @map("password_hash") @db.VarChar(255)
+  nickname      String?         @db.VarChar(64)
+  avatar        String?         @db.Text
+  theme         String          @default("light") @db.VarChar(16)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  workouts      WorkoutRecord[]
+  goals         Goal[]
+  sleeps        SleepRecord[]
+  diets         DietRecord[]
+  workRecords   WorkRecord[]
+  waterRecords  WaterRecord[]
   weightRecords WeightRecord[]
+  studyPlans    StudyPlan[]
 
   @@map("users")
 }
@@ -168,4 +169,22 @@ model WeightRecord {
 
   @@index([userId, recordDate], map: "idx_weight_records_user_record_date")
   @@map("weight_records")
+}
+
+model StudyPlan {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  title           String   @db.VarChar(128)
+  description     String?  @db.VarChar(512)
+  targetHours     Int?     @map("target_hours")
+  targetDays      Int?     @map("target_days")
+  startTime       DateTime @default(now()) @map("start_time")
+  endTime         DateTime? @map("end_time")
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_study_plans_user")
+  @@map("study_plans")
 }
