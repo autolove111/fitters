@@ -453,7 +453,7 @@ class CitationManager:
             for paper in papers[:5]:
                 # 格式化作者
                 authors = paper.get("authors", [])
-                author_str = ", ".join(authors[:3])  # Display at most 3 authors
+                author_str = ", ".join(authors[:3])  # 最多显示 3 位作者
                 if len(authors) > 3:
                     author_str += " et al."
 
@@ -464,7 +464,7 @@ class CitationManager:
                     "year": paper.get("year", ""),
                     "url": paper.get("url", ""),
                     "arxiv_id": paper.get("arxiv_id", ""),
-                    "abstract": paper.get("abstract", "")[:300],  # Truncate abstract
+                    "abstract": paper.get("abstract", "")[:300],  # 截断摘要
                     "doi": paper.get("doi", ""),
                     "venue": paper.get("venue", paper.get("journal", "")),
                 }
@@ -485,17 +485,17 @@ class CitationManager:
             return citation_info
         except Exception as e:
             print(f"⚠️ Failed to parse paper citation: {e}")
-            # Still return the basic citation info
+            # 仍返回基本引用信息
             return citation_info
 
     def _extract_code_citation(
         self, citation_id: str, tool_type: str, tool_trace: Any
     ) -> dict[str, Any]:
-        """Extract citation information for code execution"""
+        """为代码执行提取引用信息"""
         return {
             "citation_id": citation_id,
             "tool_type": tool_type,
-            "query": tool_trace.query,  # Code content
+            "query": tool_trace.query,  # 代码内容
             "summary": tool_trace.summary,
             "timestamp": tool_trace.timestamp,
         }
@@ -503,7 +503,7 @@ class CitationManager:
     def _extract_generic_citation(
         self, citation_id: str, tool_type: str, tool_trace: Any
     ) -> dict[str, Any]:
-        """Extract generic citation information (unknown tool type)"""
+        """提取通用引用信息（未知工具类型）"""
         return {
             "citation_id": citation_id,
             "tool_type": tool_type,
@@ -513,24 +513,22 @@ class CitationManager:
         }
 
     def get_citation(self, citation_id: str) -> dict[str, Any] | None:
-        """Get citation information for specified citation ID"""
+        """获取指定引用 ID 的引用信息"""
         return self._citations.get(citation_id)
 
     def get_all_citations(self) -> dict[str, dict[str, Any]]:
-        """Get all citation information"""
+        """获取所有引用信息"""
         return self._citations.copy()
 
     def get_citations_file_path(self) -> Path:
-        """Get citation JSON file path"""
+        """获取引用 JSON 文件路径"""
         return self.citations_file
 
     def format_citation_for_report(self, citation_id: str) -> str | None:
-        """Render a reference-list entry for ``citation_id`` as HTML.
+        """将 ``citation_id`` 的参考列表条目渲染为 HTML。
 
-        Output may include ``<em>``, ``<a>``, and ``<br>`` tags. All
-        user-controlled fields are HTML-escaped inside this method so the
-        caller can drop the result directly into the page without an extra
-        escape pass.
+        输出可能包含 ``<em>``、``<a>`` 和 ``<br>`` 标签。所有用户控制的字段
+        在此方法内部进行 HTML 转义，以便调用方可以直接将结果放入页面而无需额外的转义步骤。
         """
         citation = self.get_citation(citation_id)
         if not citation:
@@ -567,15 +565,15 @@ class CitationManager:
         return f"{html.escape(str(tool_type_display))}: {query}"
 
     def _format_paper_search_apa(self, citation: dict[str, Any]) -> str | None:
-        """Render each paper in a paper_search citation as a separate APA-style
-        entry, joined by ``<br>``.
+        """将 paper_search 引用中的每篇论文渲染为单独的 APA 格式条目，
+        以 ``<br>`` 连接。
 
-        APA pattern used: ``Authors (Year). *Title*. arXiv. <url>``. Fields
-        that are missing are skipped without leaving stray punctuation.
+        使用的 APA 格式：``Authors (Year). *Title*. arXiv. <url>``。
+        缺失的字段会被跳过，不留多余标点。
         """
         papers: list[dict[str, Any]] = list(citation.get("papers") or [])
         if not papers:
-            # Fallback for citations that only carry top-level fields.
+            # 仅携带顶层字段的引用的回退处理。
             fallback = {
                 "title": citation.get("title", ""),
                 "authors": citation.get("authors", ""),

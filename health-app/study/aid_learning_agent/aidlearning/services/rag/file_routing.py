@@ -276,7 +276,7 @@ class FileTypeRouter:
 
     @classmethod
     async def read_text_file(cls, file_path: str) -> str:
-        """Read a text file with automatic encoding detection."""
+        """读取文本文件，自动检测编码。"""
         for encoding in cls.TEXT_DECODING_CANDIDATES:
             try:
                 with open(file_path, "r", encoding=encoding) as f:
@@ -289,7 +289,7 @@ class FileTypeRouter:
 
     @classmethod
     def needs_parser(cls, file_path: str) -> bool:
-        """Quick check if a single file needs parser processing."""
+        """快速检查单个文件是否需要解析器处理。"""
         doc_type = cls.get_document_type(file_path)
         return doc_type in (
             DocumentType.PDF,
@@ -301,27 +301,27 @@ class FileTypeRouter:
 
     @classmethod
     def is_text_readable(cls, file_path: str) -> bool:
-        """Check if a file can be read directly as text."""
+        """检查文件是否可以直接作为文本读取。"""
         doc_type = cls.get_document_type(file_path)
         return doc_type in (DocumentType.TEXT, DocumentType.MARKDOWN)
 
     @classmethod
     def get_supported_extensions(cls) -> set[str]:
-        """Get the set of all supported file extensions."""
+        """获取所有支持的文件扩展名集合。"""
         return cls.PARSER_EXTENSIONS | cls.TEXT_EXTENSIONS | cls.IMAGE_EXTENSIONS
 
     @classmethod
     def has_supported_extension(cls, file_path: str | Path) -> bool:
-        """Return True when ``file_path`` has a supported extension.
+        """当 ``file_path`` 具有支持的扩展名时返回 True。
 
-        The check is case-insensitive so files such as ``Report.PDF`` are
-        discovered consistently across upload, CLI, folder sync, and reindex.
+        检查不区分大小写，因此 ``Report.PDF`` 等文件在上传、CLI、文件夹同步和重新索引中
+        都能被一致发现。
         """
         return Path(file_path).suffix.lower() in cls.get_supported_extensions()
 
     @classmethod
     def collect_supported_files(cls, directory: str | Path, recursive: bool = False) -> list[Path]:
-        """Collect supported files from a directory with case-insensitive suffix matching."""
+        """从目录中收集支持的文件，使用不区分大小写的后缀匹配。"""
         root = Path(directory)
         if not root.exists() or not root.is_dir():
             return []
@@ -334,5 +334,5 @@ class FileTypeRouter:
 
     @classmethod
     def get_glob_patterns(cls) -> list[str]:
-        """Get glob patterns for file searching."""
+        """获取文件搜索的 glob 模式。"""
         return [f"*{ext}" for ext in sorted(cls.get_supported_extensions())]

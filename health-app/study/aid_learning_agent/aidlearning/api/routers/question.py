@@ -42,27 +42,27 @@ def _mimic_output_dir():
 @router.websocket("/mimic")
 async def websocket_mimic_generate(websocket: WebSocket):
     """
-    WebSocket endpoint for mimic exam paper question generation.
+    模拟试卷题目生成的 WebSocket 端点。
 
-    Supports two modes:
-    1. Upload PDF directly via WebSocket (base64 encoded)
-    2. Use a pre-parsed paper directory path
+    支持两种模式：
+    1. 通过 WebSocket 直接上传 PDF（base64 编码）
+    2. 使用已解析的试卷目录路径
 
-    Message format for PDF upload:
+    PDF 上传消息格式：
     {
         "mode": "upload",
-        "pdf_data": "base64_encoded_pdf_content",
+        "pdf_data": "base64 编码的 PDF 内容",
         "pdf_name": "exam.pdf",
-        "kb_name": "knowledge_base_name",
-        "max_questions": 5  // optional
+        "kb_name": "知识库名称",
+        "max_questions": 5  // 可选
     }
 
-    Message format for pre-parsed:
+    预解析消息格式：
     {
         "mode": "parsed",
-        "paper_path": "directory_name",
-        "kb_name": "knowledge_base_name",
-        "max_questions": 5  // optional
+        "paper_path": "目录名",
+        "kb_name": "知识库名称",
+        "max_questions": 5  // 可选
     }
     """
     from aidlearning.api.routers.auth import ws_auth_failed, ws_require_auth
@@ -78,15 +78,15 @@ async def websocket_mimic_generate(websocket: WebSocket):
     original_stdout = sys.stdout
 
     try:
-        # 1. Wait for config
+        # 1. 等待配置
         data = await websocket.receive_json()
-        mode = data.get("mode", "parsed")  # "upload" or "parsed"
+        mode = data.get("mode", "parsed")  # "upload" 或 "parsed"
         kb_name = data.get("kb_name", "ai_textbook")
         max_questions = data.get("max_questions")
 
         logger.info(f"Starting mimic generation (mode: {mode}, kb: {kb_name})")
 
-        # 2. Setup Log Queue
+        # 2. 设置日志队列
         log_queue = asyncio.Queue()
         loop = asyncio.get_running_loop()
         task_id = f"question_mimic_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
@@ -105,8 +105,8 @@ async def websocket_mimic_generate(websocket: WebSocket):
 
         pusher_task = asyncio.create_task(log_pusher())
 
-        # 3. Stdout interceptor for capturing prints
-        # ANSI escape sequence pattern for stripping color codes
+        # 3. 标准输出拦截器，用于捕获 print 输出
+        # 用于剥离 ANSI 颜色码的转义序列模式
         ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
 
         class StdoutInterceptor:
@@ -118,14 +118,14 @@ async def websocket_mimic_generate(websocket: WebSocket):
             def write(self, message):
                 if self._closed:
                     return
-                # Write to terminal first (with ANSI codes for color)
+                # 先写入终端（保留 ANSI 颜色码）
                 try:
                     self.original_stdout.write(message)
                 except Exception:
                     pass
-                # Strip ANSI escape codes before sending to frontend
+                # 发送到前端前剥离 ANSI 转义码
                 clean_message = ANSI_ESCAPE_PATTERN.sub("", message).strip()
-                # Then send to frontend (non-blocking)
+                # 然后发送到前端（非阻塞）
                 if clean_message:
                     try:
                         event = ProcessLogEvent(
@@ -147,7 +147,7 @@ async def websocket_mimic_generate(websocket: WebSocket):
                         pass
 
             def close(self):
-                """Mark interceptor as closed to prevent further writes."""
+                """标记拦截器为已关闭，防止后续写入。"""
                 self._closed = True
 
         interceptor = StdoutInterceptor(log_queue, original_stdout)
@@ -161,7 +161,7 @@ async def websocket_mimic_generate(websocket: WebSocket):
             pdf_path = None
             paper_dir = None
 
-            # Handle PDF upload mode
+            # 处理 PDF 上传模式
             if mode == "upload":
                 pdf_data = data.get("pdf_data")
                 pdf_name = data.get("pdf_name", "exam.pdf")
@@ -172,7 +172,7 @@ async def websocket_mimic_generate(websocket: WebSocket):
                     )
                     return
 
-                # Decode PDF data first to check size
+                # 先解码 PDF 数据以检查大小
                 try:
                     pdf_bytes = base64.b64decode(pdf_data)
                 except Exception as e:
@@ -181,7 +181,7 @@ async def websocket_mimic_generate(websocket: WebSocket):
                     )
                     return
 
-                # Pre-validate filename and file size before writing
+                # 写入前预校验文件名和文件大小
                 try:
                     safe_name = DocumentValidator.validate_upload_safety(
                         pdf_name, len(pdf_bytes), {".pdf"}
@@ -190,7 +190,7 @@ async def websocket_mimic_generate(websocket: WebSocket):
                     await websocket.send_json({"type": "error", "content": str(e)})
                     return
 
-                # Create batch directory for this mimic session
+                # 为本次模拟会话创建批次目录
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 pdf_stem = Path(safe_name).stem
                 batch_dir = _mimic_output_dir() / f"mimic_{timestamp}_{pdf_stem}"

@@ -936,11 +936,9 @@ BUILTIN_TOOL_TYPES: tuple[type[BaseTool], ...] = (
     SessionSearchTool,
 )
 
-# Tools whose implementation is parked while we redesign them. NOT loaded
-# into the runtime registry — the chat agent cannot invoke these — but the
-# settings page surfaces them with a "Coming soon" badge so users see the
-# capability is on the roadmap. Re-add to ``BUILTIN_TOOL_TYPES`` when ready
-# to ship.
+# 正在重新设计中的工具实现。不加载到运行时注册表中 —— 聊天代理无法调用它们
+# —— 但设置页面会以"即将推出"徽章展示它们，让用户看到该功能在路线图上。
+# 准备发布时重新添加到 ``BUILTIN_TOOL_TYPES``。
 COMING_SOON_TOOL_TYPES: tuple[type[BaseTool], ...] = ()
 
 BUILTIN_TOOL_NAMES: tuple[str, ...] = tuple(tool_type().name for tool_type in BUILTIN_TOOL_TYPES)
@@ -949,11 +947,9 @@ COMING_SOON_TOOL_NAMES: tuple[str, ...] = tuple(
     tool_type().name for tool_type in COMING_SOON_TOOL_TYPES
 )
 
-# Tools the user can switch on/off from /settings/tools ("体验增强" /
-# Experience Enhancement). Everything else in BUILTIN_TOOL_NAMES is mounted
-# automatically by the chat pipeline under per-tool context gates and is
-# locked-on from the user's perspective. Ordering here is the canonical
-# display order for the settings page.
+# 用户可以从 /settings/tools（"体验增强"）开关的工具。
+# BUILTIN_TOOL_NAMES 中的其他工具由聊天管道在每工具上下文门控下自动挂载，
+# 从用户角度看是锁定开启的。此处的顺序是设置页面的规范显示顺序。
 USER_TOGGLEABLE_TOOL_NAMES: tuple[str, ...] = (
     "brainstorm",
     "web_search",

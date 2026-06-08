@@ -1,17 +1,14 @@
-"""Build the payload for the ``ask_user`` tool.
+"""为 ``ask_user`` 工具构建载荷。
 
-The tool packages one-to-three structured questions into a payload that
-the chat pipeline interprets as a "pause this same turn until the user
-answers" signal (``ToolResult.pause_for_user``). The frontend reads the
-same payload off ``tool_result.metadata.ask_user`` and renders a card
-that lets the user move between questions and submit answers in one
-batch.
+该工具将一到三个结构化问题打包成载荷，聊天管道将其解释为
+"暂停当前轮次直到用户回答"的信号（``ToolResult.pause_for_user``）。
+前端从 ``tool_result.metadata.ask_user`` 读取相同的载荷并渲染卡片，
+让用户在问题之间切换并一次性提交答案。
 
-The schema is intentionally a list-of-questions even for the common
-single-question case — every call wraps a list so the frontend has one
-code path. The legacy ``{question, options}`` argument shape is still
-accepted at the LLM-facing boundary (``build_ask_user_payload``) and is
-normalised to a single-element list internally.
+该 schema 故意设计为问题列表，即使是常见的单问题场景 ——
+每次调用都包装一个列表，使前端只需一条代码路径。
+旧版 ``{question, options}`` 参数形式在 LLM 面向的边界
+（``build_ask_user_payload``）中仍被接受，并在内部标准化为单元素列表。
 """
 
 from __future__ import annotations
@@ -29,7 +26,7 @@ MAX_PLACEHOLDER_CHARS = 120
 
 @dataclass(frozen=True)
 class AskUserQuestion:
-    """A single question rendered as one tab on the ask_user card."""
+    """在 ask_user 卡片上渲染为一个标签页的单个问题。"""
 
     id: str
     prompt: str
@@ -49,10 +46,10 @@ class AskUserQuestion:
 
 @dataclass(frozen=True)
 class AskUserPayload:
-    """Structured payload that travels alongside the tool result.
+    """与工具结果一起传递的结构化载荷。
 
-    Mirrored on the frontend by ``AskUserOptions.tsx`` which reads the
-    same field names off ``tool_result.metadata.ask_user``.
+    由前端的 ``AskUserOptions.tsx`` 镜像，从 ``tool_result.metadata.ask_user``
+    读取相同的字段名。
     """
 
     questions: tuple[AskUserQuestion, ...]
@@ -73,17 +70,16 @@ def build_ask_user_payload(
     *,
     questions: Any = None,
     intro: Any = None,
-    # Legacy single-question shape — auto-normalised into ``questions``.
+    # 旧版单问题形式 —— 自动标准化为 ``questions``。
     question: Any = None,
     options: Any = None,
 ) -> tuple[AskUserPayload | None, str | None]:
-    """Validate + normalise the LLM-provided arguments.
+    """验证并标准化 LLM 提供的参数。
 
-    Accepts either the v2 ``{questions: [...], intro?}`` shape or the
-    legacy ``{question, options?}`` shape (which is wrapped into a
-    one-element list). Returns ``(payload, None)`` on success, or
-    ``(None, error_message)`` if arguments cannot be honoured — errors
-    propagate back to the LLM as a tool failure rather than raising.
+    接受 v2 ``{questions: [...], intro?}`` 形式或旧版 ``{question, options?}`` 形式
+    （会被包装为单元素列表）。成功时返回 ``(payload, None)``，
+    如果参数无法满足则返回 ``(None, error_message)`` —— 错误作为工具失败
+    传播回 LLM 而不是抛出异常。
     """
     raw_questions = _coerce_questions(questions, question, options)
     if isinstance(raw_questions, str):
@@ -117,7 +113,7 @@ def _coerce_questions(questions: Any, question: Any, options: Any) -> list[Any] 
             return "`questions` must be an array."
         return list(questions)
     if question is not None:
-        # Legacy single-question shape.
+        # 旧版单问题形式。
         return [{"prompt": question, "options": options}]
     return []
 
@@ -126,8 +122,7 @@ def _build_question(raw: Any, idx: int, used_ids: set[str]) -> AskUserQuestion |
     if not isinstance(raw, dict):
         return f"Question #{idx + 1} must be an object."
 
-    # ``prompt`` is the canonical field; accept ``question`` as alias
-    # for forgiveness toward older LLM prompts.
+    # ``prompt`` 是规范字段；接受 ``question`` 作为别名以兼容旧版 LLM 提示。
     prompt_raw = raw.get("prompt")
     if prompt_raw is None:
         prompt_raw = raw.get("question")
