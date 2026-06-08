@@ -1,5 +1,5 @@
 <template>
-  <view class="weightloss-container">
+  <view class="weightloss-container" :class="{ dark: isDark }">
 
     <scroll-view class="scroll-content" scroll-y :enhanced="true" :show-scrollbar="false">
       <!-- 核心数据卡片 -->
@@ -173,6 +173,10 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const username = computed(() => userStore.state?.username || 'user')
@@ -450,7 +454,7 @@ onShow(() => {
 <style scoped>
 .weightloss-container {
   min-height: 100vh;
-  background: linear-gradient(145deg, #f0f9f4 0%, #e4f0ea 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 
@@ -550,7 +554,7 @@ onShow(() => {
   left: 20rpx;
   width: 120rpx;
   height: 120rpx;
-  background: white;
+  background: var(--card-bg);
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -573,7 +577,7 @@ onShow(() => {
 .summary-divider { width: 1px; background: #bfdbc0; height: 40rpx; align-self: center; }
 
 .record-card {
-  background: #ffffffcc;
+  background: var(--card-bg);
   backdrop-filter: blur(12px);
   border-radius: 48rpx;
   padding: 28rpx;
@@ -651,7 +655,7 @@ onShow(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -659,15 +663,15 @@ onShow(() => {
 }
 .popup-container {
   width: 560rpx;
-  background: #fff9f2;
+  background: var(--modal-bg);
   border-radius: 64rpx;
   padding: 48rpx 40rpx;
   text-align: center;
 }
-.popup-title { font-size: 36rpx; font-weight: 700; color: #2a6230; display: block; margin-bottom: 36rpx; }
+.popup-title { font-size: 36rpx; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 36rpx; }
 .popup-input-area { margin-bottom: 48rpx; text-align: left; }
-.input-label { font-size: 28rpx; color: #5e7a5e; margin-bottom: 12rpx; display: block; }
-.popup-input { background: #f3f9f0; border-radius: 56rpx; height: 84rpx; padding: 0 28rpx; font-size: 32rpx; border: 1px solid #cbdbc6; }
+.input-label { font-size: 28rpx; color: var(--text-secondary); margin-bottom: 12rpx; display: block; }
+.popup-input { background: var(--input-bg); border-radius: 56rpx; height: 84rpx; padding: 0 28rpx; font-size: 32rpx; border: 1px solid var(--input-border); }
 .popup-buttons { display: flex; gap: 24rpx; }
 .popup-btn { flex: 1; height: 80rpx; border-radius: 60rpx; font-size: 28rpx; border: none; }
 .cancel { background: #eef2ec; color: #4d6e4d; }

@@ -74,6 +74,7 @@ function serializeTodo(record: any) {
     content: record.content,
     completed: record.completed,
     todoDate: record.recordDate,
+    deadline: record.deadline,
     createdAt: record.createdAt,
   };
 }
@@ -261,6 +262,16 @@ workRouter.get("/health-data", asyncHandler(async (req, res) => {
     eyeRestCount: settings.eyeRestCount || 0,
     waterIntake: settings.waterIntake || 0,
     backRelaxCount: settings.backRelaxCount || 0,
+    vocalRestCount: settings.vocalRestCount || 0,
+    stopMoveCount: settings.stopMoveCount || 0,
+    eyeExerciseCount: settings.eyeExerciseCount || 0,
+    classBreakCount: settings.classBreakCount || 0,
+    deepBreathCount: settings.deepBreathCount || 0,
+    legMoveCount: settings.legMoveCount || 0,
+    neckRelaxCount: settings.neckRelaxCount || 0,
+    stepCount: settings.stepCount || 0,
+    energySnackCount: settings.energySnackCount || 0,
+    standCount: settings.standCount || 0,
   });
 }));
 
@@ -315,7 +326,7 @@ workRouter.get("/todos/today", asyncHandler(async (req, res) => {
 
 workRouter.post("/todos", asyncHandler(async (req, res) => {
   const userId = (req as AuthenticatedRequest).userId;
-  const { content } = req.body as { content: string };
+  const { content, deadline } = req.body as { content: string; deadline?: string };
 
   const todo = await prisma.workRecord.create({
     data: {
@@ -323,6 +334,7 @@ workRouter.post("/todos", asyncHandler(async (req, res) => {
       recordType: "todo",
       recordDate: todayUtc(),
       content,
+      deadline: deadline ? new Date(deadline) : null,
     },
   });
 

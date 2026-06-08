@@ -1,5 +1,5 @@
 <template>
-  <scroll-view class="wellness-container" scroll-y>
+  <scroll-view class="wellness-container" scroll-y :class="{ dark: isDark }">
     <view class="inner-wrapper">
       <!-- 顶部装饰 -->
       <view class="hero-section">
@@ -154,6 +154,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { wellnessApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const userStore = useUserStore()
 const { isLoggedIn, state } = userStore
@@ -538,7 +542,7 @@ onMounted(() => {
   width: 100%;
   height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #f0f9f0 0%, #e8f5e9 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   box-sizing: border-box;
 }
 
@@ -631,7 +635,7 @@ onMounted(() => {
 
 /* 表单卡片 */
 .form-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
   border-radius: 48rpx;
   padding: 40rpx 32rpx;
@@ -678,32 +682,32 @@ onMounted(() => {
 .label {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2c3e2f;
+  color: var(--text-primary);
   margin-right: 12rpx;
 }
 
 .optional {
   font-size: 24rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
 }
 
 .custom-input,
 .custom-textarea {
   width: 100%;
   padding: 24rpx 28rpx;
-  background: #f5f9f5;
+  background: var(--input-bg);
   border-radius: 32rpx;
   font-size: 30rpx;
-  border: 2rpx solid #d0e2d0;
+  border: 2rpx solid var(--input-border);
   transition: all 0.2s;
   box-sizing: border-box;
-  color: #1b3b1a;
+  color: var(--text-primary);
 }
 
 .custom-input:focus,
 .custom-textarea:focus {
   border-color: #66bb6a;
-  background: #ffffff;
+  background: var(--card-bg);
   box-shadow: 0 0 0 6rpx rgba(102, 187, 106, 0.1);
 }
 
@@ -718,7 +722,7 @@ onMounted(() => {
 
 .tag-label {
   font-size: 26rpx;
-  color: #5d7a5c;
+  color: var(--text-secondary);
   margin-right: 16rpx;
   display: inline-block;
 }
@@ -768,7 +772,7 @@ onMounted(() => {
 }
 
 .advice-card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 40rpx 32rpx;
   margin-bottom: 30rpx;
@@ -835,7 +839,7 @@ onMounted(() => {
 .advice-text {
   font-size: 30rpx;
   line-height: 1.8;
-  color: #2c3e2f;
+  color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -846,7 +850,7 @@ onMounted(() => {
 
 .advice-note {
   font-size: 22rpx;
-  color: #9eaf9e;
+  color: var(--text-tertiary);
 }
 
 .empty-state {
@@ -879,7 +883,7 @@ onMounted(() => {
 }
 
 .loading-skeleton {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 40rpx;
   width: 100%;
@@ -919,7 +923,7 @@ onMounted(() => {
 }
 
 .input-placeholder {
-  color: #bcd0bc;
+  color: var(--text-tertiary);
   font-size: 28rpx;
   white-space: nowrap;
   overflow: visible;
@@ -933,13 +937,13 @@ onMounted(() => {
 
 /* ========== 新增打卡与成就系统样式 ========== */
 .checkin-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
   border-radius: 48rpx;
   padding: 30rpx;
   margin-bottom: 30rpx;
   box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.05);
-  border: 1px solid #d0e2d0;
+  border: 1px solid var(--input-border);
 }
 .checkin-header {
   display: flex;
@@ -977,11 +981,11 @@ onMounted(() => {
   font-weight: 600;
   margin-left: 16rpx;
   flex: 1;
-  color: #2c3e2f;
+  color: var(--text-primary);
 }
 .task-target {
   font-size: 26rpx;
-  color: #8d9e8d;
+  color: var(--text-secondary);
 }
 .badge-section {
   margin: 20rpx 0;

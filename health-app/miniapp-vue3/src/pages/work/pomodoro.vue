@@ -1,5 +1,5 @@
 <template>
-  <view class="pomodoro-page">
+  <view class="pomodoro-page" :class="{ dark: isDark }">
     <view class="pomodoro-card">
       <view class="timer-display">
         <text class="timer-minutes">{{ formattedTime.minutes }}</text>
@@ -44,6 +44,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { workApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const workDurationMin = ref(25)
 const breakDurationMin = ref(5)
@@ -165,10 +168,10 @@ onUnmounted(() => {
 .pomodoro-page {
   min-height: 100vh;
   padding: 30rpx;
-  background: linear-gradient(180deg, #f7fbff 0%, #e8f4ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 .pomodoro-card {
-  background: rgba(255,255,255,0.98);
+  background: var(--card-bg);
   border-radius: 48rpx;
   padding: 40rpx 30rpx;
   box-shadow: 0 20rpx 40rpx rgba(0,0,0,0.08);
@@ -234,7 +237,7 @@ onUnmounted(() => {
 }
 
 .duration-setting {
-  border-top: 1px solid #e8f4ff;
+  border-top: 1px solid var(--divider);
   padding-top: 24rpx;
   margin-bottom: 24rpx;
 }
@@ -246,7 +249,7 @@ onUnmounted(() => {
 }
 .duration-label {
   font-size: 28rpx;
-  color: #334155;
+  color: var(--text-primary);
 }
 .duration-controls {
   display: flex;
@@ -271,7 +274,7 @@ onUnmounted(() => {
 .duration-val {
   font-size: 30rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   min-width: 130rpx;
   text-align: center;
 }
@@ -280,8 +283,8 @@ onUnmounted(() => {
   text-align: center;
   margin-top: 20rpx;
   font-size: 28rpx;
-  color: #334155;
+  color: var(--text-primary);
   padding-top: 20rpx;
-  border-top: 1px solid #e8f4ff;
+  border-top: 1px solid var(--divider);
 }
 </style>

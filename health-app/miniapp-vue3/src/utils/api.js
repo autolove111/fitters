@@ -129,9 +129,9 @@ export const workApi = {
   getAllExercises: () => request('/work/exercises', { method: 'GET' }),
   // 获取今日工作时长
   getTodayWorkDuration: () => request('/work/today-duration', { method: 'GET' }),
-  // 今日TODO
+  // TODO
   getTodayTodos: () => request('/work/todos/today', { method: 'GET' }),
-  addTodayTodo: (content) => request('/work/todos', { method: 'POST', data: { content } }),
+  addTodayTodo: (content, deadline) => request('/work/todos', { method: 'POST', data: { content, deadline } }),
   completeTodo: (todoId) => request(`/work/todos/${todoId}`, { method: 'DELETE' }),
   // 获取用户健康数据（职业专属指标）
   getHealthData: (occupation) => request(`/work/health-data?occupation=${occupation}`, { method: 'GET' }),
@@ -158,4 +158,23 @@ export const userApi = {
   updateProfile: (data) => request('/users/profile', { method: 'PUT', data }),
   changePassword: (data) => request('/users/password', { method: 'PUT', data }),
   deleteAccount: () => request('/users/account', { method: 'DELETE' }),
+}
+
+// ========== 主题模块 API ==========
+export const themeApi = {
+  getTheme: () => request('/users/theme', { method: 'GET' }),
+  updateTheme: (mode) => request('/users/theme', { method: 'PUT', data: { mode } }),
+}
+
+// ========== 饮水模块 API ==========
+export const waterApi = {
+  add: (data) => request('/waters', { method: 'POST', data }),
+  list: () => request('/waters'),
+  today: () => request('/waters/today', { method: 'GET' }),
+}
+
+// ========== 体重模块 API ==========
+export const weightApi = {
+  add: (data) => request('/weights', { method: 'POST', data }),
+  today: () => request('/weights/today', { method: 'GET' }),
 }

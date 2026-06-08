@@ -1,24 +1,24 @@
 <template>
   <view class="workspace-page">
     <view class="shell">
-      <view :class="['sidebar', { 'sidebar-open': isSidebarOpen }]">
+      <view :class="['sidebar', { 'sidebar-open': isSidebarOpen }]" :style="{ top: navBarHeight + 'px' }">
         <view class="brand-block">
           <view class="brand-row">
             <view class="brand-mark">A</view>
             <text class="brand-name">AidLearning</text>
           </view>
-          <!-- <view class="brand-badge">v1.4.0</view> -->
+          <!-- <view class="brand-badge">v1.0.0</view> -->
         </view>
 
         <view class="nav-section">
           <view class="primary-action" @click="startNewChat">
             <u-icon name="plus" size="30" color="#f3ece7" />
-            <text>New Chat</text>
+            <text>新建对话</text>
           </view>
         </view>
 
         <view class="nav-section">
-          <text class="section-label">Chat</text>
+          <text class="section-label">对话</text>
           <view class="session-group">
             <text class="group-label">{{ sessionGroupTitle }}</text>
             <view
@@ -28,9 +28,9 @@
               @click="openSession(session.id)"
             >
               <view class="session-dot" />
-              <text class="session-text">{{ session.title || 'New chat' }}</text>
+              <text class="session-text">{{ session.title || '新对话' }}</text>
             </view>
-            <text v-if="recentSessions.length === 0" class="session-empty">No chat history yet</text>
+            <text v-if="recentSessions.length === 0" class="session-empty">暂无对话记录</text>
           </view>
         </view>
 
@@ -47,19 +47,19 @@
         </view>
       </view>
 
-      <view class="page-topbar">
+      <view class="page-topbar" :style="{ top: (navBarHeight + 12) + 'px' }">
         <button class="menu-toggle-btn" @click="toggleSidebar">
           <u-icon name="menu" color="#0f172a" />
         </button>
       </view>
 
-      <view class="main-panel">
+      <view class="main-panel" :style="{ paddingTop: (navBarHeight + 60) + 'px' }">
         <view v-if="!messages.length" class="hero">
           <view class="hero-badge">
             <u-icon name="bookmark" size="34" color="#7d736d" />
           </view>
-          <text class="hero-title">What would you like to learn?</text>
-          <text class="hero-subtitle">Plan, explore, and start a new tutoring conversation from one place.</text>
+          <text class="hero-title">今天想学点什么？</text>
+          <text class="hero-subtitle">制定计划、探索知识、开始你的专属学习对话</text>
         </view>
 
         <scroll-view
@@ -74,7 +74,7 @@
           </view>
           <view v-if="chatStore.state.isStreaming" class="streaming-row">
             <view class="streaming-bubble">
-              <text>{{ chatStore.state.streamingContent || 'Thinking...' }}</text>
+              <text>{{ chatStore.state.streamingContent || '思考中...' }}</text>
             </view>
           </view>
           <view id="msg-bottom" class="msg-bottom" />
@@ -103,47 +103,28 @@
           <textarea
             v-model="draft"
             class="composer-textarea"
-            auto-height
             maxlength="8000"
-            placeholder="How can I help you today?"
+            placeholder="输入你的问题..."
             placeholder-class="composer-placeholder"
             @confirm="submitDraft"
           />
 
           <view class="composer-footer">
             <view class="composer-toolbar">
-              <view class="left-actions">
-                <view class="capability-pill active" @click="toggleCapabilityMenu">
-                  <u-icon :name="selectedCapability.icon" size="22" color="#ea8f57" />
-                  <text>{{ selectedCapability.label }}</text>
-                  <u-icon :name="showCapabilityMenu ? 'arrow-up' : 'arrow-down'" size="18" color="#ea8f57" />
-                </view>
-                <view class="tool-pill" @click="goKnowledge">
-                  <u-icon name="file-text" size="22" color="#a59a92" />
-                  <text>Knowledge</text>
-                </view>
-                <view class="tool-pill" @click="goSkills">
-                  <u-icon name="star" size="22" color="#a59a92" />
-                  <text>Skill</text>
-                </view>
-                <view class="tool-pill" @click="goMemory">
-                  <u-icon name="bookmark" size="22" color="#a59a92" />
-                  <text>Memory</text>
-                </view>
+              <view class="tool-pill" @click="goKnowledge">
+                <u-icon name="file-text" size="22" color="#a59a92" />
+                <text>知识库</text>
               </view>
-
-              <view class="composer-actions">
-                <view class="model-pill">
-                  <u-icon name="grid" size="22" color="#8f8178" />
-                  <text>{{ selectedModelLabel }}</text>
-                </view>
-                <view class="send-button" @click="submitDraft">
-                  <u-icon
-                    :name="chatStore.state.isStreaming ? 'close-circle' : 'arrow-up'"
-                    size="28"
-                    :color="chatStore.state.isStreaming ? '#f6d6d1' : '#201d1a'"
-                  />
-                </view>
+              <view class="tool-pill" @click="goSkills">
+                <u-icon name="star" size="22" color="#a59a92" />
+                <text>技能</text>
+              </view>
+              <view class="send-button" @click="submitDraft">
+                <u-icon
+                  :name="chatStore.state.isStreaming ? 'close-circle' : 'arrow-up'"
+                  size="28"
+                  :color="chatStore.state.isStreaming ? '#f6d6d1' : '#201d1a'"
+                />
               </view>
             </view>
           </view>
@@ -163,37 +144,37 @@ const capabilityOptions = [
   {
     key: 'chat',
     value: 'chat',
-    label: 'Chat',
+    label: '对话',
     icon: 'chat',
-    description: 'Flexible conversation with any tool',
+    description: '灵活对话，支持多种工具',
   },
   {
     key: 'solve',
     value: 'deep_solve',
-    label: 'Solve',
+    label: '解题',
     icon: 'grid',
-    description: 'Multi-step reasoning & problem solving',
+    description: '多步骤推理与问题求解',
   },
   {
     key: 'quiz',
     value: 'deep_question',
-    label: 'Quiz',
+    label: '出题',
     icon: 'edit-pen',
-    description: 'Auto-validated question generation',
+    description: '自动生成练习题目',
   },
   {
     key: 'research',
     value: 'deep_research',
-    label: 'Research',
+    label: '研究',
     icon: 'search',
-    description: 'Comprehensive multi-agent research',
+    description: '多智能体深度研究',
   },
   {
     key: 'visualize',
     value: 'visualize',
-    label: 'Visualize',
+    label: '可视化',
     icon: 'bar-chart',
-    description: 'Generate charts, diagrams, and visual explanations',
+    description: '生成图表与可视化解释',
   },
 ]
 
@@ -208,13 +189,14 @@ export default {
       showCapabilityMenu: false,
       capabilityOptions,
       menuItems: [
-        { label: 'Sessions', icon: 'clock', route: '/pages/study/aidlearning/chat/session' },
-        { label: 'Knowledge', icon: 'bookmark', route: '/pages/study/aidlearning/knowledge/list' },
-        { label: 'Skills', icon: 'star', route: '/pages/study/aidlearning/skills/list' },
-        { label: 'Memory', icon: 'heart', route: '/pages/study/aidlearning/memory/overview' },
-        { label: 'Settings', icon: 'setting', route: '/pages/study/aidlearning/settings/index' },
+        // { label: '会话', icon: 'clock', route: '/pages/study/aidlearning/chat/session' },
+        { label: '知识库', icon: 'bookmark', route: '/pages/study/aidlearning/knowledge/list' },
+        { label: '技能', icon: 'star', route: '/pages/study/aidlearning/skills/list' },
+        // { label: '记忆', icon: 'heart', route: '/pages/study/aidlearning/memory/overview' },
+        { label: '设置', icon: 'setting', route: '/pages/study/aidlearning/settings/index' },
       ],
       isSidebarOpen: false,
+      navBarHeight: 0,
     }
   },
   computed: {
@@ -222,13 +204,13 @@ export default {
       return this.chatStore.state.messages
     },
     sessionGroupTitle() {
-      if (!this.recentSessions.length) return 'RECENT'
+      if (!this.recentSessions.length) return '最近'
       const latest = this.recentSessions[0]?.updated_at
-      if (!latest) return 'RECENT'
+      if (!latest) return '最近'
       const latestKey = dayjs(latest).format('YYYY-MM-DD')
-      if (latestKey === dayjs().format('YYYY-MM-DD')) return 'TODAY'
-      if (latestKey === dayjs().subtract(1, 'day').format('YYYY-MM-DD')) return 'YESTERDAY'
-      return dayjs(latest).format('MMM DD').toUpperCase()
+      if (latestKey === dayjs().format('YYYY-MM-DD')) return '今天'
+      if (latestKey === dayjs().subtract(1, 'day').format('YYYY-MM-DD')) return '昨天'
+      return dayjs(latest).format('MM月DD日')
     },
     selectedCapability() {
       return this.capabilityOptions.find((item) => item.value === this.chatStore.state.capability) || this.capabilityOptions[0]
@@ -254,6 +236,8 @@ export default {
     },
   },
   onShow() {
+    const sys = uni.getSystemInfoSync()
+    this.navBarHeight = sys.statusBarHeight + 44
     this.chatStore.ensureConnected()
     if (!this.chatStore.state.capability || this.chatStore.state.capability === 'tutor') {
       this.chatStore.state.capability = 'chat'
@@ -287,7 +271,7 @@ export default {
         this.isSidebarOpen = false
         this.scrollToBottom()
       } catch (e) {
-        uni.showToast({ title: 'Failed to open session', icon: 'none' })
+        uni.showToast({ title: '打开对话失败', icon: 'none' })
       }
     },
     toggleCapabilityMenu() {
@@ -359,17 +343,15 @@ export default {
 
 .sidebar {
   position: fixed;
-  top: 0;
   left: 0;
   bottom: 0;
-  width: 300rpx;
-  background: linear-gradient(180deg, rgba(243, 249, 255, 0.98), rgba(238, 245, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  width: 340rpx;
+  background: linear-gradient(180deg, #f3f9ff, #eef5ff);
   border-right: 1rpx solid rgba(255, 255, 255, 0.7);
   padding: 28rpx 24rpx 32rpx;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
-  z-index: 110;
+  z-index: 100;
   overflow-y: auto;
 }
 
@@ -381,7 +363,7 @@ export default {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
-  z-index: 100;
+  z-index: 99;
 }
 
 .brand-block {
@@ -518,7 +500,7 @@ export default {
 
 .main-panel {
   flex: 1;
-  padding: 120rpx 24rpx 40rpx;
+  padding: 24rpx 24rpx 40rpx;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -526,9 +508,8 @@ export default {
 
 .page-topbar {
   position: fixed;
-  top: 24rpx;
   right: 24rpx;
-  z-index: 130;
+  z-index: 101;
 }
 
 .menu-toggle-btn {
@@ -561,8 +542,7 @@ export default {
   height: 88rpx;
   border-radius: 28rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(96, 165, 250, 0.22));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,8 +579,7 @@ export default {
 
 .streaming-bubble {
   max-width: 85%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   padding: 24rpx 30rpx;
   border-radius: 28rpx 28rpx 28rpx 4rpx;
   font-size: 28rpx;
@@ -619,8 +598,7 @@ export default {
   max-width: 1100rpx;
   align-self: center;
   border-radius: 40rpx;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   border: 1rpx solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 28rpx 50rpx rgba(15, 23, 42, 0.06);
   overflow: hidden;
@@ -631,8 +609,7 @@ export default {
   border-radius: 36rpx;
   overflow: hidden;
   border: 1rpx solid rgba(255, 255, 255, 0.85);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
-  backdrop-filter: blur(20rpx);
+  background: linear-gradient(145deg, #ffffff, #e5f2ff);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
@@ -687,7 +664,7 @@ export default {
 
 .composer-textarea {
   width: 100%;
-  min-height: 180rpx;
+  height: 180rpx;
   max-height: 320rpx;
   padding: 34rpx 34rpx 22rpx;
   color: #0f172a;
@@ -695,6 +672,7 @@ export default {
   line-height: 1.65;
   background: transparent;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .composer-placeholder {
@@ -709,16 +687,7 @@ export default {
 .composer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-  flex-wrap: wrap;
-}
-
-.left-actions {
-  display: flex;
-  align-items: center;
   gap: 12rpx;
-  flex-wrap: wrap;
 }
 
 .capability-pill,
@@ -743,26 +712,6 @@ export default {
   box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.12);
 }
 
-.composer-actions {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-left: auto;
-}
-
-.model-pill {
-  flex: 0 0 auto;
-  min-width: 0;
-  height: 64rpx;
-  border-radius: 18rpx;
-  padding: 0 18rpx;
-  background: rgba(255, 255, 255, 0.9);
-  color: #0f172a;
-  font-size: 24rpx;
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-}
 
 .send-button {
   width: 72rpx;
@@ -772,6 +721,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
 }
 
 @media screen and (min-width: 960px) {
@@ -780,8 +730,8 @@ export default {
   }
 
   .sidebar {
-    width: 300rpx;
-    min-width: 300rpx;
+    width: 340rpx;
+    min-width: 340rpx;
     min-height: 100vh;
     border-bottom: none;
     border-right: 1rpx solid rgba(255, 255, 255, 0.7);
@@ -793,7 +743,8 @@ export default {
   }
 
   .main-panel {
-    padding-top: 40rpx;
+    margin-left: 340rpx;
+    width: calc(100% - 340rpx);
   }
 
   .menu-item {
@@ -810,26 +761,9 @@ export default {
   }
 
   .composer-textarea {
-    min-height: 160rpx;
+    height: 160rpx;
     font-size: 28rpx;
   }
 
-  .composer-toolbar {
-    align-items: stretch;
-  }
-
-  .left-actions {
-    width: 100%;
-  }
-
-  .composer-actions {
-    width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
-  }
-
-  .model-pill {
-    width: 100%;
-  }
 }
 </style>

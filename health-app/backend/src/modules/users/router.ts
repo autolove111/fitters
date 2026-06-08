@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
-import { readFileSync } from "fs";
+import { unlinkSync } from "fs";
 import multer from "multer";
+import { join } from "path";
 import { z } from "zod";
 import { HttpError, asyncHandler } from "../../common/errors.js";
 import { ok } from "../../common/response.js";
@@ -9,7 +10,15 @@ import { requireAuth, type AuthenticatedRequest } from "../../middleware/auth.js
 import { prisma } from "../../prisma.js";
 
 export const usersRouter = Router();
-const upload = multer({ dest: "uploads/" });
+
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (_req, file, cb) => {
+    const ext = file.originalname.split(".").pop() || "png";
+    cb(null, `avatar_${Date.now()}.${ext}`);
+  },
+});
+const upload = multer({ storage });
 
 const updateUserSchema = z.object({
   nickname: z.string().trim().max(64).optional(),
@@ -101,17 +110,27 @@ usersRouter.post(
       throw new HttpError(400, "avatar file is required");
     }
 
-    const fileBuffer = readFileSync(req.file.path);
-    const base64Data = fileBuffer.toString("base64");
-    const mimeType = req.file.mimetype;
-    const avatar = `data:${mimeType};base64,${base64Data}`;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatar: true },
+    });
+
+    const oldAvatar = user?.avatar;
+    if (oldAvatar && oldAvatar.startsWith("/uploads/")) {
+      const oldPath = join(process.cwd(), oldAvatar);
+      try {
+        unlinkSync(oldPath);
+      } catch {}
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`;
 
     await prisma.user.update({
       where: { id: userId },
-      data: { avatar },
+      data: { avatar: avatarUrl },
     });
 
-    ok(res, { avatar }, "avatar updated");
+    ok(res, { avatar: avatarUrl }, "avatar updated");
   }),
 );
 
@@ -233,5 +252,42 @@ usersRouter.delete(
     });
 
     ok(res, null, "account deleted");
+  }),
+);
+
+usersRouter.get(
+  "/theme",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { theme: true },
+    });
+
+    if (!user) {
+      throw new HttpError(404, "user not found");
+    }
+
+    ok(res, { theme: user.theme || "light" });
+  }),
+);
+
+usersRouter.put(
+  "/theme",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const { mode } = req.body as { mode: string };
+
+    if (!["light", "dark", "auto"].includes(mode)) {
+      throw new HttpError(400, "invalid theme mode");
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { theme: mode },
+    });
+
+    ok(res, { theme: mode }, "theme updated");
   }),
 );

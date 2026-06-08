@@ -1,5 +1,5 @@
 <template>
-  <view class="study-container">
+  <view class="study-container" :class="{ dark: isDark }">
     <view class="hero-card">
       <view class="hero-top-row">
         <view>
@@ -69,6 +69,9 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { studyApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const plans = ref([
   { id: 1, content: '测试计划1', start: '2026-05-25 19:00', end: '2026-05-25 20:00' },
@@ -172,7 +175,7 @@ onShow(() => {
 .study-container {
   padding: 32rpx;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
 .hero-card {
@@ -181,7 +184,7 @@ onShow(() => {
   border-radius: 40rpx;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
   backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
   overflow: hidden;
   margin-bottom: 30rpx;
@@ -201,7 +204,7 @@ onShow(() => {
 .hero-title {
   font-size: 48rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
@@ -209,7 +212,7 @@ onShow(() => {
   display: block;
   margin-top: 12rpx;
   font-size: 26rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -241,7 +244,7 @@ onShow(() => {
 
 .hero-tag {
   background: rgba(59, 130, 246, 0.12);
-  color: #0f172a;
+  color: var(--text-primary);
   padding: 12rpx 18rpx;
   border-radius: 26rpx;
   font-size: 24rpx;
@@ -256,13 +259,13 @@ onShow(() => {
 .section-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .section-note {
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .load-error {
@@ -293,9 +296,9 @@ onShow(() => {
   width: 560rpx;
   min-width: 560rpx;
   padding: 30rpx;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+  background: var(--card-bg);
   border-radius: 40rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.85);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 28rpx 50rpx rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
@@ -349,7 +352,7 @@ onShow(() => {
 .plan-content {
   font-size: 34rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.3;
   margin-bottom: 18rpx;
 }
@@ -365,21 +368,21 @@ onShow(() => {
   flex: 1;
   padding: 18rpx 18rpx 16rpx;
   border-radius: 28rpx;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1rpx solid rgba(148, 163, 184, 0.14);
+  background: var(--card-bg);
+  border: 1rpx solid var(--input-border);
 }
 
 .time-label {
   display: block;
   font-size: 22rpx;
-  color: #475569;
+  color: var(--text-secondary);
   margin-bottom: 8rpx;
 }
 
 .time-value {
   font-size: 24rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .plan-footer {
@@ -410,7 +413,7 @@ onShow(() => {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
   backdrop-filter: blur(20rpx);
   border-radius: 36rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
@@ -430,12 +433,12 @@ onShow(() => {
 .aidlearning-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .aidlearning-desc {
   font-size: 24rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -461,7 +464,7 @@ onShow(() => {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
   backdrop-filter: blur(20rpx);
   border-radius: 36rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
@@ -481,12 +484,12 @@ onShow(() => {
 .pomodoro-entry-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .pomodoro-entry-desc {
   font-size: 24rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 

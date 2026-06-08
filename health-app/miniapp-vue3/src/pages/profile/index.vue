@@ -1,5 +1,5 @@
 <template>
-  <view class="profile-page">
+  <view class="profile-page" :class="{ dark: isDark }">
     <!-- 头像 -->
     <view class="profile-card">
       <view class="profile-item" @click="onAvatarClick">
@@ -27,6 +27,16 @@
         <text class="item-label">修改密码</text>
         <view class="item-right">
           <text class="item-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 深色模式 -->
+      <view class="profile-item">
+        <text class="item-label">深色模式</text>
+        <view class="item-right">
+          <view class="theme-toggle" :class="{ active: isDark }" @click="onToggleTheme">
+            <view class="toggle-knob"></view>
+          </view>
         </view>
       </view>
     </view>
@@ -64,10 +74,18 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
 import { userApi } from '@/utils/api'
 
 const userStore = useUserStore()
 const { state, displayName, saveAvatar, saveNickname: storeSaveNickname, clearUser } = userStore
+
+const themeStore = useThemeStore()
+const { isDark, toggleTheme } = themeStore
+
+const onToggleTheme = () => {
+  toggleTheme()
+}
 
 const avatar = computed(() => state.avatar || '')
 const nickname = computed(() => state.nickname || '')
@@ -104,8 +122,12 @@ const pickAvatar = () => {
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
     success: async (res) => {
-      await saveAvatar(res.tempFilePaths[0])
-      uni.showToast({ title: '头像已更新', icon: 'success' })
+      try {
+        await saveAvatar(res.tempFilePaths[0])
+        uni.showToast({ title: '头像已更新', icon: 'success' })
+      } catch (e) {
+        uni.showToast({ title: '头像上传失败，请重试', icon: 'none' })
+      }
     }
   })
 }
@@ -166,30 +188,30 @@ const confirmDelete = () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   padding: 32rpx;
 }
 .profile-card {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   border-radius: 36rpx;
   margin-bottom: 28rpx;
   overflow: hidden;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.1);
+  border: 1rpx solid var(--card-border);
+  box-shadow: 0 20rpx 44rpx var(--card-shadow);
 }
 .profile-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 28rpx 30rpx;
-  border-bottom: 1rpx solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1rpx solid var(--divider);
 }
 .profile-item:last-child {
   border-bottom: none;
 }
 .item-label {
   font-size: 30rpx;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .item-right {
   display: flex;
@@ -198,11 +220,11 @@ const confirmDelete = () => {
 }
 .item-value {
   font-size: 28rpx;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .item-arrow {
   font-size: 36rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 .avatar-img {
   width: 80rpx;
@@ -224,17 +246,44 @@ const confirmDelete = () => {
   font-weight: 700;
 }
 .danger:active {
-  background: rgba(239, 68, 68, 0.05);
+  background: var(--danger-bg);
 }
 .danger-text {
-  color: #e53935;
+  color: var(--danger-color);
+}
+
+/* 主题切换开关 */
+.theme-toggle {
+  width: 96rpx;
+  height: 52rpx;
+  border-radius: 999rpx;
+  background: var(--toggle-bg);
+  position: relative;
+  transition: background 0.3s;
+}
+.theme-toggle.active {
+  background: var(--toggle-active-bg);
+}
+.toggle-knob {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: #ffffff;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  transition: transform 0.3s;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+.theme-toggle.active .toggle-knob {
+  transform: translateX(44rpx);
 }
 
 /* 弹窗 */
 .modal-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,25 +291,26 @@ const confirmDelete = () => {
 }
 .modal-card {
   width: 600rpx;
-  background: #ffffff;
+  background: var(--modal-bg);
   border-radius: 36rpx;
   padding: 40rpx;
 }
 .modal-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
   text-align: center;
   margin-bottom: 30rpx;
 }
 .modal-input {
   height: 88rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.2);
+  border: 1rpx solid var(--input-border);
   border-radius: 24rpx;
   padding: 0 24rpx;
   font-size: 30rpx;
   margin-bottom: 30rpx;
+  color: var(--text-primary);
 }
 .modal-actions {
   display: flex;
@@ -275,8 +325,8 @@ const confirmDelete = () => {
   border: none;
 }
 .modal-btn.cancel {
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--btn-cancel-bg);
+  color: var(--btn-cancel-text);
 }
 .modal-btn.confirm {
   background: linear-gradient(90deg, #38bdf8, #22c55e);
