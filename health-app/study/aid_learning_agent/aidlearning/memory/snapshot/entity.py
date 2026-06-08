@@ -1,13 +1,12 @@
-"""Snapshot data types.
+"""快照数据类型。
 
-An ``Entity`` is one unit of L1 content for a non-KB surface — e.g. one
-notebook record, one co-writer document, one book, one chat session.
-The snapshot is the *current* set of these on disk; the diff log records
-how that set has changed across refreshes.
+``Entity`` 是非 KB surface 的一个 L1 内容单元 — 例如一个笔记本记录、
+一个协作文档、一本书、一个聊天会话。
+快照是磁盘上这些内容的*当前*集合；差异日志记录该集合在刷新间的变化。
 
-These types are intentionally pure dataclasses with no I/O. Adapters
-build ``Entity`` lists; ``diff.diff_snapshots`` consumes two ``state``
-dicts to produce ``ChangeEntry`` records.
+这些类型有意设计为无 I/O 的纯 dataclass。
+适配器构建 ``Entity`` 列表；``diff.diff_snapshots`` 消费两个 ``state``
+字典以产生 ``ChangeEntry`` 记录。
 """
 
 from __future__ import annotations

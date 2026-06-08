@@ -25,7 +25,7 @@ from aidlearning.tools.question import mimic_exam_questions
 from aidlearning.utils.document_validator import DocumentValidator
 from aidlearning.utils.error_utils import format_exception_message
 
-# Setup module logger with unified logging system (from config)
+# 使用统一日志系统（来自配置）设置模块日志器
 config = load_config_with_main("main.yaml", PROJECT_ROOT)
 log_dir = config.get("paths", {}).get("user_log_dir") or config.get("logging", {}).get("log_dir")
 logger = logging.getLogger(__name__)
@@ -34,9 +34,8 @@ router = APIRouter()
 
 
 def _mimic_output_dir():
-    # Resolved per-call so a per-user PathService (set after auth) routes
-    # generated mimic papers under the caller's own workspace instead of
-    # admin's directory frozen at import time.
+    # 每次调用时解析，使每用户的 PathService（认证后设置）将生成的模拟试卷
+    # 路由到调用者自己的工作区，而非导入时冻结的管理员目录。
     return get_path_service().get_question_dir() / "mimic_papers"
 
 

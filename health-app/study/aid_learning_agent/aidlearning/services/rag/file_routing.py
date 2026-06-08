@@ -1,9 +1,9 @@
 """
-File Type Router
-================
+文件类型路由器
+==============
 
-Centralized file type classification and routing for the RAG pipeline.
-Determines the appropriate processing method for each document type.
+RAG 管线的集中式文件类型分类和路由。
+确定每种文档类型的适当处理方法。
 """
 
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class DocumentType(Enum):
-    """Document type classification."""
+    """文档类型分类。"""
 
     PDF = "pdf"
     TEXT = "text"
@@ -30,7 +30,7 @@ class DocumentType(Enum):
 
 @dataclass
 class FileClassification:
-    """Result of file classification."""
+    """文件分类结果。"""
 
     parser_files: List[str]
     text_files: List[str]
@@ -39,12 +39,12 @@ class FileClassification:
 
 
 class FileTypeRouter:
-    """File type router for the RAG pipeline.
+    """RAG 管线的文件类型路由器。
 
-    Classifies files before processing to route them to appropriate handlers:
-    - PDF / Office files -> parser-based text extraction
-    - Text files -> Direct read (fast, simple)
-    - Unsupported -> Skip with warning
+    在处理前对文件进行分类，将其路由到适当的处理器：
+    - PDF / Office 文件 -> 基于解析器的文本提取
+    - 文本文件 -> 直接读取（快速、简单）
+    - 不支持 -> 跳过并警告
     """
 
     PDF_EXTENSIONS = {".pdf"}
@@ -52,7 +52,7 @@ class FileTypeRouter:
     PARSER_EXTENSIONS = PDF_EXTENSIONS | OFFICE_EXTENSIONS
 
     TEXT_EXTENSIONS = {
-        # Plain text & docs
+        # 纯文本和文档
         ".txt",
         ".text",
         ".log",
@@ -60,7 +60,7 @@ class FileTypeRouter:
         ".markdown",
         ".rst",
         ".asciidoc",
-        # Data / config
+        # 数据/配置
         ".json",
         ".jsonc",
         ".json5",
@@ -74,11 +74,11 @@ class FileTypeRouter:
         ".conf",
         ".env",
         ".properties",
-        # Typesetting
+        # 排版
         ".tex",
         ".latex",
         ".bib",
-        # JavaScript / TypeScript family
+        # JavaScript / TypeScript 系列
         ".js",
         ".mjs",
         ".cjs",
@@ -87,19 +87,19 @@ class FileTypeRouter:
         ".cts",
         ".jsx",
         ".tsx",
-        # Web frameworks
+        # Web 框架
         ".vue",
         ".svelte",
         # Python
         ".py",
-        # JVM languages
+        # JVM 语言
         ".java",
         ".kt",
         ".kts",
         ".scala",
         ".groovy",
         ".gradle",
-        # Systems languages
+        # 系统语言
         ".c",
         ".h",
         ".cpp",
@@ -113,11 +113,11 @@ class FileTypeRouter:
         ".rs",
         ".zig",
         ".nim",
-        # Apple platforms
+        # Apple 平台
         ".swift",
         ".m",
         ".mm",
-        # Scripting
+        # 脚本语言
         ".rb",
         ".php",
         ".pl",
@@ -126,7 +126,7 @@ class FileTypeRouter:
         ".r",
         ".jl",
         ".dart",
-        # Functional
+        # 函数式语言
         ".hs",
         ".clj",
         ".cljs",
@@ -142,7 +142,7 @@ class FileTypeRouter:
         ".lsp",
         ".scm",
         ".rkt",
-        # Web markup / styles
+        # Web 标记/样式
         ".html",
         ".htm",
         ".xml",
@@ -151,21 +151,21 @@ class FileTypeRouter:
         ".scss",
         ".sass",
         ".less",
-        # Smart contracts
+        # 智能合约
         ".sol",
-        # Shells / editors
+        # Shell/编辑器
         ".sh",
         ".bash",
         ".zsh",
         ".fish",
         ".ps1",
         ".vim",
-        # Query / IDL
+        # 查询/IDL
         ".sql",
         ".graphql",
         ".gql",
         ".proto",
-        # Build / infra
+        # 构建/基础设施
         ".cmake",
         ".mk",
         ".tf",
@@ -178,7 +178,7 @@ class FileTypeRouter:
 
     @classmethod
     def get_document_type(cls, file_path: str) -> DocumentType:
-        """Classify a single file by its type."""
+        """按类型对单个文件进行分类。"""
         ext = Path(file_path).suffix.lower()
 
         if ext in cls.PDF_EXTENSIONS:
@@ -200,7 +200,7 @@ class FileTypeRouter:
 
     @classmethod
     def _is_text_file(cls, file_path: str, sample_size: int = 8192) -> bool:
-        """Detect if a file is text-based by examining its content."""
+        """通过检查文件内容来检测是否为文本文件。"""
         try:
             with open(file_path, "rb") as f:
                 chunk = f.read(sample_size)
@@ -215,7 +215,7 @@ class FileTypeRouter:
 
     @classmethod
     def classify_files(cls, file_paths: List[str]) -> FileClassification:
-        """Classify a list of files by processing method."""
+        """按处理方法对文件列表进行分类。"""
         parser_files = []
         text_files = []
         image_files = []
@@ -263,10 +263,9 @@ class FileTypeRouter:
 
     @classmethod
     def decode_bytes(cls, data: bytes) -> str:
-        """Decode raw bytes using the same fallback chain as read_text_file.
+        """使用与 read_text_file 相同的回退链解码原始字节。
 
-        Used by the chat-attachment extractor so path-based and bytes-based
-        callers share one source of truth for supported encodings.
+        供聊天附件提取器使用，使基于路径和基于字节的调用方共享同一编码支持来源。
         """
         for encoding in cls.TEXT_DECODING_CANDIDATES:
             try:

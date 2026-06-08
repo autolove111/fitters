@@ -1,4 +1,4 @@
-"""Public entry points for the tool layer."""
+"""工具层的公共入口点。"""
 
 from __future__ import annotations
 
@@ -40,5 +40,5 @@ def __getattr__(name: str):
     return value
 
 
-# Question generation tools (lazy import to avoid circular dependencies)
-# Access via: from aidlearning.tools.question import parse_pdf_with_mineru, etc.
+# 题目生成工具（延迟导入以避免循环依赖）
+# 访问方式：from aidlearning.tools.question import parse_pdf_with_mineru 等

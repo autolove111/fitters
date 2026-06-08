@@ -1,4 +1,4 @@
-"""Built-in tool implementations and metadata."""
+"""内置工具实现和元数据。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class _PromptHintsMixin:
-    """Shared prompt-hint loader for built-in tools."""
+    """内置工具共享的提示提示加载器。"""
 
     def get_prompt_hints(self, language: str = "en"):
         return load_prompt_hints(self.name, language=language)
@@ -391,14 +391,12 @@ class PaperSearchToolWrapper(_PromptHintsMixin, BaseTool):
 
 
 class ReadSourceTool(_PromptHintsMixin, BaseTool):
-    """Load the full text of an attached Space source by its manifest id.
+    """通过清单 ID 加载附加的 Space 源的完整文本。
 
-    The chat pipeline auto-enables this tool whenever a turn has any non-image
-    attached source (notebook record, book reference, history session,
-    question-bank entry, or document attachment). The per-turn full-text
-    payload is carried in ``context.metadata["source_index"]`` as
-    ``{source_id: str}`` and injected into the tool call by
-    ``_augment_tool_kwargs``. The tool itself stays stateless.
+    当轮次有任何非图片的附加源（笔记本记录、书籍引用、历史会话、题库条目或文档附件）时，
+    聊天管道会自动启用此工具。每轮的完整文本载荷以 ``{source_id: str}`` 的形式
+    携带在 ``context.metadata["source_index"]`` 中，由 ``_augment_tool_kwargs``
+    注入到工具调用中。工具本身保持无状态。
     """
 
     def get_definition(self) -> ToolDefinition:
@@ -455,11 +453,10 @@ class ReadSourceTool(_PromptHintsMixin, BaseTool):
 
 
 class ReadMemoryTool(_PromptHintsMixin, BaseTool):
-    """Read the current user's memory with optional semantic search.
+    """读取当前用户的记忆，支持可选的语义搜索。
 
-    Without a query, returns the full L3 concatenation (backward
-    compatible).  With a query, performs semantic search across both
-    mid-term (SQLite) and long-term (L2/L3 markdown) memory.
+    不带查询时，返回完整的 L3 拼接内容（向后兼容）。
+    带查询时，在中期（SQLite）和长期（L2/L3 Markdown）记忆中执行语义搜索。
     """
 
     def get_definition(self) -> ToolDefinition:
@@ -499,12 +496,11 @@ class ReadMemoryTool(_PromptHintsMixin, BaseTool):
 
 
 class WriteMemoryTool(_PromptHintsMixin, BaseTool):
-    """Persist an explicit user preference into the L3 ``preferences.md``.
+    """将明确的用户偏好持久化到 L3 ``preferences.md``。
 
-    The only chat-mode write into memory. Other memory docs are updated
-    through the Memory workbench by the user manually. This tool is for
-    moments when the user *explicitly* states a preference — speak it
-    back to them only if natural, then call this with the substance.
+    聊天模式下唯一写入记忆的工具。其他记忆文档由用户通过记忆工作台手动更新。
+    此工具用于用户*明确*表达偏好的场景 —— 仅在自然时复述给用户，
+    然后用实质内容调用此工具。
     """
 
     def get_definition(self) -> ToolDefinition:
@@ -592,12 +588,11 @@ class WriteMemoryTool(_PromptHintsMixin, BaseTool):
 
 
 class WebFetchTool(_PromptHintsMixin, BaseTool):
-    """Fetch a specific URL and return readable markdown.
+    """获取特定 URL 并返回可读的 Markdown。
 
-    The actual fetch / extract / safety logic lives in
-    ``aidlearning.tools.web_fetch`` so this wrapper stays free of network
-    code — easier to unit-test the BaseTool boilerplate without spinning
-    up an httpx mock.
+    实际的获取/提取/安全逻辑位于 ``aidlearning.tools.web_fetch`` 中，
+    使此包装器不包含网络代码 —— 更容易对 BaseTool 样板进行单元测试，
+    无需启动 httpx 模拟。
     """
 
     def get_definition(self) -> ToolDefinition:
@@ -656,9 +651,8 @@ class WebFetchTool(_PromptHintsMixin, BaseTool):
 
 
 class GithubTool(_PromptHintsMixin, BaseTool):
-    """Read-only GitHub queries via `gh`. Always auto-mounted; the
-    underlying call gracefully reports "gh unavailable" when the CLI
-    isn't installed on the server."""
+    """通过 `gh` 进行只读 GitHub 查询。始终自动挂载；
+    当服务器未安装 CLI 时，底层调用会优雅地报告"gh 不可用"。"""
 
     _ALLOWED_QUERY_TYPES = ("pr", "issue", "run", "repo", "api")
 
@@ -719,17 +713,14 @@ class GithubTool(_PromptHintsMixin, BaseTool):
 
 
 class AskUserTool(_PromptHintsMixin, BaseTool):
-    """Pause the turn mid-loop to ask the user a clarifying question.
+    """在循环中途暂停轮次以向用户提出澄清问题。
 
-    Returns ``pause_for_user`` carrying the structured question payload.
-    The chat pipeline halts the agentic loop after this call, surfaces
-    the question + options as a card in the chat UI, and **waits for
-    the user's reply on the same turn**. When the reply arrives the
-    loop resumes with the user's answer substituted into this tool's
-    result body — so subsequent iterations see "User answered: <text>"
-    as the matching ``role=tool`` content and can act on it. The user
-    can also abort the wait at any time via the composer's stop button
-    (which cancels the whole turn).
+    返回携带结构化问题载荷的 ``pause_for_user``。
+    聊天管道在此调用后暂停智能体循环，将问题+选项作为卡片显示在聊天 UI 中，
+    并**等待同一轮次中的用户回复**。当回复到达时，循环恢复，
+    用户的答案被替换到此工具的结果体中 —— 因此后续迭代会看到
+    "User answered: <text>" 作为匹配的 ``role=tool`` 内容并可以据此行动。
+    用户也可以随时通过编辑器的停止按钮中止等待（取消整个轮次）。
     """
 
     def get_definition(self) -> ToolDefinition:
@@ -832,12 +823,11 @@ class AskUserTool(_PromptHintsMixin, BaseTool):
 
 
 class SessionSearchTool(_PromptHintsMixin, BaseTool):
-    """Search past conversation history (mid-term memory).
+    """搜索过去的对话历史（中期记忆）。
 
-    Uses SQLite FTS5 full-text search to find relevant messages from
-    previous sessions.  Supports keyword search with optional time
-    filtering.  This is the primary tool for "what did we talk about
-    last week?" type queries.
+    使用 SQLite FTS5 全文搜索查找来自先前会话的相关消息。
+    支持关键词搜索和可选的时间过滤。
+    这是"我们上周讨论了什么？"类型查询的主要工具。
     """
 
     def get_definition(self) -> ToolDefinition:

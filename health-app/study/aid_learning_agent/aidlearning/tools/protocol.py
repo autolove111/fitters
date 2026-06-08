@@ -143,36 +143,36 @@ class ToolEventSink(Protocol):
 
 class BaseTool(ABC):
     """
-    Abstract base for all tools.
+    所有工具的抽象基类。
 
-    Subclasses must implement ``get_definition`` and ``execute``.
+    子类必须实现 ``get_definition`` 和 ``execute``。
 
-    Example::
+    示例::
 
         class MyTool(BaseTool):
             def get_definition(self) -> ToolDefinition:
                 return ToolDefinition(
                     name="my_tool",
-                    description="Does something useful.",
+                    description="做有用的事情。",
                     parameters=[ToolParameter(name="query", type="string")],
                 )
 
             async def execute(self, **kwargs) -> ToolResult:
-                return ToolResult(content="result")
+                return ToolResult(content="结果")
     """
 
     @abstractmethod
     def get_definition(self) -> ToolDefinition:
-        """Return the tool's metadata & parameter schema."""
+        """返回工具的元数据和参数 schema。"""
         ...
 
     @abstractmethod
     async def execute(self, **kwargs: Any) -> ToolResult:
-        """Run the tool with the given keyword arguments."""
+        """使用给定的关键字参数运行工具。"""
         ...
 
     def get_prompt_hints(self, language: str = "en") -> ToolPromptHints:
-        """Return prompt-level metadata for dynamic prompt assembly."""
+        """返回用于动态提示组装的提示级元数据。"""
         definition = self.get_definition()
         return ToolPromptHints(
             short_description=definition.description,

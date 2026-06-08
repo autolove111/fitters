@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-CitationManager - Citation management system
-Responsible for extracting citation information from tool calls and managing citation JSON files
+CitationManager - 引用管理系统
+负责从工具调用中提取引用信息并管理引用 JSON 文件
 """
 
 import asyncio
@@ -16,15 +16,15 @@ from aidlearning.utils.json_parser import parse_json_response
 
 
 class CitationManager:
-    """Citation manager with global ID management"""
+    """具有全局 ID 管理的引用管理器"""
 
     def __init__(self, research_id: str, cache_dir: Path | None = None):
         """
-        Initialize citation manager
+        初始化引用管理器
 
         Args:
-            research_id: Research task ID
-            cache_dir: Cache directory path, if None uses default path
+            research_id: 研究任务 ID
+            cache_dir: 缓存目录路径，为 None 时使用默认路径
         """
         self.research_id = research_id
         if cache_dir is None:
@@ -35,39 +35,39 @@ class CitationManager:
         self.citations_file = self.cache_dir / "citations.json"
         self._citations: dict[str, dict[str, Any]] = {}
 
-        # Global citation ID counters
-        self._plan_counter = 0  # For PLAN-XX format (planning stage)
-        self._block_counters: dict[str, int] = {}  # For CIT-X-XX format (research stage)
+        # 全局引用 ID 计数器
+        self._plan_counter = 0  # 用于 PLAN-XX 格式（规划阶段）
+        self._block_counters: dict[str, int] = {}  # 用于 CIT-X-XX 格式（研究阶段）
 
-        # Reference number mapping (citation_id -> ref_number for in-text citations)
+        # 引用编号映射（citation_id -> 文内引用的 ref_number）
         self._ref_number_map: dict[str, int] = {}
 
-        # Lock for thread-safe operations in parallel mode
+        # 并行模式下线程安全操作的锁
         self._lock = asyncio.Lock()
 
         self._load_citations()
 
     def generate_plan_citation_id(self) -> str:
         """
-        Generate a new citation ID for planning stage (PLAN-XX format)
+        为规划阶段生成新的引用 ID（PLAN-XX 格式）
 
         Returns:
-            Citation ID in PLAN-XX format
+            PLAN-XX 格式的引用 ID
         """
         self._plan_counter += 1
         return f"PLAN-{self._plan_counter:02d}"
 
     def generate_research_citation_id(self, block_id: str) -> str:
         """
-        Generate a new citation ID for research stage (CIT-X-XX format)
+        为研究阶段生成新的引用 ID（CIT-X-XX 格式）
 
         Args:
-            block_id: Block ID (e.g., "block_3")
+            block_id: 块 ID（如 "block_3"）
 
         Returns:
-            Citation ID in CIT-X-XX format
+            CIT-X-XX 格式的引用 ID
         """
-        # Extract block number from block_id
+        # 从 block_id 中提取块编号
         block_num = 0
         try:
             if block_id and "_" in block_id:
@@ -75,7 +75,7 @@ class CitationManager:
         except (ValueError, IndexError):
             block_num = 0
 
-        # Increment counter for this block
+        # 递增此块的计数器
         block_key = str(block_num)
         if block_key not in self._block_counters:
             self._block_counters[block_key] = 0
@@ -85,14 +85,14 @@ class CitationManager:
 
     def get_next_citation_id(self, stage: str = "research", block_id: str = "") -> str:
         """
-        Get the next available citation ID
+        获取下一个可用的引用 ID
 
         Args:
-            stage: "planning" or "research"
-            block_id: Block ID (required for research stage)
+            stage: "planning" 或 "research"
+            block_id: 块 ID（研究阶段必需）
 
         Returns:
-            Next available citation ID
+            下一个可用的引用 ID
         """
         if stage == "planning":
             return self.generate_plan_citation_id()
@@ -100,31 +100,31 @@ class CitationManager:
 
     def citation_exists(self, citation_id: str) -> bool:
         """
-        Check if a citation ID already exists
+        检查引用 ID 是否已存在
 
         Args:
-            citation_id: Citation ID to check
+            citation_id: 要检查的引用 ID
 
         Returns:
-            True if citation exists, False otherwise
+            引用存在返回 True，否则返回 False
         """
         return citation_id in self._citations
 
     def _load_citations(self):
-        """Load citation information from JSON file and restore counters"""
+        """从 JSON 文件加载引用信息并恢复计数器"""
         if self.citations_file.exists():
             try:
                 with open(self.citations_file, encoding="utf-8") as f:
                     data = json.load(f)
                     self._citations = data.get("citations", {})
 
-                    # Try to restore counters from saved state first
+                    # 首先尝试从保存的状态恢复计数器
                     counters = data.get("counters", {})
                     if counters:
                         self._plan_counter = counters.get("plan_counter", 0)
                         self._block_counters = counters.get("block_counters", {})
                     else:
-                        # Fallback: restore counters from existing citations
+                        # 回退：从现有引用恢复计数器
                         self._restore_counters_from_citations()
             except Exception as e:
                 print(f"⚠️ Failed to load citation file: {e}")
@@ -133,7 +133,7 @@ class CitationManager:
             self._citations = {}
 
     def _restore_counters_from_citations(self):
-        """Restore citation counters from existing citations to avoid ID conflicts"""
+        """从现有引用恢复引用计数器以避免 ID 冲突"""
         for citation_id in self._citations.keys():
             if citation_id.startswith("PLAN-"):
                 try:
@@ -156,7 +156,7 @@ class CitationManager:
                     pass
 
     def _save_citations(self):
-        """Save citation information to JSON file"""
+        """将引用信息保存为 JSON 文件"""
         try:
             data = {
                 "research_id": self.research_id,
@@ -174,13 +174,13 @@ class CitationManager:
 
     def validate_citation_references(self, text: str) -> dict[str, Any]:
         """
-        Validate citation references in text and identify invalid ones
+        验证文本中的引用引用并识别无效引用
 
         Args:
-            text: Text containing citation references like [[CIT-X-XX]]
+            text: 包含引用引用的文本，如 [[CIT-X-XX]]
 
         Returns:
-            Dictionary with validation results:
+            包含验证结果的字典：
             {
                 "valid_citations": [...],
                 "invalid_citations": [...],
@@ -189,7 +189,7 @@ class CitationManager:
         """
         import re
 
-        # Find all citation references in the text
+        # 查找文本中所有引用引用
         pattern = r"\[\[([A-Z]+-\d+-?\d*)\]\]"
         found_refs = re.findall(pattern, text)
 
@@ -211,13 +211,13 @@ class CitationManager:
 
     def fix_invalid_citations(self, text: str) -> str:
         """
-        Remove or mark invalid citation references in text
+        移除或标记文本中的无效引用引用
 
         Args:
-            text: Text containing citation references
+            text: 包含引用引用的文本
 
         Returns:
-            Text with invalid citations removed or marked
+            已移除或标记无效引用的文本
         """
         import re
 
@@ -226,8 +226,8 @@ class CitationManager:
         def replace_invalid(match):
             citation_id = match.group(1)
             if self.citation_exists(citation_id):
-                return match.group(0)  # Keep valid citations
-            return ""  # Remove invalid citations
+                return match.group(0)  # 保留有效引用
+            return ""  # 移除无效引用
 
         return re.sub(pattern, replace_invalid, text)
 
@@ -236,24 +236,23 @@ class CitationManager:
         citation_id: str,
         tool_type: str,
         tool_trace: Any,
-        raw_answer: str,  # Raw answer JSON string
+        raw_answer: str,  # 原始答案 JSON 字符串
         tool_metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
-        Add citation information
+        添加引用信息
 
         Args:
-            citation_id: Citation ID
-            tool_type: Tool type
-            tool_trace: ToolTrace object
-            raw_answer: Raw answer (JSON string)
-            tool_metadata: Structured ToolResult.metadata for this call, when
-                available. Extractors prefer this over reparsing ``raw_answer``
-                because tool messages now carry the textual answer rather than
-                a JSON payload.
+            citation_id: 引用 ID
+            tool_type: 工具类型
+            tool_trace: ToolTrace 对象
+            raw_answer: 原始答案（JSON 字符串）
+            tool_metadata: 此调用的结构化 ToolResult.metadata（可用时）。
+                提取器优先使用此字段而非重新解析 ``raw_answer``，
+                因为工具消息现在携带文本答案而非 JSON 负载。
 
         Returns:
-            Whether addition was successful
+            添加是否成功
         """
         try:
             tool_type_lower = tool_type.lower()
@@ -273,7 +272,7 @@ class CitationManager:
             elif tool_type_lower == "run_code":
                 citation_info = self._extract_code_citation(citation_id, tool_type, tool_trace)
             else:
-                # Unknown tool type, use generic format
+                # 未知工具类型，使用通用格式
                 citation_info = self._extract_generic_citation(citation_id, tool_type, tool_trace)
 
             if citation_info:
@@ -288,25 +287,25 @@ class CitationManager:
     def _extract_rag_citation(
         self, citation_id: str, tool_type: str, raw_answer: str, tool_trace: Any
     ) -> dict[str, Any]:
-        """Extract citation information for RAG retrieval with source documents"""
+        """为 RAG 检索提取引用信息，包含源文档"""
         citation_info = {
             "citation_id": citation_id,
             "tool_type": tool_type,
             "query": tool_trace.query,
             "summary": tool_trace.summary,
             "timestamp": tool_trace.timestamp,
-            "sources": [],  # List of source documents
+            "sources": [],  # 源文档列表
         }
 
         try:
-            # Parse raw_answer to extract source information
+            # 解析 raw_answer 以提取源信息
             answer_data = parse_json_response(raw_answer)
 
-            # Extract source documents if available
-            # Common fields in RAG responses: chunks, documents, sources, context
+            # 如果可用则提取源文档
+            # RAG 响应中的常见字段：chunks、documents、sources、context
             sources = []
 
-            # Try different field names for source documents
+            # 尝试不同的源文档字段名
             for field_name in ["chunks", "documents", "sources", "context", "retrieved_docs"]:
                 if field_name in answer_data:
                     source_list = answer_data[field_name]
@@ -330,13 +329,13 @@ class CitationManager:
                                 sources.append(source_info)
                     break
 
-            # Also extract kb_name if available
+            # 同时提取 kb_name（如果可用）
             citation_info["kb_name"] = answer_data.get("kb_name", "")
             citation_info["sources"] = sources
             citation_info["total_sources"] = len(sources)
 
         except (json.JSONDecodeError, Exception) as e:
-            # If parsing fails, still return basic citation info
+            # 如果解析失败，仍返回基本引用信息
             print(f"⚠️ Failed to parse RAG source info: {e}")
 
         return citation_info
@@ -349,11 +348,11 @@ class CitationManager:
         tool_trace: Any,
         tool_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Extract citation information for web search with URLs.
+        """为网页搜索提取引用信息，包含 URL。
 
-        Prefers the structured ``ToolResult.metadata`` (which carries the
-        provider's ``citations``/``results`` list) because ``raw_answer`` is
-        the textual answer surfaced to the LLM, not a JSON payload.
+        优先使用结构化的 ``ToolResult.metadata``（携带提供商的
+        ``citations``/``results`` 列表），因为 ``raw_answer`` 是呈现给
+        LLM 的文本答案，而非 JSON 负载。
         """
         citation_info = {
             "citation_id": citation_id,
@@ -421,11 +420,10 @@ class CitationManager:
         tool_trace: Any,
         tool_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Extract citation information for paper search - supports multiple papers.
+        """为论文搜索提取引用信息 - 支持多篇论文。
 
-        Prefers ``tool_metadata['papers']`` (set by ``PaperSearchToolWrapper``)
-        because the tool message ``content`` is a markdown listing rather than
-        a JSON payload.
+        优先使用 ``tool_metadata['papers']``（由 ``PaperSearchToolWrapper`` 设置），
+        因为工具消息的 ``content`` 是 Markdown 列表而非 JSON 负载。
         """
         citation_info = {
             "citation_id": citation_id,
@@ -450,10 +448,10 @@ class CitationManager:
             if not papers:
                 return citation_info
 
-            # Process ALL papers (up to 5 for practicality)
+            # 处理所有论文（最多 5 篇以保证实用性）
             processed_papers = []
             for paper in papers[:5]:
-                # Format authors
+                # 格式化作者
                 authors = paper.get("authors", [])
                 author_str = ", ".join(authors[:3])  # Display at most 3 authors
                 if len(authors) > 3:

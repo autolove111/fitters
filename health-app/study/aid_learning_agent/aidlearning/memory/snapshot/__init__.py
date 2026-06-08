@@ -1,17 +1,15 @@
-"""Workspace snapshot subsystem for L1 memory.
+"""L1 记忆的工作区快照子系统。
 
-Public API:
+公共 API：
 
-- :func:`read_snapshot` — current entities for a surface (no I/O on
-  ``state.json`` / ``changes.jsonl``).
-- :func:`refresh_snapshot` — re-read workspace, diff against last
-  persisted state, append changes, persist new state. Returns the
-  computed change list. Idempotent: a no-change refresh writes nothing
-  to the changes log.
-- :func:`read_changes` — paginated history of past refreshes for one
-  surface (git-log-style display source).
-- :func:`current_state` — the persisted ``state.json`` for a surface
-  (consolidator uses ``last_refresh`` to gate L2 updates).
+- :func:`read_snapshot` — surface 的当前实体（不操作 ``state.json`` / ``changes.jsonl``）。
+- :func:`refresh_snapshot` — 重新读取工作区，与上次持久化状态对比差异，
+  追加变更，持久化新状态。返回计算的变更列表。
+  幂等：无变更的刷新不向变更日志写入任何内容。
+- :func:`read_changes` — 一个 surface 的过去刷新的分页历史
+  （git-log 风格的展示来源）。
+- :func:`current_state` — surface 的已持久化 ``state.json``
+  （整合器使用 ``last_refresh`` 来控制 L2 更新）。
 """
 
 from __future__ import annotations
@@ -30,10 +28,10 @@ def read_snapshot(surface: Surface) -> list[Entity]:
 
 
 def pending_changes(surface: Surface, entities: list[Entity] | None = None) -> list[ChangeEntry]:
-    """Compute the diff between current workspace and the last persisted state.
+    """计算当前工作区与上次持久化状态之间的差异。
 
-    Pure / read-only: never writes to ``state.json`` or ``changes.jsonl``.
-    Used by the L1 view to show "what would a refresh capture right now".
+    纯只读：从不写入 ``state.json`` 或 ``changes.jsonl``。
+    L1 视图用于显示"刷新现在会捕获什么"。
     """
     if entities is None:
         entities = adapters.read_entities(surface)
@@ -70,7 +68,7 @@ def refresh_snapshot(surface: Surface) -> list[ChangeEntry]:
 def read_changes(surface: Surface, *, limit: int = 200, offset: int = 0) -> list[ChangeEntry]:
     bound = max(1, min(limit, 1000))
     all_changes: list[ChangeEntry] = list(store.iter_changes(surface))
-    # Most recent first — the file is append-order, reverse it.
+    # 最近的优先 — 文件是追加顺序，反转它。
     all_changes.reverse()
     return all_changes[offset : offset + bound]
 
@@ -96,5 +94,5 @@ __all__ = [
 ]
 
 
-# Iterable kept for static-analyzer happiness when consumers import *.
+# Iterable 保留以满足静态分析器，当消费者使用 import * 时。
 _: Iterable = []

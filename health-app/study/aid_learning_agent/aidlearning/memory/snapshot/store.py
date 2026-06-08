@@ -1,15 +1,14 @@
-"""On-disk persistence for snapshot state + change log.
+"""快照状态 + 变更日志的磁盘持久化。
 
-Each surface gets its own ``<memory_dir>/snapshot/<surface>/`` directory
-holding:
+每个 surface 拥有自己的 ``<memory_dir>/snapshot/<surface>/`` 目录，包含：
 
-- ``state.json``     — current ``{entity_id: fingerprint}`` map plus
-                       a parallel ``labels`` map (so removals can show
-                       the old human-readable title) and ``last_refresh``.
-- ``changes.jsonl``  — append-only diff log (one ``ChangeEntry`` per line).
+- ``state.json``     — 当前 ``{entity_id: fingerprint}`` 映射加上
+                       平行的 ``labels`` 映射（以便移除时显示旧的人类可读标题）
+                       和 ``last_refresh``。
+- ``changes.jsonl``  — 仅追加的差异日志（每行一个 ``ChangeEntry``）。
 
-State writes are atomic via temp-file + rename. Changes are appended
-line-by-line, which is naturally atomic on POSIX filesystems.
+状态写入通过临时文件 + 重命名实现原子性。变更逐行追加，
+在 POSIX 文件系统上天然原子。
 """
 
 from __future__ import annotations

@@ -93,14 +93,13 @@ async def get_overview():
 
 @router.get("/resolve_entry/{entry_id}")
 async def resolve_entry(entry_id: str):
-    """Find which L2 doc owns this entry id.
+    """查找此条目 ID 所属的 L2 文档。
 
-    L3 docs cite L2 entries by their ``m_<ULID>`` entry id; the workbench
-    UI uses this resolver to turn an L3 footnote click into a navigation
-    to the right L2 surface + scroll-to anchor.
+    L3 文档通过 m_<ULID> 条目 ID 引用 L2 条目；工作台 UI 使用此解析器
+    将 L3 脚注点击转换为导航到正确的 L2 surface + 滚动到锚点。
 
-    Scans the seven L2 mds in order; first hit wins. 404 if no L2 doc
-    contains the id (e.g. the entry was deleted or the id is stale).
+    按顺序扫描七个 L2 md 文件；第一个匹配即返回。如果没有任何 L2 文档
+    包含该 ID（如条目已删除或 ID 已过期），返回 404。
     """
     if not _ENTRY_ID_RE.match(entry_id):
         raise HTTPException(status_code=400, detail="not a valid entry id")
@@ -133,7 +132,7 @@ async def list_backups():
     return {"backups": out}
 
 
-# ── Doc read / write / delete ────────────────────────────────────────────
+# ── 文档 读取 / 写入 / 删除 ────────────────────────────────────────────────
 
 
 @router.get("/doc/{layer}/{key}")
@@ -167,15 +166,13 @@ async def delete_entry(layer: str, key: str, entry_id: str):
 
 @router.post("/doc/{layer}/{key}/reset")
 async def reset_doc(layer: str, key: str):
-    """Wipe the doc + its meta sidecar so the next update starts fresh.
+    """清除文档及其元数据附属文件，使下次更新从头开始。
 
-    Destructive — the caller has confirmed. After this returns the .md
-    file is gone *and* the ``seen_entity_refs`` set is cleared, so a
-    subsequent ``run_update`` re-ingests every L1 entity instead of
-    treating them as already-seen.
+    破坏性操作——调用方已确认。返回后 .md 文件被删除，
+    且 seen_entity_refs 集合被清空，因此后续的 run_update
+    会重新摄入所有 L1 实体，而不是视为已处理。
 
-    Refuses while a consolidator run is active on this doc; the caller
-    can cancel first.
+    当该文档有活跃的整合器运行时拒绝执行；调用方应先取消。
     """
     lyr = _validate_layer(layer)
     _validate_doc_key(lyr, key)
@@ -218,7 +215,7 @@ async def reset_doc(layer: str, key: str):
     }
 
 
-# ── Doc update (SSE-streamed consolidator) ───────────────────────────────
+# ── 文档更新（SSE 流式整合器）──────────────────────────────────────────────
 
 
 class LLMSelectionPayload(BaseModel):
@@ -237,7 +234,7 @@ class RunStartRequest(BaseModel):
 
 
 def _runner_for(req: RunStartRequest):
-    """Return an ``async on_event → None`` runner for the requested mode."""
+    """返回请求模式对应的 async on_event → None 运行器。"""
     from aidlearning.memory.consolidator import (
         run_audit,
         run_dedup,
@@ -306,10 +303,10 @@ def _runner_for(req: RunStartRequest):
 
 @router.post("/runs/start")
 async def start_run(req: RunStartRequest):
-    """Start one consolidator mode and return a run handle.
+    """启动一个整合器模式并返回运行句柄。
 
-    The run survives client disconnects; reconnect via
-    ``GET /runs/{id}/events?since=N``.
+    运行在客户端断开后仍可继续；通过
+    GET /runs/{id}/events?since=N 重新连接。
     """
     lyr = _validate_layer(req.layer)
     _validate_doc_key(lyr, req.key)
@@ -407,11 +404,10 @@ async def list_runs(layer: str | None = None, key: str | None = None):
 
 @router.get("/runs/{run_id}/events")
 async def stream_run_events(run_id: str, since: int = 0):
-    """SSE-replay events from ``since`` (exclusive) until the run ends.
+    """从 since（不含）开始 SSE 回放事件直到运行结束。
 
-    Reconnecting after a refresh: pass the largest ``seq`` previously
-    observed. The manager replays the buffered tail, then blocks on
-    new events until the run reaches a terminal state.
+    刷新后重新连接：传入之前收到的最大 seq。
+    管理器回放缓冲尾部，然后阻塞等待新事件直到运行达到终态。
     """
     from aidlearning.memory.consolidator.runs import get_run_manager
 
@@ -422,7 +418,7 @@ async def stream_run_events(run_id: str, since: int = 0):
 
     async def producer():
         cursor = max(0, since)
-        # Initial backfill (if any) is delivered as a batch up front.
+        # 初始回填（如有）作为一批预先发送。
         while True:
             events = await manager.wait_for_events(run, since=cursor)
             for ev in events:
@@ -436,7 +432,7 @@ async def stream_run_events(run_id: str, since: int = 0):
                 )
             cursor = max(cursor, run.events[-1].seq + 1 if run.events else cursor)
             if not run.active:
-                # Drain any final events that arrived between wait return and now.
+                # 排空 wait 返回到此刻之间到达的最后一批事件。
                 final = run.events[cursor:]
                 for ev in final:
                     yield (
@@ -452,11 +448,11 @@ async def stream_run_events(run_id: str, since: int = 0):
     return StreamingResponse(producer(), media_type="text/event-stream")
 
 
-# ── Legacy per-mode endpoints (kept as thin wrappers over /runs/start) ──
+# ── 旧版按模式划分的端点（保留为 /runs/start 的薄包装）───────────────────
 
 
 def _legacy_run_stream(req: RunStartRequest) -> StreamingResponse:
-    """Old contract: POST /doc/{layer}/{key}/<mode> streams events inline."""
+    """旧版约定：POST /doc/{layer}/{key}/<mode> 内联流式传输事件。"""
     from aidlearning.memory.consolidator.runs import (
         RunBusyError,
         get_run_manager,
@@ -572,11 +568,10 @@ async def dedup_doc(layer: str, key: str, payload: DedupRequest | None = None):
 
 @router.get("/doc/{layer}/{key}/lines")
 async def get_doc_lines(layer: str, key: str):
-    """Return the line-numbered, footnote-stripped view of a doc.
+    """返回文档的带行号、去除脚注的视图。
 
-    Used by the workbench's "show line numbers" toggle so the same line
-    indices the audit/dedup LLMs see are visible to the user. Footnote
-    block is omitted because edit ops never reference it directly.
+    供工作台的"显示行号"开关使用，使用户能看到与审计/去重 LLM 相同的行索引。
+    脚注区块被省略，因为编辑操作不会直接引用它。
     """
     lyr = _validate_layer(layer)
     _validate_doc_key(lyr, key)
@@ -607,12 +602,12 @@ async def get_doc_lines(layer: str, key: str):
     }
 
 
-# ── Settings ────────────────────────────────────────────────────────────
+# ── 设置 ────────────────────────────────────────────────────────────────────
 
 
 @router.get("/settings")
 async def get_memory_settings_endpoint():
-    """Return the current ``memory:`` subtree (defaults merged in)."""
+    """返回当前 memory: 子树（含默认值合并）。"""
     from aidlearning.memory.settings import memory_settings_dict
 
     return memory_settings_dict()
@@ -620,7 +615,7 @@ async def get_memory_settings_endpoint():
 
 @router.put("/settings")
 async def put_memory_settings(payload: dict):
-    """Merge the payload into the ``memory:`` subtree and persist."""
+    """将请求体合并到 memory: 子树并持久化。"""
     from aidlearning.memory.settings import (
         memory_settings_dict,
         save_memory_settings,
@@ -647,7 +642,7 @@ class ApplyOpsRequest(BaseModel):
 
 @router.post("/doc/{layer}/{key}/apply")
 async def apply_doc_ops(layer: str, key: str, payload: ApplyOpsRequest):
-    """Commit a list of previously-previewed ops to a doc atomically."""
+    """将一组预览过的操作原子性地提交到文档。"""
     lyr = _validate_layer(layer)
     _validate_doc_key(lyr, key)
     if lyr == "L3" and key == "preferences":
@@ -673,7 +668,7 @@ async def apply_doc_ops(layer: str, key: str, payload: ApplyOpsRequest):
     }
 
 
-# ── Trace browser ────────────────────────────────────────────────────────
+# ── 追踪浏览器 ────────────────────────────────────────────────────────────
 
 
 @router.get("/trace/{surface}")
@@ -721,16 +716,15 @@ async def clear_trace_day(surface: str, day: str):
     return {"surface": surf, "day": day, "deleted": True}
 
 
-# ── Snapshot (L1 workspace mirror) ───────────────────────────────────────
+# ── 快照（L1 工作区镜像）──────────────────────────────────────────────────
 
 
 @router.get("/snapshot/{surface}")
 async def get_snapshot(surface: str):
-    """Return the current entity list for ``surface`` from workspace.
+    """返回工作区中指定 surface 的当前实体列表。
 
-    Snapshot is always derived live from workspace at call time. The response
-    also includes ``pending_changes`` — the diff vs the last persisted state.
-    Refresh commits these pending changes into ``changes.jsonl``.
+    快照始终在调用时从工作区实时派生。响应还包含 pending_changes——
+    与上次持久化状态的差异。刷新操作将这些待定变更提交到 changes.jsonl。
     """
     surf = _validate_surface(surface)
     from aidlearning.memory import snapshot as snap
@@ -748,7 +742,7 @@ async def get_snapshot(surface: str):
 
 @router.post("/snapshot/{surface}/refresh")
 async def refresh_snapshot(surface: str):
-    """Reconcile persisted state with current workspace; record diffs."""
+    """将持久化状态与当前工作区对账；记录差异。"""
     surf = _validate_surface(surface)
     from aidlearning.memory import snapshot as snap
 
@@ -784,12 +778,12 @@ async def clear_snapshot_changes(surface: str):
     return {"surface": surf, "cleared": True}
 
 
-# ── Debug: Full memory state ──────────────────────────────────────────
+# ── 调试：完整记忆状态 ──────────────────────────────────────────────
 
 
 @router.get("/debug")
 async def debug_memory_page():
-    """Serve the memory debug dashboard HTML page."""
+    """提供记忆调试仪表盘 HTML 页面。"""
     from fastapi.responses import HTMLResponse
     from pathlib import Path
 
@@ -801,10 +795,10 @@ async def debug_memory_page():
 
 @router.get("/debug/state")
 async def debug_memory_state():
-    """Return the full state of all memory layers.
+    """返回所有记忆层的完整状态。
 
-    Includes in-memory buffers, SQLite messages, L2/L3 docs, and
-    L1 traces.  Useful for real-time debugging during conversations.
+    包括内存缓冲区、SQLite 消息、L2/L3 文档和 L1 追踪记录。
+    适用于对话过程中的实时调试。
     """
     import re as _re
     import sqlite3 as _sqlite3
@@ -812,7 +806,7 @@ async def debug_memory_state():
 
     result: dict[str, Any] = {}
 
-    # ── Short-term (buffers) ─────────────────────────────────────
+    # ── 短期记忆（缓冲区）────────────────────────────────────────
     try:
         from aidlearning.memory.short_term.buffer_manager import get_buffer_manager
         mgr = get_buffer_manager()
@@ -840,7 +834,7 @@ async def debug_memory_state():
     except Exception as exc:
         result["short_term"] = {"error": str(exc)}
 
-    # ── Mid-term (SQLite) ────────────────────────────────────────
+    # ── 中期记忆（SQLite）───────────────────────────────────────────
     try:
         from aidlearning.services.path_service import get_path_service
         db_path = get_path_service().get_chat_history_db()
@@ -881,7 +875,7 @@ async def debug_memory_state():
     except Exception as exc:
         result["mid_term"] = {"error": str(exc)}
 
-    # ── Long-term (L2/L3 Markdown) ───────────────────────────────
+    # ── 长期记忆（L2/L3 Markdown）──────────────────────────────────
     try:
         from aidlearning.memory.shared.paths import memory_root, L2_TARGETS, L3_SLOTS
         mem_root = memory_root()
@@ -922,7 +916,7 @@ async def debug_memory_state():
     except Exception as exc:
         result["long_term"] = {"error": str(exc)}
 
-    # ── L1 traces ────────────────────────────────────────────────
+    # ── L1 追踪记录 ────────────────────────────────────────────────
     try:
         from aidlearning.memory.shared.paths import memory_root
         td = memory_root() / "trace"
@@ -942,7 +936,7 @@ async def debug_memory_state():
 
 @router.get("/debug/sessions")
 async def debug_sessions():
-    """Return all sessions with message counts for the debug dashboard."""
+    """返回所有会话及其消息数量，供调试仪表盘使用。"""
     import sqlite3 as _sqlite3
     from datetime import datetime, timezone
 
@@ -981,10 +975,10 @@ async def debug_sessions():
 
 @router.get("/debug/session/{session_id}")
 async def debug_session_buffer(session_id: str):
-    """Force-load a session into the buffer and return its state.
+    """强制将会话加载到缓冲区并返回其状态。
 
-    Removes the session from the initialized set so it gets re-hydrated
-    from SQLite, giving a fresh view of the buffer state.
+    从已初始化集合中移除该会话，使其从 SQLite 重新水合，
+    从而获得缓冲区状态的最新视图。
     """
     from datetime import datetime, timezone
 
@@ -996,14 +990,14 @@ async def debug_session_buffer(session_id: str):
         sqlite_store = get_sqlite_session_store()
         buffer_mgr = get_buffer_manager()
 
-        # Force re-hydration: remove from initialized set and existing buffers
+        # 强制重新水合：从已初始化集合和现有缓冲区中移除
         buffer_mgr._initialized.discard(session_id)
         buffer_mgr._buffers.pop(session_id, None)
 
-        # Load the session into a buffer
+        # 将会话加载到缓冲区
         buf = await buffer_mgr.get_or_create(session_id, sqlite_store)
 
-        # Get session info
+        # 获取会话信息
         db_path = sqlite_store.db_path
         conn = sqlite3c.connect(str(db_path))
         conn.row_factory = sqlite3c.Row
@@ -1018,7 +1012,7 @@ async def debug_session_buffer(session_id: str):
         title = session["title"] or "Untitled"
         conn.close()
 
-        # Build response from buffer
+        # 从缓冲区构建响应
         messages = buf.get_messages_for_context()
         msg_details = []
         for m in messages:

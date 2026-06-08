@@ -1,9 +1,9 @@
 """
-Tool Registry
-=============
+工具注册表
+==========
 
-Central registry that discovers and manages all tools (built-in and plugin).
-Provides lookup, listing, and OpenAI schema generation.
+发现和管理所有工具（内置和插件）的中央注册表。
+提供查找、列表和 OpenAI schema 生成功能。
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 class ToolRegistry:
     """
-    Singleton-ish registry of all available tools.
+    所有可用工具的准单例注册表。
 
-    Usage::
+    用法::
 
         registry = ToolRegistry()
         registry.load_builtins()
@@ -39,7 +39,7 @@ class ToolRegistry:
         logger.debug("Registered tool: %s", name)
 
     def load_builtins(self) -> None:
-        """Instantiate and register all built-in tools."""
+        """实例化并注册所有内置工具。"""
         for tool_type in BUILTIN_TOOL_TYPES:
             try:
                 tool = tool_type()
@@ -74,7 +74,7 @@ class ToolRegistry:
         return list(self._tools.keys())
 
     def get_enabled(self, names: list[str]) -> list[BaseTool]:
-        """Return tool instances for the given names (skipping unknown)."""
+        """返回给定名称的工具实例（跳过未知的）。"""
         enabled: list[BaseTool] = []
         seen: set[str] = set()
         for name in names:
@@ -86,7 +86,7 @@ class ToolRegistry:
         return enabled
 
     def get_definitions(self, names: list[str] | None = None) -> list[ToolDefinition]:
-        """Return definitions for *names* (or all if None)."""
+        """返回 *names* 的定义（如果为 None 则返回全部）。"""
         tools = self._tools.values() if names is None else self.get_enabled(names)
         return [t.get_definition() for t in tools]
 
@@ -95,7 +95,7 @@ class ToolRegistry:
         names: list[str],
         language: str = "en",
     ) -> list[tuple[str, ToolPromptHints]]:
-        """Return prompt hints for the given tool names."""
+        """返回给定工具名称的提示提示。"""
         entries: list[tuple[str, ToolPromptHints]] = []
         for tool in self.get_enabled(names):
             entries.append((tool.name, tool.get_prompt_hints(language=language)))
@@ -108,7 +108,7 @@ class ToolRegistry:
         language: str = "en",
         **opts: Any,
     ) -> str:
-        """Compose prompt text for the given tools."""
+        """为给定工具组合提示文本。"""
         composer = ToolPromptComposer(language=language)
         hints = self.get_prompt_hints(names, language=language)
         if format == "list":
@@ -127,11 +127,11 @@ class ToolRegistry:
         raise ValueError(f"Unsupported prompt format: {format}")
 
     def build_openai_schemas(self, names: list[str] | None = None) -> list[dict[str, Any]]:
-        """Build OpenAI function-calling tool schemas."""
+        """构建 OpenAI 函数调用工具 schema。"""
         return [d.to_openai_schema() for d in self.get_definitions(names)]
 
     async def execute(self, name: str, **kwargs: Any):
-        """Resolve aliases, execute the tool, and return its ToolResult."""
+        """解析别名，执行工具，并返回其 ToolResult。"""
         resolved_name, resolved_kwargs = self._resolve_request(name, kwargs)
         tool = self._tools.get(resolved_name)
         if tool is None:
@@ -143,7 +143,7 @@ _default_registry: ToolRegistry | None = None
 
 
 def get_tool_registry() -> ToolRegistry:
-    """Return the global ToolRegistry (creating & loading builtins on first call)."""
+    """返回全局 ToolRegistry（首次调用时创建并加载内置工具）。"""
     global _default_registry
     if _default_registry is None:
         _default_registry = ToolRegistry()

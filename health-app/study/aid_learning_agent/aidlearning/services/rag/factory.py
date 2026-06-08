@@ -1,8 +1,7 @@
-"""RAG pipeline factory.
+"""RAG 管线工厂。
 
-The project ships with a single LlamaIndex-backed pipeline. The helpers
-below remain because several call-sites import them; they have all been
-collapsed to operate on the single supported pipeline.
+项目附带一个基于 LlamaIndex 的管线。以下辅助函数保留是因为多个调用点导入了它们；
+它们已全部合并为操作单一支持的管线。
 """
 
 from __future__ import annotations
@@ -11,15 +10,15 @@ from typing import Any, Dict, List, Optional
 
 DEFAULT_PROVIDER = "llamaindex"
 
-# Cached pipeline instances keyed by kb_base_dir.
+# 以 kb_base_dir 为键缓存的管线实例。
 _PIPELINE_CACHE: Dict[Optional[str], Any] = {}
 
 
 def normalize_provider_name(_name: Optional[str] = None) -> str:
-    """Always return the canonical provider name.
+    """始终返回规范的提供商名称。
 
-    Older configs/migrations may carry legacy provider strings (e.g.
-    ``lightrag``); they are all treated as the only supported pipeline.
+    较旧的配置/迁移可能携带旧版提供商字符串（如 ``lightrag``）；
+    它们都被视为唯一支持的管线。
     """
     return DEFAULT_PROVIDER
 
@@ -29,16 +28,14 @@ def get_pipeline(
     kb_base_dir: Optional[str] = None,
     **kwargs: Any,
 ):
-    """Return the (cached) LlamaIndex pipeline instance.
+    """返回（缓存的）LlamaIndex 管线实例。
 
-    The ``name`` argument is accepted for backward compatibility but is
-    ignored — only the LlamaIndex pipeline is supported.
+    ``name`` 参数为向后兼容而接受，但会被忽略 —— 仅支持 LlamaIndex 管线。
     """
     from .pipelines.llamaindex.pipeline import LlamaIndexPipeline
 
     if kwargs:
-        # When custom kwargs are provided, build a fresh instance and skip
-        # the cache to honour overrides.
+        # 当提供自定义参数时，构建新实例并跳过缓存以尊重覆盖。
         if kb_base_dir is not None:
             kwargs.setdefault("kb_base_dir", kb_base_dir)
         return LlamaIndexPipeline(**kwargs)
@@ -49,7 +46,7 @@ def get_pipeline(
 
 
 def list_pipelines() -> List[Dict[str, str]]:
-    """Return the single available pipeline (kept for callers that still ask)."""
+    """返回唯一可用的管线（保留给仍在使用的调用方）。"""
     return [
         {
             "id": DEFAULT_PROVIDER,

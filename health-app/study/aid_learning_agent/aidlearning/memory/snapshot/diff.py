@@ -1,8 +1,7 @@
-"""Pure-function diff between two snapshot states.
+"""两个快照状态之间的纯函数差异。
 
-A ``state`` is ``{entity_id: fingerprint}``. ``label_map`` carries
-human-readable titles for the change-log so we don't have to re-read
-workspace state when rendering history.
+``state`` 是 ``{entity_id: fingerprint}``。``label_map`` 携带
+变更日志的人类可读标题，使我们在渲染历史时不必重新读取工作区状态。
 """
 
 from __future__ import annotations
@@ -19,10 +18,10 @@ def diff_snapshots(
     label_map: dict[str, str],
     prev_label_map: dict[str, str] | None = None,
 ) -> list[ChangeEntry]:
-    """Return the change list moving ``prev`` → ``curr``.
+    """返回 ``prev`` → ``curr`` 的变更列表。
 
-    ``label_map`` provides labels for currently-present entities;
-    ``prev_label_map`` (optional) is consulted for removed-entity labels.
+    ``label_map`` 为当前存在的实体提供标签；
+    ``prev_label_map``（可选）用于获取已移除实体的标签。
     """
     ts = datetime.now(tz=timezone.utc).isoformat()
     out: list[ChangeEntry] = []
