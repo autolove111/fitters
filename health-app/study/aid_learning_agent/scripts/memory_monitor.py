@@ -1,8 +1,8 @@
-"""Real-time memory monitor for AidLearning.
+"""AidLearning 实时内存监控器。
 
-Run this script to see the current state of all memory layers.
+运行此脚本查看所有内存层的当前状态。
 
-Usage:
+用法：
     python scripts/memory_monitor.py
 """
 
@@ -20,7 +20,7 @@ def monitor():
     print("AidLearning Memory Monitor")
     print("=" * 60)
 
-    # ── 1. Short-term ─────────────────────────────────────────────
+    # ── 1. 短期记忆 ─────────────────────────────────────────────
     print()
     print("[1] SHORT-TERM MEMORY (ConversationBuffer)")
     print("-" * 40)
@@ -40,14 +40,14 @@ def monitor():
         for m in buf._messages[-3:]:
             print(f"    [{m.msg_id}] {m.role}: {m.content[:60]}")
 
-    # ── 2. Mid-term ───────────────────────────────────────────────
+    # ── 2. 中期记忆 ───────────────────────────────────────────────
     print()
     print("[2] MID-TERM MEMORY (SQLite messages)")
     print("-" * 40)
     from aidlearning.services.path_service import get_path_service
     from aidlearning.utils.sqlite_compat import sqlite3 as sqlite3c
 
-    # Initialize store to ensure FTS5 table exists
+    # 初始化存储以确保 FTS5 表存在
     from aidlearning.services.session.sqlite_store import get_sqlite_session_store
     _ = get_sqlite_session_store()
 
@@ -61,18 +61,18 @@ def monitor():
         count = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
         print(f"Total messages: {count}")
 
-        # FTS5 status
+        # FTS5 状态
         try:
             fts = conn.execute("SELECT COUNT(*) FROM messages_fts").fetchone()[0]
             print(f"FTS5 indexed: {fts}")
         except Exception:
             print("FTS5: not available (using LIKE fallback)")
 
-        # Session count
+        # 会话数
         sessions = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
         print(f"Sessions: {sessions}")
 
-        # Recent messages
+        # 最近消息
         rows = conn.execute(
             "SELECT session_id, role, substr(content,1,60) as c "
             "FROM messages ORDER BY created_at DESC LIMIT 5"
@@ -83,7 +83,7 @@ def monitor():
 
         conn.close()
 
-    # ── 3. Long-term ──────────────────────────────────────────────
+    # ── 3. 长期记忆 ──────────────────────────────────────────────
     print()
     print("[3] LONG-TERM MEMORY (L2/L3 Markdown)")
     print("-" * 40)
@@ -113,7 +113,7 @@ def monitor():
         else:
             print(f"  L3/{slot}.md: NOT CREATED")
 
-    # ── 4. L1 traces ──────────────────────────────────────────────
+    # ── 4. L1 追踪 ──────────────────────────────────────────────
     print()
     print("[4] L1 TRACE EVENTS")
     print("-" * 40)
@@ -134,7 +134,7 @@ def monitor():
     else:
         print("  Trace directory not found")
 
-    # ── 5. Skills ─────────────────────────────────────────────────
+    # ── 5. 技能 ─────────────────────────────────────────────────
     print()
     print("[5] PROCEDURAL MEMORY (Skills)")
     print("-" * 40)
@@ -148,7 +148,7 @@ def monitor():
             skill_file = d / "SKILL.md"
             if skill_file.exists():
                 c = skill_file.read_text(encoding="utf-8")
-                # Extract name from frontmatter
+                # 从 frontmatter 中提取名称
                 m = re.search(r"^name:\s*(.+)$", c, re.MULTILINE)
                 name = m.group(1).strip() if m else d.name
                 print(f"  - {name}")

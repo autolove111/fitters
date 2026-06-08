@@ -1,4 +1,4 @@
-"""Audit log for resource access and admin actions in the multi-user layer."""
+"""多用户层中资源访问和管理员操作的审计日志。"""
 
 from __future__ import annotations
 
@@ -11,8 +11,7 @@ from .paths import SYSTEM_ROOT, ensure_system_dirs
 
 
 def _audit_file():
-    # Resolved per call so monkey-patched SYSTEM_ROOT (e.g. in tests) takes
-    # effect without a module reload.
+    # 每次调用时解析，以便在测试中通过猴子补丁修改的 SYSTEM_ROOT 无需重新加载模块即可生效。
     return SYSTEM_ROOT / "audit" / "usage.jsonl"
 
 
@@ -22,7 +21,7 @@ def _write(payload: dict[str, Any]) -> None:
         with _audit_file().open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
     except Exception:
-        # Auditing must never break a request.
+        # 审计操作绝不能中断请求。
         return
 
 
@@ -32,11 +31,10 @@ def log_usage(
     action: str,
     extra: dict[str, Any] | None = None,
 ) -> None:
-    """Record an ordinary user's access to an admin-curated resource.
+    """记录普通用户对管理员管理资源的访问。
 
-    Admin self-access is intentionally not recorded here (admins constantly
-    interact with their own workspace; logging every read would dilute the
-    signal). Use :func:`log_admin_action` for admin-side write events.
+    此处有意不记录管理员的自身访问（管理员会频繁操作自己的工作区，记录每次读取会稀释信号）。
+    管理员端的写入事件请使用 :func:`log_admin_action`。
     """
     user = get_current_user()
     if user.is_admin:
@@ -59,11 +57,10 @@ def log_admin_action(
     target_user_id: str | None = None,
     summary: dict[str, Any] | None = None,
 ) -> None:
-    """Record an admin-side write (grant change, user CRUD, etc.).
+    """记录管理员端的写入操作（授权变更、用户增删改查等）。
 
-    The current user (the actor) is captured automatically; ``target_user_id``
-    identifies which user the action affects (if any). ``summary`` may carry a
-    short, non-secret payload describing what changed.
+    当前用户（操作者）会被自动捕获；``target_user_id`` 标识操作影响的目标用户（如果有）。
+    ``summary`` 可携带简短的非敏感信息描述变更内容。
     """
     user = get_current_user()
     payload: dict[str, Any] = {

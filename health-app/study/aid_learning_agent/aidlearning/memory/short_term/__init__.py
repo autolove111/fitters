@@ -1,11 +1,10 @@
-"""Layer 1: Short-term memory — sliding window + compression.
+"""第 1 层：短期记忆 — 滑动窗口 + 压缩。
 
-Provides ``ContextBuilder`` which manages the conversation history
-budget: recent messages are kept verbatim, older ones are compressed
-via LLM summarization.
+提供 ``ContextBuilder``，管理对话历史预算：最近的消息原样保留，
+较旧的消息通过 LLM 摘要压缩。
 
-Provides ``ConversationBuffer`` and ``BufferManager`` for in-memory
-message buffering with zero-I/O context building.
+提供 ``ConversationBuffer`` 和 ``BufferManager``，
+用于内存消息缓冲和零 I/O 上下文构建。
 """
 
 from .context_builder import ContextBuilder, count_tokens

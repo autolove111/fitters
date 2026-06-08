@@ -1,9 +1,8 @@
-"""Question generation package.
+"""问题生成包。
 
-The main entry point is :class:`~aidlearning.agents.question.pipeline.QuestionPipeline`.
-Lightweight names (``FollowupAgent``, ``QuizTemplate``, ``QuizPair``, etc.)
-are resolved lazily so callers that only need one symbol don't eagerly
-import the full pipeline + its LLM dependencies.
+主入口是 :class:`~aidlearning.agents.question.pipeline.QuestionPipeline`。
+轻量级名称（``FollowupAgent``、``QuizTemplate``、``QuizPair`` 等）
+延迟解析，以便只需要一个符号的调用方不会急切地导入完整管线及其 LLM 依赖。
 """
 
 from importlib import import_module

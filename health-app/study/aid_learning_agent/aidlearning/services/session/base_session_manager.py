@@ -19,20 +19,20 @@ import uuid
 
 class BaseSessionManager(ABC):
     """
-    Abstract base class for session management.
+    会话管理的抽象基类。
 
-    Provides common functionality for storing and retrieving sessions,
-    with customization points for module-specific behavior.
+    提供会话存储和检索的通用功能，
+    并为模块特定行为提供定制点。
 
-    Path resolution is deferred to request-time via @property so that
-    multi-user isolation works correctly: ``get_path_service()`` is
-    called on every access, respecting the per-request user context.
+    路径解析通过 @property 延迟到请求时执行，
+    以确保多用户隔离正常工作：``get_path_service()``
+    在每次访问时调用，遵循每个请求的用户上下文。
 
-    Subclasses must implement:
-    - _get_session_id_prefix(): Return the session ID prefix (e.g., "solve_", "chat_")
-    - _get_default_title(): Return the default title for new sessions
-    - _create_session_data(): Create module-specific session data structure
-    - _get_session_summary(): Create module-specific session summary for listing
+    子类必须实现：
+    - _get_session_id_prefix()：返回会话 ID 前缀（如 "solve_"、"chat_"）
+    - _get_default_title()：返回新会话的默认标题
+    - _create_session_data()：创建模块特定的会话数据结构
+    - _get_session_summary()：创建模块特定的会话摘要用于列表展示
     """
 
     MAX_SESSIONS = 100
@@ -60,7 +60,7 @@ class BaseSessionManager(ABC):
             self._save_data(initial_data)
 
     # =========================================================================
-    # Abstract Methods - Must be implemented by subclasses
+    # 抽象方法 - 子类必须实现
     # =========================================================================
 
     @abstractmethod
@@ -80,7 +80,7 @@ class BaseSessionManager(ABC):
         pass
 
     # =========================================================================
-    # File Operations
+    # 文件操作
     # =========================================================================
 
     def _load_data(self) -> dict[str, Any]:
@@ -106,7 +106,7 @@ class BaseSessionManager(ABC):
         self._save_data(data)
 
     # =========================================================================
-    # Session CRUD Operations
+    # 会话增删改查操作
     # =========================================================================
 
     def create_session(
@@ -240,7 +240,7 @@ class BaseSessionManager(ABC):
         return count
 
     # =========================================================================
-    # Utility Methods
+    # 工具方法
     # =========================================================================
 
     def get_session_count(self) -> int:

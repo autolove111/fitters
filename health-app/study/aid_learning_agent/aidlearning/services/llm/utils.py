@@ -1,8 +1,8 @@
 """
-LLM Utilities
-=============
+LLM 工具函数
+============
 
-Shared helpers for URL handling, response parsing, and content cleanup.
+URL 处理、响应解析和内容清理的共享辅助函数。
 """
 
 from __future__ import annotations
@@ -56,14 +56,14 @@ V1_SUFFIX_PORTS = {
 
 def is_local_llm_server(base_url: str, allow_private: bool | None = None) -> bool:
     """
-    Determine whether a URL points to a local LLM server.
+    判断 URL 是否指向本地 LLM 服务器。
 
     Args:
-        base_url: URL to inspect.
-        allow_private: Optional override to treat private IPs as local.
+        base_url: 待检查的 URL。
+        allow_private: 可选覆盖参数，将私有 IP 视为本地。
 
     Returns:
-        True when the URL looks local.
+        当 URL 看起来是本地地址时返回 True。
     """
     if not base_url:
         return False
@@ -99,20 +99,20 @@ def is_local_llm_server(base_url: str, allow_private: bool | None = None) -> boo
 
 
 def _needs_v1_suffix(base_url: str) -> bool:
-    """Return True when base_url should receive a /v1 suffix."""
+    """当 base_url 需要添加 /v1 后缀时返回 True。"""
     return any(port in base_url for port in V1_SUFFIX_PORTS) and not base_url.endswith("/v1")
 
 
 def sanitize_url(base_url: str, model: str = "") -> str:
     """
-    Sanitize a base URL, normalizing scheme and removing known endpoints.
+    清理基础 URL，规范化协议并移除已知端点。
 
     Args:
-        base_url: Base URL.
-        model: Unused (kept for API compatibility).
+        base_url: 基础 URL。
+        model: 未使用（保留以维持 API 兼容性）。
 
     Returns:
-        Sanitized base URL.
+        清理后的基础 URL。
     """
     if not base_url:
         return ""
@@ -144,7 +144,7 @@ def clean_thinking_tags(
     binding: str | None = None,
     model: str | None = None,
 ) -> str:
-    """Remove <think> tags from model output."""
+    """从模型输出中移除 think 标签。"""
     if not content:
         return ""
 
@@ -153,8 +153,7 @@ def clean_thinking_tags(
         re.DOTALL | re.IGNORECASE,
     )
     cleaned = re.sub(closed_pattern, "", content)
-    # Streaming providers can surface a final partial block if the request is
-    # interrupted after reasoning has started. Never expose that scratchpad.
+    # 流式提供商可能在推理已开始后因请求中断而输出最终的部分块，绝不暴露该草稿内容。
     unclosed_pattern = re.compile(
         r"`?<\s*think(?:ing)?\b[^>]*>`?.*$",
         re.DOTALL | re.IGNORECASE,
@@ -169,7 +168,7 @@ def build_chat_url(
     api_version: str | None = None,
     binding: str | None = None,
 ) -> str:
-    """Build a chat-completions endpoint URL."""
+    """构建 chat-completions 端点 URL。"""
     base_url = base_url.rstrip("/")
     binding_lower = (binding or "openai").lower()
 
@@ -192,7 +191,7 @@ def build_completion_url(
     api_version: str | None = None,
     binding: str | None = None,
 ) -> str:
-    """Build a legacy completions endpoint URL."""
+    """构建旧版 completions 端点 URL。"""
     if not base_url:
         return base_url
 
@@ -226,13 +225,11 @@ def _extract_content_field(content: object) -> str:
 
 
 def extract_response_content(message: object) -> str:
-    """Extract textual content from response payloads.
+    """从响应载荷中提取文本内容。
 
-    Returns empty string when the message carries no meaningful text
-    (e.g. a streaming delta with ``content=None``).  Never falls back
-    to ``str(message)`` for complex objects — that would inject garbage
-    like ``"{'provider_specific_fields': None, ...}"`` into the response
-    stream and corrupt downstream JSON parsing.
+    当消息不包含有意义的文本时（例如 ``content=None`` 的流式 delta）返回空字符串。
+    对复杂对象永远不会回退到 ``str(message)`` —— 那会将类似
+    ``"{'provider_specific_fields': None, ...}"`` 的垃圾内容注入响应流并破坏下游 JSON 解析。
     """
     if message is None:
         return ""
@@ -248,7 +245,7 @@ def extract_response_content(message: object) -> str:
             return str(message["text"])
         return ""
 
-    # LiteLLM/OpenAI SDK response models often expose attributes instead of dict keys.
+    # LiteLLM/OpenAI SDK 响应模型通常通过属性而非字典键暴露数据。
     if hasattr(message, "content"):
         content = _extract_content_field(getattr(message, "content"))
         if content:
@@ -266,8 +263,7 @@ def extract_response_content(message: object) -> str:
         if dumped is not None and dumped is not message:
             return extract_response_content(dumped)
 
-    # Only stringify simple/primitive values; complex SDK objects with no
-    # extractable content should yield empty string, not their repr.
+    # 仅对简单/原始值进行字符串化；无可提取内容的复杂 SDK 对象应返回空字符串而非其 repr。
     if isinstance(message, (int, float, bool)):
         return str(message)
     return ""
@@ -285,7 +281,7 @@ def _normalize_model_name(entry: object) -> str | None:
 
 
 def collect_model_names(entries: Sequence[object]) -> list[str]:
-    """Collect model names from provider payloads."""
+    """从提供商载荷中收集模型名称。"""
     names: list[str] = []
     for entry in entries:
         name = _normalize_model_name(entry)
@@ -295,7 +291,7 @@ def collect_model_names(entries: Sequence[object]) -> list[str]:
 
 
 def build_auth_headers(api_key: str | None, binding: str | None = None) -> dict[str, str]:
-    """Build auth headers for provider requests."""
+    """为提供商请求构建认证头。"""
     headers = {"Content-Type": "application/json"}
 
     if not api_key:

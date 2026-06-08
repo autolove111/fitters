@@ -1,4 +1,4 @@
-"""Runtime home resolution for installed and source AidLearning runs."""
+"""已安装和源码运行 AidLearning 的运行时主目录解析。"""
 
 from __future__ import annotations
 
@@ -10,15 +10,14 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 
 
 def get_runtime_home(home: str | Path | None = None) -> Path:
-    """Return the directory that owns runtime data for this process.
+    """返回当前进程的运行时数据目录。
 
-    Priority:
-    1. Explicit *home* argument.
-    2. ``AIDLEARNING_HOME`` environment variable.
-    3. Current working directory.
+    优先级：
+    1. 显式的 *home* 参数。
+    2. ``AIDLEARNING_HOME`` 环境变量。
+    3. 当前工作目录。
 
-    The returned path is the workspace root; runtime data lives below
-    ``<home>/data``.
+    返回的路径是工作区根目录；运行时数据位于 ``<home>/data`` 下。
     """
 
     raw = home if home is not None else os.getenv(AIDLEARNING_HOME_ENV)
@@ -28,7 +27,7 @@ def get_runtime_home(home: str | Path | None = None) -> Path:
 
 
 def get_runtime_data_root(home: str | Path | None = None) -> Path:
-    """Return ``<runtime-home>/data``."""
+    """返回 ``<runtime-home>/data``。"""
 
     return get_runtime_home(home) / "data"
 

@@ -1,4 +1,4 @@
-"""Base LLM provider interface."""
+"""LLM 提供商基础接口。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from loguru import logger
 
 @dataclass
 class ToolCallRequest:
-    """A tool call request from the LLM."""
+    """来自 LLM 的工具调用请求。"""
 
     id: str
     name: str
@@ -23,7 +23,7 @@ class ToolCallRequest:
     function_provider_specific_fields: dict[str, Any] | None = None
 
     def to_openai_tool_call(self) -> dict[str, Any]:
-        """Serialize to an OpenAI-style tool_call payload."""
+        """序列化为 OpenAI 风格的 tool_call 载荷。"""
         tool_call: dict[str, Any] = {
             "id": self.id,
             "type": "function",
@@ -43,7 +43,7 @@ class ToolCallRequest:
 
 @dataclass
 class LLMResponse:
-    """Response from an LLM provider."""
+    """LLM 提供商的响应。"""
 
     content: str | None
     tool_calls: list[ToolCallRequest] = field(default_factory=list)
@@ -54,13 +54,13 @@ class LLMResponse:
 
     @property
     def has_tool_calls(self) -> bool:
-        """Check if response contains tool calls."""
+        """检查响应是否包含工具调用。"""
         return len(self.tool_calls) > 0
 
 
 @dataclass(frozen=True)
 class GenerationSettings:
-    """Default generation parameters for LLM calls."""
+    """LLM 调用的默认生成参数。"""
 
     temperature: float = 0.7
     max_tokens: int = 4096
@@ -68,7 +68,7 @@ class GenerationSettings:
 
 
 class LLMProvider(ABC):
-    """Abstract base class for LLM providers."""
+    """LLM 提供商的抽象基类。"""
 
     _CHAT_RETRY_DELAYS = (1, 2, 4)
     _TRANSIENT_ERROR_MARKERS = (
@@ -121,7 +121,7 @@ class LLMProvider(ABC):
 
     @staticmethod
     def _sanitize_empty_content(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Replace empty text content that causes provider 400 errors."""
+        """替换会导致提供商 400 错误的空文本内容。"""
         result: list[dict[str, Any]] = []
         for msg in messages:
             content = msg.get("content")
@@ -168,7 +168,7 @@ class LLMProvider(ABC):
 
     @staticmethod
     def _tool_cache_marker_indices(tools: list[dict[str, Any]]) -> list[int]:
-        """Return indices of tool definitions that should get cache_control markers."""
+        """返回应添加 cache_control 标记的工具定义索引。"""
         n = len(tools)
         if n == 0:
             return []
@@ -181,7 +181,7 @@ class LLMProvider(ABC):
         messages: list[dict[str, Any]],
         allowed_keys: frozenset[str],
     ) -> list[dict[str, Any]]:
-        """Keep only provider-safe message keys and normalize assistant content."""
+        """仅保留提供商安全的消息键并规范化 assistant 内容。"""
         sanitized = []
         for msg in messages:
             clean = {k: v for k, v in msg.items() if k in allowed_keys}
@@ -206,7 +206,7 @@ class LLMProvider(ABC):
 
     @classmethod
     def _strip_image_content(cls, messages: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
-        """Replace image blocks with text placeholders."""
+        """将图片块替换为文本占位符。"""
         found = False
         stripped: list[dict[str, Any]] = []
         for msg in messages:
@@ -226,7 +226,7 @@ class LLMProvider(ABC):
 
     @classmethod
     def _strip_image_content_inplace(cls, messages: list[dict[str, Any]]) -> bool:
-        """Replace image blocks with text placeholders in-place."""
+        """就地将图片块替换为文本占位符。"""
         found = False
         for msg in messages:
             content = msg.get("content")
@@ -264,7 +264,7 @@ class LLMProvider(ABC):
         tool_choice: str | dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Send a chat completion request."""
+        """发送聊天补全请求。"""
 
     async def chat_stream(
         self,
@@ -279,7 +279,7 @@ class LLMProvider(ABC):
         on_reasoning_delta: Callable[[str], Awaitable[None]] | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Fallback streaming implementation that emits the full response once."""
+        """回退的流式实现，一次性输出完整响应。"""
         response = await self.chat(
             messages=messages,
             tools=tools,
@@ -388,7 +388,7 @@ class LLMProvider(ABC):
         retry_delays: Sequence[float] | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Call chat() with retry on transient provider failures."""
+        """调用 chat() 并在瞬时提供商故障时重试。"""
         if max_tokens is self._SENTINEL:
             max_tokens = self.generation.max_tokens
         if temperature is self._SENTINEL:
@@ -431,7 +431,7 @@ class LLMProvider(ABC):
         retry_delays: Sequence[float] | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        """Call chat_stream() with the same transient retry policy as chat()."""
+        """调用 chat_stream()，使用与 chat() 相同的瞬时故障重试策略。"""
         if max_tokens is self._SENTINEL:
             max_tokens = self.generation.max_tokens
         if temperature is self._SENTINEL:
@@ -464,4 +464,4 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def get_default_model(self) -> str:
-        """Get the default model for this provider."""
+        """获取此提供商的默认模型。"""

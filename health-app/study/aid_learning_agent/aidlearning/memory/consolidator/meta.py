@@ -1,11 +1,10 @@
-"""Per-doc consolidator metadata (``*.meta.json`` files).
+"""每个文档的整合器元数据（``*.meta.json`` 文件）。
 
-For each L2/L3 markdown doc we keep a sidecar JSON capturing the set of
-upstream ids "seen" at the last update. ``run_update`` uses set diff
-against the live state to compute "what's new since last update" — a
-purely id-based diff is robust against mtime / time-zone / replays.
+对于每个 L2/L3 markdown 文档，我们保留一个伴随 JSON，记录上次更新时"已见"的上游 id 集合。
+``run_update`` 使用与实时状态的集合差异来计算"上次更新以来的新内容" —
+纯粹基于 id 的差异对 mtime / 时区 / 重放具有鲁棒性。
 
-Files
+文件
 -----
 * ``memory/L2/<surface>.meta.json``::
 
@@ -27,7 +26,7 @@ Files
         }
       }
 
-Atomic writes via temp + rename. Missing files behave as "first run".
+通过临时文件 + 重命名实现原子写入。缺失的文件视为"首次运行"。
 """
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ logger = logging.getLogger(__name__)
 _META_VERSION = 1
 
 
-# ── L2 meta ─────────────────────────────────────────────────────────────
+# ── L2 元数据 ─────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -90,7 +89,7 @@ def save_l2_meta(
     return meta
 
 
-# ── L3 meta ─────────────────────────────────────────────────────────────
+# ── L3 元数据 ─────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -130,7 +129,7 @@ def save_l3_meta(
     return meta
 
 
-# ── Internals ───────────────────────────────────────────────────────────
+# ── 内部函数 ───────────────────────────────────────────────────────────
 
 
 def _load_meta_l2(path: Path) -> L2Meta:

@@ -1,18 +1,16 @@
-"""Dedup mode — iterative line-level merge / delete over the full doc.
+"""去重模式 — 在整个文档上进行迭代行级合并/删除。
 
-Each iteration:
-1. Render the full md as a line-numbered view (footnote-stripped).
-2. One LLM call returns ``{"edits": [...]}`` (replace + delete only —
-   the dedup prompt forbids inserts).
-3. Apply in reverse line order.
-4. If the LLM returned zero edits, **stop early** (saves tokens).
+每次迭代：
+1. 将完整 markdown 渲染为带行号的视图（去除脚注）。
+2. 一次 LLM 调用返回 ``{"edits": [...]}``（仅替换+删除 — 去重提示词禁止插入）。
+3. 按行号降序应用。
+4. 如果 LLM 返回零个编辑，**提前停止**（节省 token）。
 
-The configured ``iterations`` is the *upper bound*, not a quota.
+配置的 ``iterations`` 是*上限*，而非配额。
 
-Dedup is invoked either:
-- automatically after a successful :func:`run_update` (controlled by
-  ``memory.dedup.auto_after_update``), or
-- explicitly via the workbench `[Dedup]` button.
+去重被调用的方式：
+- 在成功的 :func:`run_update` 之后自动调用（由 ``memory.dedup.auto_after_update`` 控制），或
+- 通过工作台的 `[Dedup]` 按钮显式调用。
 """
 
 from __future__ import annotations
@@ -198,7 +196,7 @@ async def _run_dedup_inner(
     )
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────
+# ── 辅助函数 ─────────────────────────────────────────────────────────────
 
 
 def _path_for(layer: str, key: str):

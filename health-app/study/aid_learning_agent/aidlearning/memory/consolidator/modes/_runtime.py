@@ -1,11 +1,11 @@
-"""Shared runtime helpers used by every mode.
+"""每个模式共享的运行时辅助函数。
 
-These keep the per-mode files focused on algorithm, not plumbing:
+这些函数使各模式文件专注于算法而非管道：
 
-* Prompt loading (en/zh, cached).
-* SSE event emission (``_emit``).
-* Document load + atomic write.
-* LLM call wrapper with retries + a one-line warning on failure.
+* 提示词加载（en/zh，带缓存）。
+* SSE 事件发射（``_emit``）。
+* 文档加载 + 原子写入。
+* LLM 调用包装器，带重试 + 失败时一行警告。
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ _META_CACHE: dict[str, dict[str, Any]] = {}
 
 
 def load_prompt(name: str, language: str) -> dict[str, str]:
-    """Load and cache one prompt YAML by name + language (en/zh)."""
+    """按名称 + 语言（en/zh）加载并缓存一个提示词 YAML。"""
     lang = _lang_code(language)
     key = (lang, name)
     cached = _PROMPT_CACHE.get(key)
@@ -52,7 +52,7 @@ def load_prompt(name: str, language: str) -> dict[str, str]:
 
 
 def load_focus_meta(language: str) -> dict[str, Any]:
-    """Load the per-surface / per-slot focus + sections map for a language."""
+    """加载指定语言的每 surface / 每 slot 的焦点 + 节映射。"""
     lang = _lang_code(language)
     cached = _META_CACHE.get(lang)
     if cached is not None:
@@ -97,13 +97,11 @@ async def call_llm(
     chunk_index: int | None = None,
     label: str | None = None,
 ) -> str:
-    """Single LLM call. Returns the raw text body; "" on failure.
+    """单次 LLM 调用。返回原始文本体；失败时返回 ""。
 
-    The model/provider is resolved from the *active* LLM config — the
-    mode is expected to have installed a scoped config via
-    :func:`activate_llm_selection` if the user picked a non-default
-    model. Emits ``llm_io_start`` / ``llm_io_end`` events for the
-    workbench trace.
+    模型/提供商从*活跃* LLM 配置解析 — 如果用户选择了非默认模型，
+    模式预期已通过 :func:`activate_llm_selection` 安装了作用域配置。
+    为工作台追踪发出 ``llm_io_start`` / ``llm_io_end`` 事件。
     """
     from aidlearning.services.llm import get_llm_config
 
@@ -162,8 +160,8 @@ async def call_llm(
             )
         return response
     except Exception as exc:  # noqa: BLE001
-        # Some providers still do not implement streaming. Fall back to the
-        # non-streaming path so memory jobs remain usable.
+        # 部分提供商尚未实现流式传输。回退到非流式路径，
+        # 以确保记忆任务仍可使用。
         logger.warning("consolidator streaming LLM call failed; falling back: %s", exc)
         try:
             response = await llm_complete(
@@ -236,7 +234,7 @@ async def write_doc_checkpoint(
     label: str | None = None,
     action: str = "write",
 ) -> int:
-    """Write a doc now and register one run-scoped undo checkpoint."""
+    """立即写入文档并注册一个运行范围的撤销检查点。"""
     existed = path.exists()
     previous = path.read_text(encoding="utf-8") if existed else ""
     await write_doc_atomic(path, doc)

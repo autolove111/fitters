@@ -1,4 +1,4 @@
-"""Notebook summarization agent."""
+"""笔记本摘要生成 Agent。"""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def _clip_text(value: str, limit: int) -> str:
 
 
 class NotebookSummarizeAgent:
-    """Generate concise summaries for notebook records."""
+    """为笔记本记录生成简洁摘要。"""
 
     def __init__(self, language: str = "en") -> None:
         self.language = "zh" if str(language or "en").lower().startswith("zh") else "en"
@@ -28,9 +28,8 @@ class NotebookSummarizeAgent:
         self.api_version = getattr(self.llm_config, "api_version", None)
         self.binding = getattr(self.llm_config, "binding", None) or "openai"
         self.extra_headers = getattr(self.llm_config, "extra_headers", None) or {}
-        # Prompts live under aidlearning/agents/notebook/prompts/{en,zh}/summarize_agent.yaml
-        # so the notebook summarizer follows the same bilingual convention as
-        # the rest of the agents and never hard-codes prompt strings here.
+        # 提示词位于 aidlearning/agents/notebook/prompts/{en,zh}/summarize_agent.yaml
+        # 这样笔记本摘要器遵循与其他 Agent 相同的双语约定，永不在此处硬编码提示词字符串。
         self._prompts = get_prompt_manager().load_prompts(
             "notebook", "summarize_agent", self.language
         )

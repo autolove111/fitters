@@ -1,4 +1,4 @@
-"""Bridge optional loguru records into stdlib logging."""
+"""将可选的 loguru 记录桥接到标准库日志。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 
 
 def install_loguru_bridge(level: int = logging.DEBUG) -> bool:
-    """Forward loguru logs to stdlib if loguru is installed."""
+    """如果 loguru 已安装，将 loguru 日志转发到标准库。"""
     try:
         from loguru import logger as loguru_logger
     except Exception:

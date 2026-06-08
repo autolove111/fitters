@@ -1,22 +1,17 @@
-"""Quiz history loader — surfaces prior quiz items in the same session.
+"""测验历史加载器 —— 在同一会话中展示先前的测验项目。
 
-Used by :class:`QuestionPipeline` so the Explore phase can articulate
-which topics have already been tested, which the learner got wrong, and
-how the next round should avoid duplication / optionally target weak
-spots.
+供 :class:`QuestionPipeline` 使用，以便 Explore 阶段可以说明哪些主题
+已被测试过、学习者答错了哪些，以及下一轮应如何避免重复 / 可选地针对薄弱环节。
 
-Single public entry point:
+单个公共入口：
 
-* :func:`load_session_quiz_history` — async, takes ``session_id`` and an
-  upper bound, returns a chronological list of
-  :class:`~aidlearning.agents.question.pipeline.QuizHistoryEntry`.
+* :func:`load_session_quiz_history` —— 异步，接受 ``session_id`` 和上限，
+  返回按时间顺序排列的 :class:`~aidlearning.agents.question.pipeline.QuizHistoryEntry` 列表。
 
-Source of truth: the ``notebook_entries`` table (populated by
-``POST /sessions/{id}/quiz-results``). Messages are *not* consulted —
-they're free-text and would require fragile parsing.
+数据源：``notebook_entries`` 表（由 ``POST /sessions/{id}/quiz-results`` 填充）。
+*不*查询消息 —— 消息是自由文本，需要脆弱的解析。
 
-Fails closed: any error returns an empty list (so the pipeline simply
-treats the session as if no quizzes had been asked before).
+失败时关闭：任何错误返回空列表（因此管线简单地将该会话视为未询问过测验）。
 """
 
 from __future__ import annotations
@@ -36,17 +31,14 @@ async def load_session_quiz_history(
     *,
     max_entries: int = DEFAULT_MAX_ENTRIES,
 ) -> list[QuizHistoryEntry]:
-    """Return prior quiz items for ``session_id`` in chronological order.
+    """按时间顺序返回 ``session_id`` 的先前测验项目。
 
-    "Chronological" means oldest-first in the returned list, even though
-    the underlying table sorts DESC for pagination — the order matters
-    for the LLM prompt (which reads top-to-bottom as "this is what we've
-    covered so far").
+    "时间顺序"意味着返回列表中最旧的在前，即使底层表按 DESC 排序以进行分页
+    —— 顺序对 LLM 提示词很重要（它从上到下读取为"这是我们目前涵盖的内容"）。
 
-    The boolean ``is_correct`` field on notebook entries defaults to 0
-    even when no answer was submitted; we treat an empty ``user_answer``
-    as "unanswered" and surface ``is_correct=None`` for it so the explore
-    prompt can render "unknown" instead of misleading "incorrect".
+    笔记本条目上的布尔 ``is_correct`` 字段默认为 0，即使未提交答案也是如此；
+    我们将空 ``user_answer`` 视为"未回答"并为其显示 ``is_correct=None``，
+    以便探索提示词可以渲染"未知"而不是误导性的"错误"。
     """
     if not session_id or max_entries <= 0:
         return []
@@ -64,11 +56,10 @@ async def load_session_quiz_history(
         return []
 
     items: list[dict[str, Any]] = list(result.get("items") or [])
-    # Store returns DESC, but rows with identical ``created_at`` (a single
-    # upsert call writes all rows at the same timestamp) come back in
-    # insertion order — so a plain reverse() would still flip them. Sort
-    # explicitly by (created_at ASC, id ASC) so the prompt reads earliest
-    # → latest, deterministically.
+    # 存储返回 DESC，但具有相同 ``created_at`` 的行（单次 upsert 调用
+    # 以相同时间戳写入所有行）按插入顺序返回 —— 因此简单的 reverse()
+    # 仍会翻转它们。显式按 (created_at ASC, id ASC) 排序，以便提示词
+    # 确定性地从最早读到最新。
     items.sort(key=lambda r: (float(r.get("created_at") or 0.0), int(r.get("id") or 0)))
 
     entries: list[QuizHistoryEntry] = []
@@ -80,9 +71,8 @@ async def load_session_quiz_history(
             continue
         user_answer = str(raw.get("user_answer") or "").strip()
         correct_answer = str(raw.get("correct_answer") or "").strip()
-        # The DB column is a 0/1 INTEGER with default 0 — we can't tell
-        # "answered wrong" from "not answered yet" purely from is_correct.
-        # The user_answer field is authoritative for "did they attempt this".
+        # 数据库列是默认值为 0 的 0/1 INTEGER —— 我们无法仅从 is_correct
+        # 区分"答错"和"尚未回答"。user_answer 字段是"是否尝试过"的权威来源。
         if not user_answer:
             is_correct: bool | None = None
         else:

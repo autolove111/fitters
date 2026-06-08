@@ -1,4 +1,4 @@
-"""Services-layer provider runtime used by both llm.factory and TutorBot."""
+"""服务层提供商运行时，供 llm.factory 和 TutorBot 共同使用。"""
 
 from .anthropic_provider import AnthropicProvider
 from .azure_openai_provider import AzureOpenAIProvider

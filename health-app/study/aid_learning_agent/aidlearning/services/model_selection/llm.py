@@ -1,4 +1,4 @@
-"""Helpers for selecting configured LLM models without mutating settings."""
+"""选择已配置 LLM 模型的辅助函数，不修改设置。"""
 
 from __future__ import annotations
 
@@ -9,10 +9,9 @@ from typing import Any
 
 @dataclass(frozen=True, slots=True)
 class LLMSelection:
-    """A safe reference to one configured LLM model.
+    """对一个已配置 LLM 模型的安全引用。
 
-    The selection intentionally carries IDs only. Provider secrets stay in the
-    server-side catalog and are resolved only at runtime.
+    选择仅携带 ID。提供商密钥保留在服务端目录中，仅在运行时解析。
     """
 
     profile_id: str
@@ -55,7 +54,7 @@ def _llm_service(catalog: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_llm_options(catalog: dict[str, Any]) -> dict[str, Any]:
-    """Return a redacted list of configured chat-selectable LLM models."""
+    """返回已配置的聊天可选 LLM 模型的脱敏列表。"""
     service = _llm_service(catalog)
     active_profile_id = str(service.get("active_profile_id") or "")
     active_model_id = str(service.get("active_model_id") or "")
@@ -108,7 +107,7 @@ def apply_llm_selection_to_catalog(
     catalog: dict[str, Any],
     selection: LLMSelection | dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Return a catalog copy whose active LLM points at *selection*."""
+    """返回一个目录副本，其活动 LLM 指向 *selection*。"""
     resolved = LLMSelection.from_payload(selection)
     selected = deepcopy(catalog)
     if resolved is None:

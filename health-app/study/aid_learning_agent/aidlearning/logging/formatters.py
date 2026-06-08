@@ -1,4 +1,4 @@
-"""Formatters for AidLearning's stdlib logging pipeline."""
+"""AidLearning 标准库日志管道的格式化器。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .context import LOG_CONTEXT_FIELDS, current_log_context
 
 
 class ContextFilter(logging.Filter):
-    """Attach contextvars and explicit record fields to each LogRecord."""
+    """将上下文变量和显式记录字段附加到每个 LogRecord。"""
 
     def filter(self, record: logging.LogRecord) -> bool:
         context = current_log_context()
@@ -24,7 +24,7 @@ class ContextFilter(logging.Filter):
 
 
 class JsonlFormatter(logging.Formatter):
-    """One structured JSON object per line."""
+    """每行一个结构化 JSON 对象。"""
 
     def format(self, record: logging.LogRecord) -> str:
         entry: dict[str, Any] = {
@@ -40,7 +40,7 @@ class JsonlFormatter(logging.Formatter):
 
 
 class ConsoleFormatter(logging.Formatter):
-    """Small human-readable formatter for local development."""
+    """用于本地开发的小型人类可读格式化器。"""
 
     def format(self, record: logging.LogRecord) -> str:
         context = getattr(record, "log_context", {}) or {}

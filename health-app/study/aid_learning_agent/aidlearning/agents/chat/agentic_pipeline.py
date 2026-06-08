@@ -1,31 +1,26 @@
-"""Single-loop agentic chat pipeline.
+"""单循环 Agent 聊天管线。
 
-The chat capability runs as one iterative LLM loop. Each iteration is a
-single streaming LLM call followed by, depending on the model's first-line
-protocol label:
+聊天能力以一个迭代式 LLM 循环运行。每次迭代是一次流式 LLM 调用，
+随后根据模型首行协议标签决定后续行为：
 
-* ``FINISH`` → the post-label text IS the final user-facing answer; loop exits.
-* ``TOOL``   → native tool_calls run in parallel; their results feed the next
-  iteration. Tools may pause (``ask_user``) or terminate the turn.
-* ``THINK``  → intermediate reasoning; loop continues so the next call can
-  build on it.
-* ``PAUSE``  → semantically a ``THINK`` whose prose is shown to the user.
-  Same loop behavior as ``THINK`` (intermediate, no tools, loop continues),
-  but the post-label text streams into the chat bubble like ``FINISH`` so
-  the user sees the reasoning when it's worth showing.
+* ``FINISH`` → 标签后的文本即为最终的用户答案；循环退出。
+* ``TOOL``   → 原生 tool_calls 并行执行；结果反馈到下一次迭代。
+  工具可能会暂停（``ask_user``）或终止本轮。
+* ``THINK``  → 中间推理；循环继续，以便下次调用可以基于此推理。
+* ``PAUSE``  → 语义上等同于 ``THINK``，但推理文本会展示给用户。
+  与 ``THINK`` 行为相同（中间状态、无工具、循环继续），但标签后的
+  文本会像 ``FINISH`` 一样流入聊天气泡，让用户在值得展示时看到推理过程。
 
-This module is the *capability-specific* assembly layer. The generic engine
-lives in :mod:`aidlearning.core.agentic`: label parsing, single-call streaming,
-parallel tool dispatch, and the loop scheduler. Chat plugs in its own:
+本模块是*能力特定的*组装层。通用引擎位于 :mod:`aidlearning.core.agentic`：
+标签解析、单次流式调用、并行工具调度和循环调度器。Chat 插入自己的：
 
-* tool composition + per-turn KB / source / notebook enums,
-* system-prompt + message assembly (memory, skills, manifests, attachments),
-* server-side tool-kwarg augmentation,
-* context-window guard, force-finalize, answer-now fast path,
-* protocol-violation copy (YAML-loaded, language-aware).
+* 工具组合 + 每轮 KB / 源 / 笔记本枚举
+* 系统提示词 + 消息组装（记忆、技能、清单、附件）
+* 服务端工具参数增强
+* 上下文窗口守卫、强制完成、立即回答快速路径
+* 协议违规文案（YAML 加载、语言感知）
 
-History compression (branch-safe) is handled upstream by
-``ContextBuilder.build`` so it does not appear here.
+历史压缩（分支安全）由上游的 ``ContextBuilder.build`` 处理，因此不在此处出现。
 """
 
 from __future__ import annotations
@@ -86,22 +81,19 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Module-level configuration
+# 模块级配置
 # ---------------------------------------------------------------------------
 
 CHAT_EXCLUDED_TOOLS: set[str] = set()
-# User-toggleable tools — the composer / settings UI surface. Computed once
-# at import time via the shared tool-composition policy so chat and quiz
-# pipelines can't disagree about which tools the user controls.
+# 用户可切换的工具 — 由 composer / 设置界面提供。在导入时通过共享工具组合策略
+# 一次性计算，确保 chat 和 quiz 管线对用户可控制的工具保持一致。
 CHAT_OPTIONAL_TOOLS = default_optional_tools(excluded=CHAT_EXCLUDED_TOOLS)
 
-# Tool-iteration ceiling: high enough for multi-step chat loops with
-# ask_user/tool repair, still bounded to prevent runaway loops. Overridable
-# via ``capabilities.chat.max_iterations``.
+# 工具迭代上限：足够高以支持含 ask_user / 工具修复的多步聊天循环，
+# 同时有界以防止无限循环。可通过 ``capabilities.chat.max_iterations`` 覆盖。
 DEFAULT_MAX_ITERATIONS = 20
-# When messages exceed this fraction of the model's effective context
-# window, the in-turn guard replaces the largest stale tool-result with a
-# snip marker. Keeps headroom for the next LLM call without aborting.
+# 当消息超过模型有效上下文窗口的此比例时，轮内守卫会将最旧的过期工具结果
+# 替换为截断标记。为下次 LLM 调用保留余量而不中断。
 CONTEXT_WINDOW_GUARD_RATIO = 0.9
 TOOL_RESULT_SNIP_MARKER = (
     "[earlier tool result snipped to stay within context window — "
@@ -109,20 +101,18 @@ TOOL_RESULT_SNIP_MARKER = (
 )
 FINALIZATION_REPAIR_ATTEMPTS = 3
 
-# Chat-only label strings (chat's protocol vocabulary). Kept as named
-# constants for legibility in the chat YAML/copy code that references them.
+# Chat 专属标签字符串（chat 的协议词汇）。保留为命名常量以便在
+# chat YAML / 文案代码中引用。
 LABEL_FINISH = "FINISH"
 LABEL_TOOL = "TOOL"
 LABEL_THINK = "THINK"
-# ``PAUSE`` is chat-specific: semantically it's ``THINK`` made visible —
-# same intermediate / no-tools / loop-continues behavior, but the
-# post-label text is streamed into the user-facing chat bubble (so it
-# lives in both ``intermediate`` AND ``final``). The LLM picks ``PAUSE``
-# over ``THINK`` only when the reasoning itself is worth showing to the
-# user.
+# ``PAUSE`` 是 chat 专属标签：语义上是可见的 ``THINK`` ——
+# 与 ``THINK`` 相同的中间状态 / 无工具 / 循环继续行为，但标签后的
+# 文本会流入用户可见的聊天气泡（因此同时属于 ``intermediate`` 和 ``final``）。
+# LLM 仅在推理本身值得展示给用户时才会选择 ``PAUSE`` 而非 ``THINK``。
 LABEL_PAUSE = "PAUSE"
 
-# Chat's label protocol, fed into the generic loop primitive.
+# Chat 的标签协议，传入通用循环原语。
 _CHAT_PROTOCOL = LabelProtocol(
     allowed=(LABEL_FINISH, LABEL_TOOL, LABEL_THINK, LABEL_PAUSE),
     terminal=frozenset({LABEL_FINISH}),
@@ -133,12 +123,11 @@ _CHAT_PROTOCOL = LabelProtocol(
 
 
 # ---------------------------------------------------------------------------
-# Answer-now lenient label parsing
+# 立即回答的宽松标签解析
 # ---------------------------------------------------------------------------
-# The main loop owns the canonical protocol and now tolerates common wrapper
-# variants at the core parser level. Answer-now is still more permissive — it
-# is a terminal, tool-less fast-path, so the safest UI behavior is to strip
-# common spellings rather than render them as a literal label.
+# 主循环拥有规范协议，现在在核心解析器层面也容忍常见的包装变体。
+# 立即回答更加宽容 —— 它是一个终端的、无工具的快速路径，因此最安全的
+# UI 行为是剥离常见拼写变体而非将其作为字面标签渲染。
 
 _ANSWER_NOW_WRAPPED_LABEL_RE = re.compile(
     r"^`+\s*(FINISH|TOOL|THINK|PAUSE)\s*`+(?P<after>.*)$",
@@ -157,13 +146,12 @@ _ANSWER_NOW_ALLOWED_LABELS: tuple[str, ...] = (
 )
 
 
-# Re-export for tests that still import this name. New code constructs the
-# canonical ``DispatchOutcome`` directly.
+# 为仍导入此名称的测试重新导出。新代码直接构造规范的 ``DispatchOutcome``。
 _DispatchOutcome = DispatchOutcome
 
 
 def _could_be_wrapped_answer_now_label(stripped: str) -> bool:
-    """Whether a backtick-prefixed buffer may still become a label."""
+    """判断以反引号开头的缓冲区是否仍可能成为标签。"""
     probe = stripped.lstrip("`").lstrip()
     if not probe:
         return True
@@ -182,12 +170,11 @@ def _classify_answer_now_label(
     *,
     final: bool = False,
 ) -> tuple[str, str] | None:
-    """Lenient label stripper used by :meth:`AgenticChatPipeline._run_answer_now`.
+    """:meth:`AgenticChatPipeline._run_answer_now` 使用的宽松标签剥离器。
 
-    Accepts the canonical double-backtick wrapping as well as common
-    looser variants (single-backtick wrappers, unwrapped labels followed
-    by a separator). Returns ``None`` when the buffer still looks like a
-    partial label match — caller keeps buffering.
+    接受规范的双反引号包装以及常见的更宽松变体（单反引号包装、
+    后跟分隔符的未包装标签）。当缓冲区仍看起来像部分标签匹配时
+    返回 ``None`` —— 调用方继续缓冲。
     """
     from aidlearning.core.agentic.labels import classify_label
 
@@ -223,11 +210,10 @@ def _classify_answer_now_label(
 def _normalise_user_reply(
     raw: Any,
 ) -> tuple[str, list[dict[str, str]] | None]:
-    """Normalise a waiter() reply into ``(text, answers)``.
+    """将 waiter() 的回复规范化为 ``(text, answers)``。
 
-    Accepts either a plain string (legacy / direct injection in tests)
-    or a dict ``{"text": str, "answers": list | None}`` (runtime path
-    that supports the v2 multi-question schema).
+    接受纯字符串（遗留方式 / 测试中的直接注入）或
+    字典 ``{"text": str, "answers": list | None}``（支持 v2 多问题 schema 的运行时路径）。
     """
     if isinstance(raw, str):
         return raw, None
@@ -253,11 +239,10 @@ def _format_user_reply_body(
     answers: list[dict[str, str]] | None,
     ask_user_payload: dict[str, Any],
 ) -> str:
-    """Render the ``User answered:`` body the model sees on resume.
+    """渲染模型在恢复时看到的 ``User answered:`` 正文。
 
-    Multi-question replies are rendered as one ``- <prompt>\n  → <answer>``
-    line per question so the model has the original question text in
-    context. Skipped or empty answers come through as ``(skipped)``.
+    多问题回复按每个问题渲染为一行 ``- <prompt>\n  → <answer>``，
+    以便模型在上下文中保留原始问题文本。跳过或空的回答显示为 ``(skipped)``。
     """
     if answers:
         prompts_by_id: dict[str, str] = {}
@@ -277,19 +262,19 @@ def _format_user_reply_body(
 
 
 def _flatten_ask_user_summary(ask_user_payload: dict[str, Any]) -> str:
-    """One-line summary for fallback terminator emit when no waiter wired."""
+    """当未连接 waiter 时，用于回退终止器发送的单行摘要。"""
     questions = ask_user_payload.get("questions") or []
     if isinstance(questions, list) and questions:
         prompts = [str(q.get("prompt") or "") for q in questions if isinstance(q, dict)]
         prompts = [p for p in prompts if p]
         if prompts:
             return " | ".join(prompts)
-    # Legacy single-question payload shape (pre-v2).
+    # 遗留的单问题负载格式（v2 之前）。
     return str(ask_user_payload.get("question") or "")
 
 
 def _read_int(cfg: Any, *, key: str, default: int) -> int:
-    """Pull an integer from a nested YAML dict, falling back to ``default``."""
+    """从嵌套 YAML 字典中提取整数，未找到时回退到 ``default``。"""
     if isinstance(cfg, dict):
         value = cfg.get(key, default)
     else:
@@ -301,12 +286,12 @@ def _read_int(cfg: Any, *, key: str, default: int) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Pipeline
+# 管线
 # ---------------------------------------------------------------------------
 
 
 class AgenticChatPipeline:
-    """Run chat as a single iterative LLM loop with native tool calling."""
+    """以单循环迭代式 LLM 循环运行聊天，支持原生工具调用。"""
 
     def __init__(self, language: str = "en") -> None:
         self.language = "zh" if language.lower().startswith("zh") else "en"
@@ -330,9 +315,9 @@ class AgenticChatPipeline:
             self._chat_temperature = float(chat_cfg.get("temperature", 0.2))
         except (TypeError, ValueError):
             self._chat_temperature = 0.2
-        # Token budgets for the two LLM call shapes used by this pipeline.
-        # ``responding`` caps each loop iteration; ``answer_now`` caps the
-        # single-shot fallback when the user clicks "Answer now" mid-stream.
+        # 本管线使用的两种 LLM 调用形式的 Token 预算。
+        # ``responding`` 限制每次循环迭代；``answer_now`` 限制用户在流式过程中
+        # 点击"立即回答"时的单次回退调用。
         self._responding_max_tokens = _read_int(
             chat_cfg.get("responding"), key="max_tokens", default=8000
         )
@@ -367,7 +352,7 @@ class AgenticChatPipeline:
         )
 
     # ------------------------------------------------------------------
-    # Public entry point
+    # 公共入口
     # ------------------------------------------------------------------
     async def run(self, context: UnifiedContext, stream: StreamBus) -> None:
         answer_now_context = self._extract_answer_now_context(context)
@@ -395,9 +380,9 @@ class AgenticChatPipeline:
         messages, images_stripped = self._prepare_messages_with_attachments(messages, context)
 
         if images_stripped:
-            # ``images_stripped`` is a transient warning, not a sub-trace, so
-            # it carries no call_id (frontend ``CallTracePanel`` groups by
-            # call_id and would otherwise spawn an empty sub-trace row).
+            # ``images_stripped`` 是一个临时警告，不是子追踪，因此不携带
+            # call_id（前端 ``CallTracePanel`` 按 call_id 分组，否则会产生
+            # 空的子追踪行）。
             await stream.thinking(
                 self._t("notices.images_stripped", model=self.model or ""),
                 source="chat",
@@ -405,9 +390,8 @@ class AgenticChatPipeline:
                 metadata={"trace_kind": "warning"},
             )
 
-        # Build the per-turn OpenAI client via ``_build_openai_client`` so
-        # tests can monkey-patch that method post-instantiation to inject a
-        # scripted client.
+        # 通过 ``_build_openai_client`` 构建每轮的 OpenAI 客户端，以便测试可以在
+        # 实例化后对该方法进行猴子补丁以注入脚本化的客户端。
         client = self._build_openai_client()
         host = _ChatLoopHost(
             pipeline=self,
@@ -415,11 +399,10 @@ class AgenticChatPipeline:
             stream=stream,
             client=client,
         )
-        # Outer ``stage("responding")`` only drives the frontend's
-        # ``currentStage`` indicator ("AidLearning responding…"). It carries no
-        # call_id so it does NOT spawn its own sub-trace; each LLM iteration
-        # and each tool call below allocate their own call_id and surface as
-        # individual sub-traces in CallTracePanel.
+        # 外层 ``stage("responding")`` 仅驱动前端的 ``currentStage``
+        # 指示器（"AidLearning 正在回复…"）。它不携带 call_id，因此不会
+        # 生成自己的子追踪；下面的每次 LLM 迭代和每次工具调用都会分配
+        # 自己的 call_id 并在 CallTracePanel 中显示为独立的子追踪。
         async with stream.stage("responding", source="chat"):
             outcome = await run_agentic_loop(
                 initial_messages=messages,
@@ -435,11 +418,9 @@ class AgenticChatPipeline:
                 max_iterations=max(1, self._max_iterations),
                 host=host,
                 usage=self._usage,
-                # Reasoning models that natively emit ``<think>...</think>``
-                # without parroting back ``\`\`THINK\`\``` are gracefully
-                # accepted as a THINK iteration rather than treated as a
-                # protocol violation (which would burn budget on repair
-                # retries that the model can't actually satisfy).
+                # 原生输出 <think>...</think> 而不回显 THINK 标签的推理模型
+                # 会被优雅地接受为 THINK 迭代，而不是被视为协议违规
+                # （协议违规会导致在模型无法实际满足的修复重试上浪费预算）。
                 implicit_think_label=LABEL_THINK,
             )
 
@@ -459,17 +440,16 @@ class AgenticChatPipeline:
         await emit_capability_result(stream, result_payload, source="chat", usage=self._usage)
 
     # ------------------------------------------------------------------
-    # Iteration trace metadata
+    # 迭代追踪元数据
     # ------------------------------------------------------------------
     def _build_iteration_trace_metadata(
         self, iteration: int
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Allocate trace metadata for one model iteration.
+        """为一次模型迭代分配追踪元数据。
 
-        ``iter_meta`` scopes the reasoning sub-trace that THINK/TOOL/UNKNOWN
-        paths open; FINISH never opens it so the row stays empty in those
-        cases. ``final_meta`` is the per-iter id for body content events on
-        the FINISH path.
+        ``iter_meta`` 限定 THINK/TOOL/UNKNOWN 路径打开的推理子追踪；
+        FINISH 从不打开它，因此在这些情况下行保持为空。``final_meta``
+        是 FINISH 路径上正文内容事件的每次迭代 ID。
         """
         iter_call_id = new_call_id(f"chat-iter-{iteration}")
         iter_meta = build_trace_metadata(
@@ -494,7 +474,7 @@ class AgenticChatPipeline:
         return iter_meta, final_meta
 
     # ------------------------------------------------------------------
-    # Protocol copy (delegated to YAML; loop host calls these)
+    # 协议文案（委托给 YAML；循环主机调用这些方法）
     # ------------------------------------------------------------------
     def _protocol_retry_notice(self) -> str:
         return self._t(
@@ -618,7 +598,7 @@ class AgenticChatPipeline:
         return self._t("protocol.fallback_final", default=default)
 
     # ------------------------------------------------------------------
-    # Forced finalization (host hook for max-iter exhaustion)
+    # 强制完成（max-iter 耗尽时的主机钩子）
     # ------------------------------------------------------------------
     async def _run_forced_finish(
         self,
@@ -628,8 +608,8 @@ class AgenticChatPipeline:
         stream: StreamBus,
         start_iteration: int,
     ) -> tuple[str, bool, int]:
-        """Ask the model for one tool-less ``FINISH`` reply, retrying on
-        protocol violations. Returns ``(final_text, completed, calls)``."""
+        """要求模型生成一次无工具的 ``FINISH`` 回复，在协议违规时重试。
+        返回 ``(final_text, completed, calls)``。"""
         calls = 0
         messages.append({"role": "user", "content": self._force_finish_message()})
         await stream.progress(
@@ -706,7 +686,7 @@ class AgenticChatPipeline:
         messages.append({"role": "assistant", "content": clipped})
 
     # ------------------------------------------------------------------
-    # Emit helpers (host hooks)
+    # 发送辅助方法（主机钩子）
     # ------------------------------------------------------------------
     async def _emit_final_text(
         self,
@@ -728,13 +708,13 @@ class AgenticChatPipeline:
         stream: StreamBus,
         payload: dict[str, Any] | None,
     ) -> None:
-        """Emit a ``content(call_kind=llm_final_response)`` event with the
-        terminating tool's content + its UI metadata.
+        """发送一个 ``content(call_kind=llm_final_response)`` 事件，
+        包含终止工具的内容及其 UI 元数据。
 
-        Generic enough to support any future ``terminate_turn`` tool: the
-        tool's own ``ToolResult.metadata`` rides along on the
-        ``tool_metadata`` slot so the frontend can dispatch on it (e.g.
-        render option chips for ``ask_user`` via ``tool_metadata.ask_user``).
+        通用性足以支持未来的任何 ``terminate_turn`` 工具：工具自身的
+        ``ToolResult.metadata`` 附带在 ``tool_metadata`` 槽位上，以便
+        前端可以据此进行分派（例如通过 ``tool_metadata.ask_user``
+        渲染 ``ask_user`` 的选项卡片）。
         """
         if not payload:
             return
@@ -807,7 +787,7 @@ class AgenticChatPipeline:
         }
 
     # ------------------------------------------------------------------
-    # Tool dispatch (thin wrappers around the primitives — preserved for tests)
+    # 工具调度（对原语的薄封装 — 保留用于测试）
     # ------------------------------------------------------------------
     async def _execute_tool_call(
         self,
@@ -817,16 +797,16 @@ class AgenticChatPipeline:
         stream: StreamBus | None = None,
         retrieve_meta: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Run a single tool with chat-flavored retrieve-progress events.
+        """运行单个工具，附带 chat 风格的检索进度事件。
 
-        Direct callers (notably test code) use this to drive one tool
-        without going through the parallel dispatcher.
+        直接调用方（尤其是测试代码）使用此方法驱动单个工具，
+        而不经过并行调度器。
         """
         from aidlearning.core.agentic import execute_tool_call
 
         if stream is None:
-            # No stream means no retrieve trace either; fall through with a
-            # dummy bus so the primitive's stream calls become no-ops.
+            # 没有 stream 也意味着没有检索追踪；使用虚拟 bus 使原语的
+            # stream 调用变为空操作。
             stream = StreamBus()
         return await execute_tool_call(
             registry=self.registry,
@@ -856,8 +836,7 @@ class AgenticChatPipeline:
         stream: StreamBus,
         iteration_index: int,
     ) -> DispatchOutcome:
-        """Dispatch this iteration's tool calls under chat-specific labels,
-        kwarg-augmenter, and retrieve-trace metadata."""
+        """在 chat 专属标签、参数增强器和检索追踪元数据下调度本次迭代的工具调用。"""
         too_many = None
         if len(tool_calls) > MAX_PARALLEL_TOOL_CALLS:
             too_many = self._t(
@@ -893,7 +872,7 @@ class AgenticChatPipeline:
         )
 
     # ------------------------------------------------------------------
-    # ``ask_user`` pause / resume
+    # ``ask_user`` 暂停 / 恢复
     # ------------------------------------------------------------------
     async def _await_user_reply_and_resolve(
         self,
@@ -902,19 +881,16 @@ class AgenticChatPipeline:
         stream: StreamBus,
         dispatch: DispatchOutcome,
     ) -> bool:
-        """Pause the loop on an ``ask_user`` call and wait for the reply.
+        """在 ``ask_user`` 调用时暂停循环并等待回复。
 
-        Returns ``True`` once the user's reply has been substituted into the
-        matching ``role=tool`` message and the loop can resume. Returns
-        ``False`` if the runtime did not wire a reply queue (in which case
-        the pipeline falls back to emitting a terminator final-response,
-        mirroring the legacy behaviour so direct unit tests of the pipeline
-        still work).
+        当用户回复已替换到匹配的 ``role=tool`` 消息中且循环可以恢复时
+        返回 ``True``。如果运行时未连接回复队列则返回 ``False``
+        （此时管线回退到发送终止器最终响应，镜像遗留行为以使管线的
+        直接单元测试仍然有效）。
 
-        ``asyncio.CancelledError`` propagates up from ``waiter()`` when the
-        runtime cancels the turn task — caught by the runtime's own
-        cancellation handler which emits the right ERROR + DONE events. We
-        intentionally do NOT catch it here.
+        当运行时取消轮次任务时，``asyncio.CancelledError`` 会从
+        ``waiter()`` 向上传播 —— 由运行时自身的取消处理器捕获，
+        该处理器会发送正确的 ERROR + DONE 事件。我们故意不在此处捕获它。
         """
         ask_user = (dispatch.pause_payload or {}).get("ask_user") or {}
         waiter = context.metadata.get("wait_for_user_reply")
@@ -937,21 +913,18 @@ class AgenticChatPipeline:
         if raw_reply is None:
             return False
 
-        # Normalise: callers may pass either a plain string (older tests
-        # / direct injections) or a structured dict (runtime / v2 path).
+        # 规范化：调用方可能传入纯字符串（旧版测试 / 直接注入）或
+        # 结构化字典（运行时 / v2 路径）。
         reply_text, answers = _normalise_user_reply(raw_reply)
         body_text = _format_user_reply_body(reply_text, answers, ask_user)
 
-        # Mutate the paused tool's matching ``role=tool`` message in place.
-        # ``dispatch.tool_messages`` shares object identity with entries we
-        # already extended onto ``messages``, so this change is visible to
-        # the next LLM call without re-walking the list.
+        # 就地修改暂停工具匹配的 ``role=tool`` 消息。
+        # ``dispatch.tool_messages`` 与我们已扩展到 ``messages`` 上的条目
+        # 共享对象标识，因此此更改对下一次 LLM 调用可见，无需重新遍历列表。
         #
-        # The body is deliberately directive: a bare "User answered: X" was
-        # being misread by some models as the end of the turn. Spelling out
-        # "you must continue / do not stop after a one-liner ack" at the
-        # exact point in the conversation where the model is deciding what
-        # to do next keeps the loop alive across ask_user.
+        # 正文故意是指令性的：一个简单的 "User answered: X" 被某些模型
+        # 误解为轮次结束。在模型决定下一步操作的确切对话位置明确写出
+        # "你必须继续 / 不要在单行确认后停止"可以保持 ask_user 跨循环存活。
         resumption_directive = (
             f"{body_text}\n\n"
             "[ask_user resolved. The turn is NOT over. Use these answers "
@@ -982,9 +955,8 @@ class AgenticChatPipeline:
         return True
 
     # ------------------------------------------------------------------
-    # Answer-now: cancel mid-stream and produce a final answer from what's
-    # already been generated. Single LLM call, tools disabled, partial draft
-    # injected as a fake assistant message so the model continues naturally.
+    # 立即回答：取消流式生成并从已生成内容中产出最终答案。
+    # 单次 LLM 调用，工具禁用，部分草稿作为假助手消息注入以便模型自然继续。
     # ------------------------------------------------------------------
     async def _run_answer_now(
         self,
@@ -1053,9 +1025,8 @@ class AgenticChatPipeline:
                     label_buf += chunk
                     parsed = _classify_answer_now_label(label_buf)
                     if parsed is not None:
-                        # Answer-now reuses the normal chat system prompt, so
-                        # many models correctly start with ``FINISH``. Strip
-                        # that protocol label before it reaches the UI.
+                        # 立即回答复用正常的聊天系统提示词，因此许多模型会
+                        # 正确地以 ``FINISH`` 开头。在到达 UI 之前剥离该协议标签。
                         _label, after_label = parsed
                         label_resolved = True
                         label_buf = ""
@@ -1092,7 +1063,7 @@ class AgenticChatPipeline:
         await emit_capability_result(stream, result_payload, source="chat", usage=self._usage)
 
     # ------------------------------------------------------------------
-    # Per-iteration marker (tells the model where it is in the budget)
+    # 每次迭代标记（告知模型其在预算中的位置）
     # ------------------------------------------------------------------
     def _append_iteration_marker(
         self,
@@ -1101,14 +1072,12 @@ class AgenticChatPipeline:
         iteration: int,
         max_iterations: int,
     ) -> None:
-        """Append a ``role=user`` system-style note announcing the current
-        iteration so the LLM can pace itself.
+        """附加一个 ``role=user`` 系统风格的注释，宣告当前迭代，
+        以便 LLM 可以自行调节节奏。
 
-        Copy is YAML-driven (``iteration_marker``). Iteration is 0-indexed
-        internally; the marker shows ``current = iteration + 1`` to match
-        human counting. Markers from earlier iterations are kept in the
-        history so the model can also see how it has been spending its
-        budget across the turn.
+        文案由 YAML 驱动（``iteration_marker``）。迭代在内部从 0 开始；
+        标记显示 ``current = iteration + 1`` 以匹配人类计数。早期迭代的
+        标记保留在历史中，以便模型也能看到它在整个轮次中如何消耗预算。
         """
         current = iteration + 1
         marker = self._t(
@@ -1127,18 +1096,17 @@ class AgenticChatPipeline:
         messages.append({"role": "user", "content": marker})
 
     # ------------------------------------------------------------------
-    # In-turn context-window guard
+    # 轮内上下文窗口守卫
     # ------------------------------------------------------------------
     async def _guard_context_window(
         self,
         messages: list[dict[str, Any]],
         stream: StreamBus,
     ) -> None:
-        """Replace oldest tool-result contents with a snip marker until the
-        total token count fits under ``CONTEXT_WINDOW_GUARD_RATIO`` of the
-        model's effective window. Never touches the system message or the
-        original user message — only ``role == 'tool'`` payloads. Cross-turn
-        history compression is handled separately by ``ContextBuilder``.
+        """将最旧的工具结果内容替换为截断标记，直到总 token 数适合
+        模型有效窗口的 ``CONTEXT_WINDOW_GUARD_RATIO``。从不触及系统消息
+        或原始用户消息 —— 仅处理 ``role == 'tool'`` 的负载。
+        跨轮历史压缩由 ``ContextBuilder`` 单独处理。
         """
         try:
             window = resolve_effective_context_window(
@@ -1174,9 +1142,9 @@ class AgenticChatPipeline:
 
     @staticmethod
     def _estimate_messages_tokens(messages: list[dict[str, Any]]) -> int:
-        # Local import to break the agents.chat ↔ services.session import
-        # cycle (context_builder pulls in agents.base_agent which re-enters
-        # this module during package init).
+        # 本地导入以打破 agents.chat ↔ services.session 的导入循环
+        # （context_builder 拉取 agents.base_agent，后者在包初始化期间
+        # 重新进入此模块）。
         from aidlearning.memory.short_term.context_builder import count_tokens
 
         total = 0
@@ -1191,19 +1159,17 @@ class AgenticChatPipeline:
         return total
 
     # ------------------------------------------------------------------
-    # System prompt + message construction
+    # 系统提示词 + 消息构建
     # ------------------------------------------------------------------
     def _build_system_prompt(
         self,
         enabled_tools: list[str],
         context: UnifiedContext,
     ) -> str:
-        # ``list_with_usage`` renders one bullet per tool including the
-        # tool's ``when_to_use`` and ``input_format`` — pulled from per-tool
-        # YAML under ``aidlearning/tools/prompting/hints/{lang}/{tool}.yaml``.
-        # This is the only place per-tool guidance enters the chat persona
-        # prompt: disabled tools contribute nothing, so the model never sees
-        # instructions for tools it cannot call.
+        # ``list_with_usage`` 为每个工具渲染一个项目符号，包括工具的
+        # ``when_to_use`` 和 ``input_format`` —— 从 ``aidlearning/tools/prompting/hints/{lang}/{tool}.yaml``
+        # 下的每工具 YAML 中获取。这是每工具指导进入聊天人设提示词的唯一位置：
+        # 禁用的工具不贡献任何内容，因此模型永远不会看到它无法调用的工具的说明。
         tool_list = self.registry.build_prompt_text(
             enabled_tools,
             format="list_with_usage",
@@ -1223,12 +1189,11 @@ class AgenticChatPipeline:
         system_prompt: str,
         user_content: str,
     ) -> list[dict[str, Any]]:
-        """Assemble ``[system] + history + user``.
+        """组装 ``[system] + history + user``。
 
-        ``memory_context``, ``skills_context``, ``source_manifest``, and
-        the notebook manifest are appended as separate ``---``-delimited
-        sections after the main system prompt so prompt caching stays
-        effective when only the manifest tail changes between turns.
+        ``memory_context``、``skills_context``、``source_manifest`` 和
+        notebook 清单作为单独的 ``---`` 分隔的部分附加在主系统提示词之后，
+        以便当只有清单尾部在轮次之间变化时提示词缓存仍然有效。
         """
         system_parts = [system_prompt]
         if context.memory_context:
@@ -1262,17 +1227,17 @@ class AgenticChatPipeline:
         return mm_result.messages, mm_result.images_stripped
 
     # ------------------------------------------------------------------
-    # Tool selection + scheme construction
+    # 工具选择 + 模式构建
     # ------------------------------------------------------------------
     def _compose_enabled_tools(self, context: UnifiedContext) -> list[str]:
-        """Resolve the tool set for this turn via the shared composition policy.
+        """通过共享组合策略解析本轮的工具集。
 
-        Auto-mount flags are resolved against chat's own context:
+        自动挂载标志根据 chat 自身的上下文解析：
 
-        - ``has_kb`` — iff the user attached any KB.
-        - ``has_sources`` — iff the turn has a non-empty source index
-          (notebook / book / history / question / attachment).
-        - ``has_memory`` — iff the active user has memory content.
+        - ``has_kb`` — 当且仅当用户附加了任何 KB。
+        - ``has_sources`` — 当且仅当本轮有非空的源索引
+          （笔记本 / 书籍 / 历史 / 问题 / 附件）。
+        - ``has_memory`` — 当且仅当活跃用户有记忆内容。
         """
         return compose_enabled_tools(
             registry=self.registry,
@@ -1290,16 +1255,14 @@ class AgenticChatPipeline:
         enabled_tools: list[str],
         context: UnifiedContext,
     ) -> list[dict[str, Any]]:
-        """Return per-turn OpenAI tool schemas, with per-tool constraints.
+        """返回每轮的 OpenAI 工具 schema，附带每工具约束。
 
-        - ``rag.kb_name`` is restricted to the attached KBs as an enum.
-        - ``read_source.source_id`` is restricted to the attached source
-          ids as an enum (this makes the LLM less likely to hallucinate
-          ids and lets the OpenAI SDK validate the call client-side).
-        - ``save_to_notebook.notebook_id`` is restricted to the active
-          user's actual notebook ids — mirrors the dropdown a human sees
-          in the Save-to-Notebook dialog so the model literally cannot
-          save into a notebook the user doesn't have.
+        - ``rag.kb_name`` 限制为已附加的 KB 的枚举。
+        - ``read_source.source_id`` 限制为已附加源 ID 的枚举
+          （这使 LLM 不太可能幻觉出 ID，并允许 OpenAI SDK 在客户端验证调用）。
+        - ``save_to_notebook.notebook_id`` 限制为活跃用户的实际笔记本 ID
+          —— 镜像人类在"保存到笔记本"对话框中看到的下拉菜单，使模型
+          从字面上无法保存到用户没有的笔记本。
         """
         schemas = self.registry.build_openai_schemas(enabled_tools)
         kb_choices = self._selected_kbs(context)
@@ -1334,7 +1297,7 @@ class AgenticChatPipeline:
         return extract_answer_now_context(context)
 
     # ------------------------------------------------------------------
-    # Tool kwarg augmentation
+    # 工具参数增强
     # ------------------------------------------------------------------
     def _augment_tool_kwargs(
         self,
@@ -1370,13 +1333,12 @@ class AgenticChatPipeline:
             if task_dir is not None:
                 kwargs.setdefault("output_dir", str(task_dir / "web_search"))
         elif tool_name == "read_source":
-            # ReadSourceTool reads from this per-turn map rather than from
-            # any shared state, so each turn's sources stay isolated.
+            # ReadSourceTool 从此每轮映射而非共享状态中读取，因此每轮的源保持隔离。
             kwargs["source_index"] = self._source_index(context)
         return kwargs
 
     # ------------------------------------------------------------------
-    # Tool / KB metadata helpers
+    # 工具 / KB 元数据辅助
     # ------------------------------------------------------------------
     def _retrieve_trace_metadata(
         self,
@@ -1386,19 +1348,17 @@ class AgenticChatPipeline:
         tool_name: str,
         tool_args: dict[str, Any],
     ) -> dict[str, Any] | None:
-        """Retrieve-flavoured metadata for ``rag`` progress events.
+        """``rag`` 进度事件的检索风格元数据。
 
-        Each rag call already has its own ``tool_meta`` (with its own
-        ``call_id``); we derive a "retrieve" variant of it so the in-tool
-        progress events (provider selection, chunk retrieval, etc.) stay
-        attached to the same sub-trace but show as
-        ``trace_role=retrieve`` for the chevron icon. For non-rag tools
-        we return ``None`` so the executor skips the retrieve-progress
-        surface.
+        每次 rag 调用已有自己的 ``tool_meta``（含自己的 ``call_id``）；
+        我们派生一个"检索"变体，使工具内进度事件（提供商选择、分块检索等）
+        保持附加在同一子追踪上，但以 ``trace_role=retrieve`` 显示以获取
+        折叠箭头图标。对于非 rag 工具，我们返回 ``None`` 以使执行器
+        跳过检索进度表面。
         """
         if tool_name != "rag":
             return None
-        _ = context  # context unused for now; kept for parity with solve's variant
+        _ = context  # context 暂时未使用；保留以与 solve 的变体保持一致
         return derive_trace_metadata(
             tool_meta,
             label=self._t("labels.retrieve", default="Retrieve"),
@@ -1435,14 +1395,14 @@ class AgenticChatPipeline:
         return "- 无" if self.language == "zh" else "- none"
 
     # ------------------------------------------------------------------
-    # LLM call helpers
+    # LLM 调用辅助
     # ------------------------------------------------------------------
     async def _stream_messages(
         self,
         messages: list[dict[str, Any]],
         max_tokens: int,
     ):
-        """Stream a single tool-less LLM call. Used by answer-now."""
+        """流式调用一次无工具的 LLM。用于立即回答。"""
         output_chars = 0
         async for chunk in llm_stream(
             prompt="",
@@ -1462,11 +1422,10 @@ class AgenticChatPipeline:
         self._usage.add_estimated(input_chars=input_chars, output_chars=output_chars)
 
     def _build_openai_client(self):
-        """Build an OpenAI/Azure async client from the pipeline's LLM config.
+        """从管线的 LLM 配置构建 OpenAI/Azure 异步客户端。
 
-        Kept as a method (rather than always reusing ``self._client``) so any
-        downstream test or future caller that wants a fresh client per call
-        can still get one without poking at module-level state.
+        保留为方法（而非始终复用 ``self._client``），以便任何下游测试或
+        未来的调用方在需要每次调用使用新客户端时仍可获取，而无需触碰模块级状态。
         """
         return build_openai_client(self._client_config)
 
@@ -1483,14 +1442,13 @@ class AgenticChatPipeline:
         return can_use_native_tool_calling(binding=self.binding, model=self.model)
 
     # ------------------------------------------------------------------
-    # YAML prompt lookup
+    # YAML 提示词查找
     # ------------------------------------------------------------------
     def _t(self, key: str, default: str = "", **kwargs: Any) -> str:
-        """Look up a YAML-loaded prompt by dotted key.
+        """通过点分键查找 YAML 加载的提示词。
 
-        Returns ``default`` when missing. Renders via ``str.format`` when
-        ``kwargs`` are provided; missing placeholders leave the template
-        unrendered instead of crashing the pipeline.
+        缺失时返回 ``default``。当提供 ``kwargs`` 时通过 ``str.format`` 渲染；
+        缺失的占位符使模板保持未渲染状态，而不是使管线崩溃。
         """
         value: Any = self._prompts
         for part in key.split("."):
@@ -1508,18 +1466,17 @@ class AgenticChatPipeline:
 
 
 # ---------------------------------------------------------------------------
-# Loop host adapter
+# 循环主机适配器
 # ---------------------------------------------------------------------------
 
 
 class _ChatLoopHost:
-    """Bind the chat pipeline + current turn's context/stream into a single
-    object the generic loop primitive can call back into.
+    """将聊天管线 + 当前轮次的 context/stream 绑定为单个对象，
+    通用循环原语可以回调到该对象。
 
-    All chat-specific behavior — trace metadata, tool dispatch, pause/terminate,
-    final emission, force-finalize — lives as methods on
-    :class:`AgenticChatPipeline`; this adapter just routes the
-    :class:`~aidlearning.core.agentic.LoopHost` protocol calls to them.
+    所有 chat 专属行为 —— 追踪元数据、工具调度、暂停/终止、
+    最终发送、强制完成 —— 都作为 :class:`AgenticChatPipeline` 的方法存在；
+    此适配器仅将 :class:`~aidlearning.core.agentic.LoopHost` 协议调用路由到它们。
     """
 
     def __init__(
@@ -1545,7 +1502,7 @@ class _ChatLoopHost:
         iteration: int,
         max_iterations: int,
     ) -> None:
-        """Inject the per-iteration counter so the model can pace itself."""
+        """注入每次迭代计数器以便模型自行调节节奏。"""
         self._pipeline._append_iteration_marker(
             messages=messages,
             iteration=iteration,
@@ -1610,15 +1567,14 @@ class _ChatLoopHost:
 
 
 # ---------------------------------------------------------------------------
-# Forced-finish protocol validation (chat-local because the violation key
-# vocabulary mirrors chat's repair-copy keys).
+# 强制完成协议验证（chat 本地，因为违规键词汇镜像 chat 的修复文案键）。
 # ---------------------------------------------------------------------------
 
 
 def _classify_forced_finish_violation(step: LabeledStepResult) -> str | None:
-    """Lightweight violation classifier for the FINISH-only finalization
-    loop. With ``allowed_labels=(FINISH,)`` and ``tool_schemas=None``, the
-    only possible violations are missing label / inline duplicate label.
+    """用于仅 FINISH 完成循环的轻量级违规分类器。
+    当 ``allowed_labels=(FINISH,)`` 且 ``tool_schemas=None`` 时，
+    唯一可能的违规是缺失标签 / 行内重复标签。
     """
     if step.label == LABEL_UNKNOWN:
         return "missing_label"

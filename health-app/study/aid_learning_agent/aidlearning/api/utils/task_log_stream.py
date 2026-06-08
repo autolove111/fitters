@@ -121,7 +121,7 @@ class KnowledgeTaskStreamManager:
 
 @contextlib.contextmanager
 def capture_task_logs(task_id: str):
-    """Forward all logs bound to ``task_id`` into the task's SSE stream."""
+    """将所有绑定到 task_id 的日志转发到任务的 SSE 流中。"""
     manager = KnowledgeTaskStreamManager.get_instance()
     manager.ensure_task(task_id)
 

@@ -1,4 +1,4 @@
-"""AidLearning logging bootstrap."""
+"""AidLearning 日志引导程序。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _remove_managed_handlers(root: logging.Logger) -> None:
 
 
 def configure_logging(force: bool = False) -> LoggingConfig:
-    """Configure stdlib logging once for the whole process."""
+    """为整个进程一次性配置标准库日志。"""
     global _CONFIGURED
 
     config = load_logging_config()

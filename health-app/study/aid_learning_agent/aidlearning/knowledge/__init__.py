@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Knowledge base package exports (lazy-loaded)."""
+"""知识库包导出（延迟加载）。"""
 
 from __future__ import annotations
 

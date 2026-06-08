@@ -1,1 +1,1 @@
-"""Runtime bootstrap metadata for built-in capabilities."""
+"""内置能力的运行时引导元数据。"""

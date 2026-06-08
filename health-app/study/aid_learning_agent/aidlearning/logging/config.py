@@ -1,4 +1,4 @@
-"""Logging configuration loaded from runtime settings."""
+"""从运行时设置加载的日志配置。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def get_default_log_dir() -> Path:
 
 
 def load_logging_config() -> LoggingConfig:
-    """Load logging settings from ``data/user/settings/main.yaml``."""
+    """从 ``data/user/settings/main.yaml`` 加载日志设置。"""
     try:
         from aidlearning.services.config import (
             PROJECT_ROOT,

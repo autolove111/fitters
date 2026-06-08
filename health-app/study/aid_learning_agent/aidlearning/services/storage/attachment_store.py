@@ -1,29 +1,25 @@
-"""Persistent storage for chat attachments.
+"""聊天附件的持久化存储。
 
-The chat turn runtime writes the bytes of every uploaded attachment here
-*before* the document extractor runs. Once persisted, the URL is recorded on
-the message and the in-memory base64 is dropped (extractor still clears it
-for office docs to save DB space). The frontend later fetches the original
-file via the :mod:`aidlearning.api.routers.attachments` endpoint to render a
-preview.
+聊天轮次运行时在文档提取器运行*之前*将每个上传附件的字节写入此处。
+持久化后，URL 被记录到消息上，内存中的 base64 被丢弃
+（提取器仍会清除 Office 文档的 base64 以节省数据库空间）。
+前端随后通过 :mod:`aidlearning.api.routers.attachments` 端点获取原始文件以渲染预览。
 
-Design goals
-------------
+设计目标
+--------
 
-* **Local disk by default**: works in single-container Docker setups (the
-  ``data/user`` volume is already mounted) and on plain Linux servers without
-  any extra infrastructure.
-* **Pluggable**: a thin :class:`AttachmentStore` protocol leaves room for an
-  S3 / MinIO / GCS backend without touching call-sites.
-* **Path-safe**: filenames coming over the WS are sanitised; resolved paths
-  must remain inside the configured root.
+* **默认本地磁盘**：适用于单容器 Docker 部署（``data/user`` 卷已挂载）
+  和纯 Linux 服务器，无需额外基础设施。
+* **可插拔**：精简的 :class:`AttachmentStore` 协议为 S3 / MinIO / GCS
+  后端留出空间，无需修改调用点。
+* **路径安全**：通过 WS 传入的文件名会被清理；解析后的路径必须保持在
+  配置的根目录内。
 
-The on-disk layout is::
+磁盘布局为::
 
     {root}/{session_id}/{attachment_id}_{filename}
 
-The ``attachment_id`` prefix prevents collisions when the same filename is
-uploaded twice in the same session.
+``attachment_id`` 前缀防止同一会话中上传同名文件时的冲突。
 """
 
 from __future__ import annotations
@@ -43,21 +39,21 @@ logger = logging.getLogger(__name__)
 
 
 _DEFAULT_SUBPATH = ("workspace", "chat", "attachments")
-# Public route prefix served by aidlearning.api.routers.attachments
+# 由 aidlearning.api.routers.attachments 提供的公共路由前缀
 _PUBLIC_URL_PREFIX = "/api/attachments"
 
 
 def safe_filename(name: str) -> str:
-    """Replace filesystem-unsafe characters with underscores."""
+    """将文件系统不安全的字符替换为下划线。"""
     return re.sub(r'[\\/:*?"<>|]', "_", name).strip(". ")
 
 
 def _coerce_filename(filename: str) -> str:
-    """Reduce *filename* to a safe basename.
+    """将文件名缩减为安全的基本名称。
 
-    * Strips any directory components (defends against ``../`` traversal).
-    * Replaces filesystem-unsafe characters.
-    * Falls back to ``"file"`` if the result is empty.
+    * 去除任何目录组件（防止 ``../`` 遍历攻击）。
+    * 替换文件系统不安全的字符。
+    * 如果结果为空则回退为 ``"file"``。
     """
     base = os.path.basename(filename or "")
     cleaned = safe_filename(base)
@@ -66,11 +62,11 @@ def _coerce_filename(filename: str) -> str:
 
 @runtime_checkable
 class AttachmentStore(Protocol):
-    """Storage backend for chat attachments.
+    """聊天附件的存储后端。
 
-    Implementations must be safe to call from an asyncio context. The default
-    :class:`LocalDiskAttachmentStore` uses ``run_in_executor`` to keep blocking
-    disk I/O off the event loop.
+    实现必须可以从 asyncio 上下文中安全调用。
+    默认的 :class:`LocalDiskAttachmentStore` 使用 ``run_in_executor``
+    将阻塞磁盘 I/O 移出事件循环。
     """
 
     async def put(
@@ -82,34 +78,32 @@ class AttachmentStore(Protocol):
         data: bytes,
         mime_type: str = "",
     ) -> str:
-        """Persist *data* and return a public URL the frontend can fetch.
+        """持久化 *data* 并返回前端可获取的公共 URL。
 
-        The returned URL is relative to the API origin (e.g.
-        ``"/api/attachments/<sid>/<aid>/<name>"``). Raising on failure is
-        fine — callers log the error and proceed without ``url``.
+        返回的 URL 相对于 API 源（如 ``"/api/attachments/<sid>/<aid>/<name>"``）。
+        失败时抛出异常是可以的 —— 调用方会记录错误并在没有 ``url`` 的情况下继续。
         """
 
     async def delete_session(self, session_id: str) -> None:
-        """Best-effort cleanup of all attachments for *session_id*."""
+        """尽力清理 *session_id* 的所有附件。"""
 
     async def delete_attachment(self, session_id: str, attachment_id: str) -> None:
-        """Best-effort cleanup of a single attachment identified by *attachment_id*."""
+        """尽力清理由 *attachment_id* 标识的单个附件。"""
 
     def resolve_path(self, *, session_id: str, attachment_id: str, filename: str) -> Path | None:
-        """Return the absolute path on disk for an attachment, or ``None``
-        if it does not exist or escapes the storage root.
+        """返回附件在磁盘上的绝对路径，如果不存在或超出存储根目录则返回 ``None``。
 
-        Used by the static router to serve files; remote-storage backends can
-        return ``None`` and the router will then fall back to a redirect.
+        由静态路由器用于提供文件服务；远程存储后端可以返回 ``None``，
+        路由器将回退到重定向。
         """
 
 
 class LocalDiskAttachmentStore:
-    """Default :class:`AttachmentStore` backend writing to local disk.
+    """默认的 :class:`AttachmentStore` 后端，写入本地磁盘。
 
-    The root directory defaults to ``data/user/workspace/chat/attachments``
-    under the project root (matching :class:`PathService`'s public outputs).
-    Override via ``data/user/settings/system.json`` ``chat_attachment_dir``.
+    根目录默认为项目根目录下的 ``data/user/workspace/chat/attachments``
+    （与 :class:`PathService` 的公开输出匹配）。
+    可通过 ``data/user/settings/system.json`` 的 ``chat_attachment_dir`` 覆盖。
     """
 
     def __init__(self, root: Path | None = None) -> None:
@@ -129,12 +123,12 @@ class LocalDiskAttachmentStore:
         return (self._root / sid).resolve()
 
     def _safe_join(self, session_id: str, name: str) -> Path | None:
-        """Join *name* under the session dir and confirm the result stays
-        inside ``self._root``. Returns ``None`` if traversal is detected.
+        """将 *name* 连接到会话目录下，并确认结果保持在 ``self._root`` 内。
+        如果检测到路径遍历则返回 ``None``。
         """
         session_dir = self._session_dir(session_id)
-        # Resolve the candidate even if it doesn't exist yet — prevents a
-        # symlink-based attack that would point outside the root once created.
+        # 即使候选路径尚不存在也进行解析 —— 防止基于符号链接的攻击，
+        # 该攻击可能在创建后指向根目录之外。
         candidate = (session_dir / name).resolve()
         try:
             candidate.relative_to(self._root.resolve())
@@ -151,7 +145,7 @@ class LocalDiskAttachmentStore:
         data: bytes,
         mime_type: str = "",
     ) -> str:
-        del mime_type  # not needed for local disk
+        del mime_type  # 本地磁盘不需要
         stored = self._stored_filename(attachment_id, filename)
         target = self._safe_join(session_id, stored)
         if target is None:
@@ -160,10 +154,9 @@ class LocalDiskAttachmentStore:
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, self._write_sync, target, data)
 
-        # The router uses the same _coerce_filename rules to look up the file,
-        # so the public URL must use the sanitised pieces. Each path segment
-        # is percent-encoded so spaces/Unicode/punctuation in filenames flow
-        # through fetch / <iframe> consistently across browsers.
+        # 路由器使用相同的 _coerce_filename 规则查找文件，
+        # 因此公共 URL 必须使用清理后的片段。每个路径段都经过百分比编码，
+        # 使文件名中的空格/Unicode/标点符号在各浏览器的 fetch / <iframe> 中一致传递。
         sid = quote(_coerce_filename(session_id), safe="")
         aid = quote(attachment_id, safe="")
         name = quote(_coerce_filename(filename), safe="")
@@ -172,8 +165,7 @@ class LocalDiskAttachmentStore:
     @staticmethod
     def _write_sync(target: Path, data: bytes) -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
-        # Atomic-ish write: write to .tmp then rename. Avoids exposing a
-        # half-written file via the static handler.
+        # 原子写入：先写入 .tmp 再重命名。避免通过静态处理器暴露写入一半的文件。
         tmp = target.with_suffix(target.suffix + ".tmp")
         try:
             with tmp.open("wb") as fh:
@@ -236,10 +228,10 @@ _stores: dict[str, AttachmentStore] = {}
 
 
 def get_attachment_store() -> AttachmentStore:
-    """Return the process-wide :class:`AttachmentStore`.
+    """返回进程范围的 :class:`AttachmentStore`。
 
-    Today this is always a :class:`LocalDiskAttachmentStore`; future S3/MinIO
-    backends can be selected here based on an env var.
+    目前始终是 :class:`LocalDiskAttachmentStore`；
+    未来的 S3/MinIO 后端可在此基于环境变量选择。
     """
     root = _attachment_root()
     key = str(root)
@@ -256,5 +248,5 @@ def _attachment_root() -> Path:
 
 
 def reset_attachment_store() -> None:
-    """Reset the singleton — only meant for tests."""
+    """重置单例 —— 仅用于测试。"""
     _stores.clear()

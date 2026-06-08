@@ -1,19 +1,19 @@
 """
-Prompt Service
-==============
+提示词服务
+==========
 
-Unified prompt management for all AidLearning modules.
+所有 AidLearning 模块的统一提示词管理。
 
-Usage:
+用法：
     from aidlearning.services.prompt import get_prompt_manager, PromptManager
 
-    # Get singleton manager
+    # 获取单例管理器
     pm = get_prompt_manager()
 
-    # Load prompts for an agent
+    # 加载 Agent 的提示词
     prompts = pm.load_prompts("solve", "solve_agent", language="en")
 
-    # Get specific prompt
+    # 获取特定提示词
     system_prompt = pm.get_prompt(prompts, "system", "base")
 """
 

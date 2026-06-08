@@ -1,4 +1,4 @@
-"""Shared LLM response data models."""
+"""共享的 LLM 响应数据模型。"""
 
 from collections.abc import AsyncGenerator
 import logging
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class TutorResponse(BaseModel):
-    """LLM completion response container."""
+    """LLM 补全响应容器。"""
 
     content: str
     raw_response: dict[str, object] = Field(default_factory=dict)
@@ -27,7 +27,7 @@ class TutorResponse(BaseModel):
 
 
 class TutorStreamChunk(BaseModel):
-    """Chunk emitted during streamed LLM responses."""
+    """流式 LLM 响应中输出的分块数据。"""
 
     delta: str
     content: str = ""
@@ -39,7 +39,7 @@ class TutorStreamChunk(BaseModel):
 
 AsyncStreamGenerator = AsyncGenerator[TutorStreamChunk, None]
 
-# Backwards-compatible type aliases used by some callers/tests.
+# 向后兼容的类型别名，供部分调用方/测试使用。
 LLMResponse = TutorResponse
 StreamChunk = TutorStreamChunk
 

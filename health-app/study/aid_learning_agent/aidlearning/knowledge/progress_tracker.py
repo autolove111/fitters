@@ -1,5 +1,5 @@
 """
-Progress Tracker - Tracks knowledge base initialization progress
+进度跟踪器 - 跟踪知识库初始化进度
 """
 
 import asyncio
@@ -10,7 +10,7 @@ import json
 import logging
 from pathlib import Path
 
-# Use unified logging system
+# 使用统一日志系统
 
 _logger = logging.getLogger(__name__)
 
@@ -20,38 +20,38 @@ def _logger_instance():
 
 
 class ProgressStage(Enum):
-    """Initialization stage"""
+    """初始化阶段"""
 
-    INITIALIZING = "initializing"  # Initializing
-    PROCESSING_DOCUMENTS = "processing_documents"  # Processing documents
-    PROCESSING_FILE = "processing_file"  # Processing single file
-    COMPLETED = "completed"  # Completed
-    ERROR = "error"  # Error
+    INITIALIZING = "initializing"  # 初始化中
+    PROCESSING_DOCUMENTS = "processing_documents"  # 处理文档
+    PROCESSING_FILE = "processing_file"  # 处理单个文件
+    COMPLETED = "completed"  # 已完成
+    ERROR = "error"  # 错误
 
 
 class ProgressTracker:
-    """Progress tracker"""
+    """进度跟踪器"""
 
     def __init__(self, kb_name: str, base_dir: Path):
         self.kb_name = kb_name
         self.base_dir = base_dir
         self.kb_dir = base_dir / kb_name
         self.progress_file = self.kb_dir / ".progress.json"
-        self._callbacks: list = []  # Support multiple callbacks
-        self.task_id: str | None = None  # Task ID (for log identification)
+        self._callbacks: list = []  # 支持多个回调
+        self.task_id: str | None = None  # 任务 ID（用于日志标识）
 
     def set_callback(self, callback: Callable[[dict], None]):
-        """Set progress callback function (can be called multiple times to add multiple callbacks)"""
+        """设置进度回调函数（可多次调用以添加多个回调）"""
         if callback not in self._callbacks:
             self._callbacks.append(callback)
 
     def remove_callback(self, callback: Callable[[dict], None]):
-        """Remove progress callback function"""
+        """移除进度回调函数"""
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
     def _notify(self, progress: dict):
-        """Notify progress update (call all callbacks)"""
+        """通知进度更新（调用所有回调）"""
         from aidlearning.runtime.mode import is_server
 
         if is_server():
@@ -75,14 +75,14 @@ class ProgressTracker:
                 _logger_instance().debug("Progress callback error: %s", e)
 
     def _save_progress(self, progress: dict):
-        """Save progress to kb_config.json and local .progress.json file"""
-        # Save to kb_config.json (centralized config)
+        """将进度保存到 kb_config.json 和本地 .progress.json 文件"""
+        # 保存到 kb_config.json（集中配置）
         try:
             from aidlearning.knowledge.manager import KnowledgeBaseManager
 
             manager = KnowledgeBaseManager(base_dir=str(self.base_dir))
 
-            # Determine status based on stage
+            # 根据阶段确定状态
             stage = progress.get("stage", "")
             if stage == "completed":
                 status = "ready"
@@ -97,7 +97,7 @@ class ProgressTracker:
             else:
                 status = "initializing"
 
-            # Update kb_config.json with status and progress
+            # 更新 kb_config.json 的状态和进度
             manager.update_kb_status(
                 name=self.kb_name,
                 status=status,
@@ -119,8 +119,8 @@ class ProgressTracker:
         except Exception as e:
             _logger_instance().warning("Failed to save progress to kb_config.json: %s", e)
 
-        # Persist the last seen progress snapshot so websocket subscribers and
-        # page reloads can recover the live state without relying on in-memory callbacks.
+        # 持久化最近的进度快照，以便 websocket 订阅者和页面重新加载
+        # 可以恢复实时状态，而不依赖内存中的回调。
         try:
             self.kb_dir.mkdir(parents=True, exist_ok=True)
             temp_progress_file = self.progress_file.parent / f"{self.progress_file.name}.tmp"
@@ -145,7 +145,7 @@ class ProgressTracker:
         index_changed: bool | None = None,
         index_action: str | None = None,
     ):
-        """Update progress"""
+        """更新进度"""
         progress = {
             "kb_name": self.kb_name,
             "task_id": self.task_id,
@@ -168,7 +168,7 @@ class ProgressTracker:
             progress["error"] = error
             progress["stage"] = ProgressStage.ERROR.value
 
-        # Output to logger (terminal and log file)
+        # 输出到日志记录器（终端和日志文件）
         try:
             logger = _logger_instance()
             prefix = f"[{self.task_id}]" if self.task_id else ""
@@ -188,7 +188,7 @@ class ProgressTracker:
             else:
                 logger.info(progress_msg)
         except Exception:
-            # If unified logging fails unexpectedly, use stdlib logger as fallback.
+            # 如果统一日志意外失败，使用标准库日志记录器作为回退。
             fallback_logger = logging.getLogger("aidlearning.ProgressTracker")
             prefix = f"[{self.task_id}]" if self.task_id else ""
             fallback_logger.warning(
@@ -214,7 +214,7 @@ class ProgressTracker:
         self._notify(progress)
 
     def get_progress(self) -> dict | None:
-        """Get current progress"""
+        """获取当前进度"""
         if self.progress_file.exists():
             try:
                 with open(self.progress_file, encoding="utf-8") as f:
@@ -239,7 +239,7 @@ class ProgressTracker:
         return None
 
     def clear(self):
-        """Clear progress file"""
+        """清除进度文件"""
         if self.progress_file.exists():
             try:
                 self.progress_file.unlink()

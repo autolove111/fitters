@@ -1,4 +1,4 @@
-"""Runtime helpers for request-scoped model selection."""
+"""请求作用域模型选择的运行时辅助函数。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from aidlearning.services.llm.config import LLMConfig
 
 
 def llm_config_from_resolved(resolved: ResolvedLLMConfig) -> LLMConfig:
-    """Convert provider-runtime output into the LLM service config shape."""
+    """将提供商运行时输出转换为 LLM 服务配置格式。"""
     return LLMConfig(
         model=resolved.model,
         api_key=resolved.api_key,
@@ -28,14 +28,14 @@ def llm_config_from_resolved(resolved: ResolvedLLMConfig) -> LLMConfig:
 
 
 def resolve_llm_config_for_selection(selection: Any) -> LLMConfig:
-    """Resolve the LLM config for a chat/session selection reference."""
+    """解析聊天/会话选择引用的 LLM 配置。"""
     if selection is None:
         return llm_config_module.get_llm_config()
     return llm_config_from_resolved(resolve_llm_runtime_config(llm_selection=selection))
 
 
 def activate_llm_selection(selection: Any) -> tuple[LLMConfig, Token[LLMConfig | None]]:
-    """Resolve and install a scoped LLM config for the current async context."""
+    """为当前异步上下文解析并安装作用域 LLM 配置。"""
     config = resolve_llm_config_for_selection(selection)
     token = llm_config_module.set_scoped_llm_config(config)
     return config, token

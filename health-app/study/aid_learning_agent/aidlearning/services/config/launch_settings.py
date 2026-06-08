@@ -59,12 +59,11 @@ def _normalize_language(value: Any) -> str | None:
 
 
 def load_launch_settings(project_root: Path | None = None) -> LaunchSettings:
-    """Load ports and UI language for launcher-style entry points.
+    """加载启动器式入口点的端口和 UI 语言。
 
-    Launch ports come from ``data/user/settings/system.json``. Environment
-    variables are treated as explicit deployment overrides (for example Docker
-    port mapping), not as a second application configuration file. UI language
-    remains in ``data/user/settings/interface.json``.
+    启动端口来自 ``data/user/settings/system.json``。环境变量被视为
+    显式部署覆盖（例如 Docker 端口映射），而非第二个应用配置文件。
+    UI 语言保留在 ``data/user/settings/interface.json`` 中。
     """
 
     root = project_root or PROJECT_ROOT

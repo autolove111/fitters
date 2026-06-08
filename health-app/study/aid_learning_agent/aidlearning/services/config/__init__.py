@@ -1,4 +1,4 @@
-"""Configuration helpers backed by runtime files under data/user/settings."""
+"""基于 data/user/settings 下运行时文件的配置辅助模块。"""
 
 import importlib
 
@@ -29,8 +29,8 @@ from .runtime_settings import (
     load_system_settings,
 )
 
-# Re-export the loader module itself for code paths that monkeypatch via the
-# package namespace, e.g. ``aidlearning.services.config.loader.PROJECT_ROOT``.
+# 重新导出 loader 模块本身，用于通过包命名空间进行猴子补丁的代码路径，
+# 如 ``aidlearning.services.config.loader.PROJECT_ROOT``。
 loader = importlib.import_module(f"{__name__}.loader")
 
 __all__ = [
@@ -75,7 +75,7 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    """Lazy-load provider_runtime exports to avoid circular imports."""
+    """延迟加载 provider_runtime 导出以避免循环导入。"""
     if name in {
         "DEPRECATED_SEARCH_PROVIDERS",
         "NANOBOT_LLM_PROVIDERS",

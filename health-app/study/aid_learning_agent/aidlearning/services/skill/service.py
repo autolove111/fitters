@@ -2,20 +2,18 @@
 SkillService
 ============
 
-Loads user-authored SKILL.md files from ``data/user/workspace/skills/``.
+从 ``data/user/workspace/skills/`` 加载用户编写的 SKILL.md 文件。
 
-Each skill lives in its own directory:
+每个技能位于自己的目录中：
 
     data/user/workspace/skills/<name>/SKILL.md
 
-The file starts with a YAML frontmatter block holding ``name``,
-``description`` (and optionally ``triggers`` and ``tags``), followed by
-Markdown body that is injected verbatim into the chat system prompt when
-the skill is active.
+文件以 YAML frontmatter 块开头，包含 ``name``、``description``
+（以及可选的 ``triggers`` 和 ``tags``），后跟 Markdown 正文，
+当技能激活时会被原样注入到聊天系统提示中。
 
-A small ``.tags.json`` file next to the skill directories holds the
-canonical user-managed tag vocabulary so that tags can be created,
-renamed, or deleted independently of the skills that use them.
+技能目录旁的 ``.tags.json`` 小文件保存了规范的用户管理标签词汇表，
+以便标签可以独立于使用它们的技能进行创建、重命名或删除。
 """
 
 from __future__ import annotations
@@ -93,7 +91,7 @@ class TagExistsError(Exception):
 
 
 class SkillService:
-    """CRUD + selection for SKILL.md files under the user workspace."""
+    """用户工作空间下 SKILL.md 文件的增删改查与选择。"""
 
     def __init__(self, root: Path | None = None) -> None:
         self._root = root or (get_path_service().get_workspace_dir() / "skills")
@@ -102,7 +100,7 @@ class SkillService:
     def root(self) -> Path:
         return self._root
 
-    # ── path helpers ────────────────────────────────────────────────────
+    # ── 路径辅助方法 ────────────────────────────────────────────────────
 
     def _validate_name(self, name: str) -> str:
         candidate = (name or "").strip().lower()
@@ -116,7 +114,7 @@ class SkillService:
     def _skill_file(self, name: str) -> Path:
         return self._skill_dir(name) / "SKILL.md"
 
-    # ── tag helpers ─────────────────────────────────────────────────────
+    # ── 标签辅助方法 ─────────────────────────────────────────────────────
 
     @staticmethod
     def _normalize_tag(raw: Any) -> str:
@@ -183,7 +181,7 @@ class SkillService:
         return self._dedupe_tags(out)
 
     def _collect_skill_tags(self) -> list[str]:
-        """Scan all skills and collect tags present in their frontmatter."""
+        """扫描所有技能并收集其 frontmatter 中的标签。"""
         if not self._root.exists():
             return []
         found: list[str] = []
@@ -200,7 +198,7 @@ class SkillService:
         return found
 
     def _ensure_initialized_vocab(self) -> list[str]:
-        """Seed default tags on first access and backfill any tags found on skills."""
+        """首次访问时播种默认标签，并回填技能中发现的所有标签。"""
         vocab = self._read_tag_vocab()
         existed = self._tags_path().exists()
         if not existed:
@@ -210,7 +208,7 @@ class SkillService:
             self._write_tag_vocab(union)
         return union
 
-    # ── parsing ─────────────────────────────────────────────────────────
+    # ── 解析 ─────────────────────────────────────────────────────────
 
     @staticmethod
     def _parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
@@ -240,7 +238,7 @@ class SkillService:
         tags = self._tags_from_meta(meta)
         return SkillInfo(name=name, description=description, tags=tags)
 
-    # ── public read API ─────────────────────────────────────────────────
+    # ── 公开读取 API ─────────────────────────────────────────────────
 
     def list_skills(self) -> list[SkillInfo]:
         if not self._root.exists():
@@ -268,10 +266,10 @@ class SkillService:
         return SkillDetail(name=name, description=description, content=text, tags=tags)
 
     def load_for_context(self, names: list[str]) -> str:
-        """Render selected skills into a single system-prompt block.
+        """将选中的技能渲染为单一的系统提示块。
 
-        Frontmatter is stripped; body is concatenated under a shared header
-        so the LLM treats the section as authoritative behavior guidance.
+        去除 frontmatter；正文在共享标题下拼接，
+        使 LLM 将该部分视为权威的行为指导。
         """
         if not names:
             return ""
@@ -294,14 +292,14 @@ class SkillService:
             + "\n\n---\n\n".join(parts)
         )
 
-    # ── auto-select (keyword based, no LLM) ─────────────────────────────
+    # ── 自动选择（基于关键词，无 LLM）─────────────────────────────
 
     def auto_select(self, user_message: str, limit: int = 1) -> list[str]:
-        """Pick the most relevant skill(s) for the message via keyword scoring.
+        """通过关键词评分选择与消息最相关的技能。
 
-        Scoring rules (cheap and predictable):
-          - +3 for each frontmatter ``triggers`` term that appears in the message.
-          - +1 for each non-stopword token from ``description`` that appears.
+        评分规则（简单且可预测）：
+          - 消息中出现的 frontmatter ``triggers`` 术语 +3 分。
+          - 消息中出现的 ``description`` 非停用词 +1 分。
         """
         message = (user_message or "").lower()
         if not message.strip():
@@ -328,7 +326,7 @@ class SkillService:
         scored.sort(reverse=True)
         return [name for _, name in scored[: max(0, limit)]]
 
-    # ── public write API ────────────────────────────────────────────────
+    # ── 公开写入 API ────────────────────────────────────────────────
 
     def create(
         self,
@@ -406,7 +404,7 @@ class SkillService:
             raise SkillNotFoundError(slug)
         shutil.rmtree(target_dir)
 
-    # ── tag management API ─────────────────────────────────────────────
+    # ── 标签管理 API ─────────────────────────────────────────────
 
     def list_tags(self) -> list[str]:
         return self._ensure_initialized_vocab()
@@ -431,7 +429,7 @@ class SkillService:
             return old_tag
         new_vocab = [new_tag if t == old_tag else t for t in vocab]
         self._write_tag_vocab(new_vocab)
-        # Cascade: rewrite frontmatter on every skill that used the old tag.
+        # 级联：重写使用了旧标签的每个技能的 frontmatter。
         self._replace_tag_in_skills(old_tag, new_tag)
         return new_tag
 
@@ -444,7 +442,7 @@ class SkillService:
         self._write_tag_vocab(new_vocab)
         self._replace_tag_in_skills(tag, None)
 
-    # ── internal tag helpers ───────────────────────────────────────────
+    # ── 内部标签辅助方法 ───────────────────────────────────────────
 
     def _validate_tag_list(self, tags: list[str] | None) -> list[str]:
         if not tags:
@@ -459,7 +457,7 @@ class SkillService:
 
     def _merge_tags_into_vocab(self, new_tags: list[str]) -> None:
         if not new_tags:
-            # Still trigger init so the vocab file exists after first write.
+            # 仍然触发初始化，使词汇表文件在首次写入后存在。
             self._ensure_initialized_vocab()
             return
         vocab = self._ensure_initialized_vocab()
@@ -489,7 +487,7 @@ class SkillService:
             new_text = self._rewrite_frontmatter(detail.content, tags=updated)
             self._skill_file(entry.name).write_text(new_text, encoding="utf-8")
 
-    # ── content helpers ────────────────────────────────────────────────
+    # ── 内容辅助方法 ────────────────────────────────────────────────
 
     def _normalize_content(
         self,
@@ -499,11 +497,10 @@ class SkillService:
         *,
         tags: list[str] | None = None,
     ) -> str:
-        """Ensure the saved file has a valid frontmatter block with ``name``/``description``.
+        """确保保存的文件具有包含 ``name``/``description`` 的有效 frontmatter 块。
 
-        If the user-provided ``content`` already has frontmatter we patch the
-        ``name``, ``description`` and ``tags`` fields; otherwise we synthesise
-        a header.
+        如果用户提供的 ``content`` 已有 frontmatter，则修补 ``name``、
+        ``description`` 和 ``tags`` 字段；否则合成一个头部。
         """
         text = content if content is not None else ""
         if _FRONTMATTER_RE.match(text):

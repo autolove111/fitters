@@ -1,7 +1,7 @@
 """
-Interface (UI) settings reader.
+界面（UI）设置读取器。
 
-This is the canonical backend source for user-selected UI language/theme stored in:
+这是用户选择的 UI 语言/主题的权威后端数据源，存储在：
   data/user/settings/interface.json
 """
 
@@ -19,15 +19,15 @@ DEFAULT_UI_SETTINGS: dict[str, Any] = {
 
 
 def _interface_settings_file():
-    # Resolved on every call so a per-user PathService (set after auth)
-    # routes reads to the caller's own ``settings/interface.json`` instead
-    # of the admin scope frozen at import time.
+    # 每次调用时解析，以便每用户的 PathService（在认证后设置）
+    # 将读取路由到调用方自己的 ``settings/interface.json``，
+    # 而不是导入时冻结的管理员作用域。
     return get_path_service().get_settings_file("interface")
 
 
 def _normalize_language(language: Any, default: str = "en") -> str:
     """
-    Normalize language codes:
+    标准化语言代码：
     - en/english -> en
     - zh/chinese/cn -> zh
     """
@@ -41,7 +41,7 @@ def _normalize_language(language: Any, default: str = "en") -> str:
         if s in {"zh", "chinese", "cn"}:
             return "zh"
 
-    # Fall back to default
+    # 回退到默认值
     if isinstance(default, str):
         return _normalize_language(default, "en")
     return "en"
@@ -49,10 +49,10 @@ def _normalize_language(language: Any, default: str = "en") -> str:
 
 def get_ui_settings() -> dict[str, Any]:
     """
-    Read UI settings from interface.json with defaults.
+    从 interface.json 读取 UI 设置并应用默认值。
 
     Returns:
-        dict containing at least: {"theme": "...", "language": "..."}
+        至少包含以下键的字典：{"theme": "...", "language": "..."}
     """
     settings_file = _interface_settings_file()
     if settings_file.exists():
@@ -65,7 +65,7 @@ def get_ui_settings() -> dict[str, Any]:
             )
             return merged
         except Exception:
-            # On any parse error, fall back to defaults (safe)
+            # 任何解析错误时回退到默认值（安全）
             return DEFAULT_UI_SETTINGS.copy()
 
     return DEFAULT_UI_SETTINGS.copy()
@@ -73,11 +73,11 @@ def get_ui_settings() -> dict[str, Any]:
 
 def get_ui_language(default: str = "en") -> str:
     """
-    Get current UI language.
+    获取当前 UI 语言。
 
-    Priority:
+    优先级：
     1) interface.json
-    2) provided default
+    2) 提供的默认值
     3) 'en'
     """
     settings = get_ui_settings()

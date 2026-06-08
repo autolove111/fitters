@@ -1,9 +1,9 @@
-"""Real-time memory monitor for AidLearning.
+"""AidLearning 实时内存监控器。
 
-Continuously polls all memory layers and displays changes.
-Run this in a separate terminal while chatting.
+持续轮询所有内存层并显示变化。
+在聊天时请在另一个终端窗口中运行此脚本。
 
-Usage:
+用法：
     python scripts/memory_live.py [--interval 2]
 """
 
@@ -19,10 +19,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def get_state():
-    """Collect current state of all memory layers."""
+    """收集所有内存层的当前状态。"""
     state = {}
 
-    # Mid-term (SQLite)
+    # 中期记忆（SQLite）
     from aidlearning.services.path_service import get_path_service
     from aidlearning.utils.sqlite_compat import sqlite3 as sqlite3c
 
@@ -36,7 +36,7 @@ def get_state():
             state["fts_count"] = conn.execute("SELECT COUNT(*) FROM messages_fts").fetchone()[0]
         except Exception:
             state["fts_count"] = 0
-        # Last 3 messages
+        # 最近 3 条消息
         rows = conn.execute(
             "SELECT session_id, role, substr(content,1,80) as c, created_at "
             "FROM messages ORDER BY created_at DESC LIMIT 3"
@@ -47,7 +47,7 @@ def get_state():
         ]
         conn.close()
 
-    # Long-term (Markdown)
+    # 长期记忆（Markdown）
     from aidlearning.memory.shared.paths import memory_root, L2_TARGETS, L3_SLOTS
 
     mem_root = memory_root()
@@ -69,7 +69,7 @@ def get_state():
         else:
             state["l3"][slot] = None
 
-    # L1 traces
+    # L1 追踪
     td = mem_root / "trace"
     state["traces"] = {}
     if td.exists():
@@ -79,7 +79,7 @@ def get_state():
                 total = sum(sum(1 for _ in open(f, encoding="utf-8")) for f in files)
                 state["traces"][d.name] = {"files": len(files), "events": total}
 
-    # Buffers (short-term)
+    # 缓冲区（短期记忆）
     try:
         from aidlearning.memory.short_term.buffer_manager import get_buffer_manager
         mgr = get_buffer_manager()
@@ -97,14 +97,14 @@ def get_state():
 
 
 def format_state(state, prev_state=None):
-    """Format state as display string, highlighting changes."""
+    """将状态格式化为显示字符串，高亮显示变化。"""
     lines = []
     lines.append("=" * 60)
     lines.append("  AidLearning Memory Live Monitor")
     lines.append("  Press Ctrl+C to stop")
     lines.append("=" * 60)
 
-    # Short-term
+    # 短期记忆
     lines.append("")
     lines.append("[1] SHORT-TERM (Buffer)")
     lines.append("-" * 40)
@@ -121,7 +121,7 @@ def format_state(state, prev_state=None):
             lines.append(f"  Session: {sid}{changed}")
             lines.append(f"    Window: {info['messages']} msgs | Summary: {info['summary_len']} chars")
 
-    # Mid-term
+    # 中期记忆
     lines.append("")
     lines.append("[2] MID-TERM (SQLite)")
     lines.append("-" * 40)
@@ -140,7 +140,7 @@ def format_state(state, prev_state=None):
         for r in recent:
             lines.append(f"    [{r['sid']}] {r['role']}: {r['content'][:60]}")
 
-    # Long-term
+    # 长期记忆
     lines.append("")
     lines.append("[3] LONG-TERM (Markdown)")
     lines.append("-" * 40)
@@ -166,7 +166,7 @@ def format_state(state, prev_state=None):
         else:
             lines.append(f"  L3/{slot}.md: NOT CREATED")
 
-    # L1 traces
+    # L1 追踪
     lines.append("")
     lines.append("[4] L1 TRACES")
     lines.append("-" * 40)
@@ -190,8 +190,8 @@ def format_state(state, prev_state=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Live memory monitor")
-    parser.add_argument("--interval", type=float, default=2, help="Poll interval in seconds")
+    parser = argparse.ArgumentParser(description="实时内存监控器")
+    parser.add_argument("--interval", type=float, default=2, help="轮询间隔（秒）")
     args = parser.parse_args()
 
     prev_state = None
@@ -204,7 +204,7 @@ def main():
             prev_state = state
             time.sleep(args.interval)
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print("\n已停止。")
 
 
 if __name__ == "__main__":

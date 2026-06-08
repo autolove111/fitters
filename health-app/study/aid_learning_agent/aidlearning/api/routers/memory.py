@@ -1,30 +1,29 @@
-"""Memory v3 API — workbench backend.
+"""Memory v3 API — 工作台后端。
 
-Three layers, three modes (update / audit / dedup). Long-running work
-is owned by the :mod:`runs` manager so a refresh / nav-away does not
-kill it; clients re-attach by polling ``/runs/{id}/events?since=N``.
+三层记忆，三种模式（更新 / 审计 / 去重）。长时间运行的任务
+由 runs 管理器持有，刷新页面或导航离开不会中断；客户端通过
+轮询 /runs/{id}/events?since=N 重新接入。
 
-- ``GET  /overview``                              → all 11 docs' state + L1 backlog
-- ``GET  /doc/{layer}/{key}``                     → raw MD
-- ``GET  /doc/{layer}/{key}/lines``               → line-numbered view
-- ``PUT  /doc/{layer}/{key}``                     → user-edited save
-- ``DELETE /doc/{layer}/{key}/entry/{id}``        → drop one entry
-- ``POST /runs/start``                            → start update/audit/dedup; returns run_id
-- ``GET  /runs/{id}``                             → run state
-- ``GET  /runs/{id}/events?since=N``              → SSE-replay events from cursor N
-- ``POST /runs/{id}/cancel``                      → cooperative cancellation
-- ``POST /runs/{id}/undo``                        → restore latest run write
-- ``GET  /runs?layer=L2&key=chat``                → active+recent runs for one doc
-- ``GET  /settings``                              → memory: settings subtree
-- ``PUT  /settings``                              → save memory: settings subtree
-- ``GET  /trace/{surface}``                       → paginated L1 events
-- ``DELETE /trace/{surface}/day/{date}``          → drop one day of trace
-- ``DELETE /trace/{surface}``                     → drop all trace for a surface
-- ``GET  /backup``                                → list v1-migration backup dirs (if any)
+- GET  /overview                              → 全部 11 个文档状态 + L1 积压
+- GET  /doc/{layer}/{key}                     → 原始 MD
+- GET  /doc/{layer}/{key}/lines               → 带行号的视图
+- PUT  /doc/{layer}/{key}                     → 用户编辑保存
+- DELETE /doc/{layer}/{key}/entry/{id}        → 删除单条记录
+- POST /runs/start                            → 启动更新/审计/去重；返回 run_id
+- GET  /runs/{id}                             → 运行状态
+- GET  /runs/{id}/events?since=N              → 从游标 N 开始的 SSE 回放事件
+- POST /runs/{id}/cancel                      → 协作式取消
+- POST /runs/{id}/undo                        → 恢复最近一次运行的写入
+- GET  /runs?layer=L2&key=chat                → 单个文档的活跃+近期运行
+- GET  /settings                              → memory: 设置子树
+- PUT  /settings                              → 保存 memory: 设置子树
+- GET  /trace/{surface}                       → 分页 L1 事件
+- DELETE /trace/{surface}/day/{date}          → 删除某天的追踪记录
+- DELETE /trace/{surface}                     → 删除某 surface 的所有追踪
+- GET  /backup                                → 列出 v1 迁移备份目录（如有）
 
-The legacy per-mode endpoints (``POST /doc/{layer}/{key}/update`` etc.)
-are kept for the moment as thin wrappers that start a run and stream
-its events — older clients keep working.
+旧版按模式划分的端点（POST /doc/{layer}/{key}/update 等）
+暂时保留为薄包装，启动运行并流式传输事件——旧客户端仍可正常工作。
 """
 
 from __future__ import annotations
@@ -56,7 +55,7 @@ router = APIRouter()
 Layer = Literal["L2", "L3"]
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────
+# ── 辅助函数 ──────────────────────────────────────────────────────────────
 
 
 def _validate_doc_key(layer: Layer, key: str) -> None:
@@ -78,7 +77,7 @@ def _validate_surface(surface: str) -> Surface:
     return surface  # type: ignore[return-value]
 
 
-# ── Overview / list ──────────────────────────────────────────────────────
+# ── 概览 / 列表 ──────────────────────────────────────────────────────────
 
 
 @router.get("/overview")

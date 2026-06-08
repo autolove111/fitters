@@ -1,9 +1,8 @@
-"""Compatibility adapter for legacy question-generation entry points.
+"""遗留问题生成入口的兼容适配器。
 
-The old ``AgentCoordinator`` implementation was replaced by
-``QuestionPipeline``. A few API/tool modules still import the coordinator
-name, so this module preserves that surface while delegating all real work
-to the new pipeline.
+旧的 ``AgentCoordinator`` 实现已被 ``QuestionPipeline`` 替代。
+部分 API/工具模块仍然导入 coordinator 名称，因此本模块保留该接口，
+同时将所有实际工作委托给新管线。
 """
 
 from __future__ import annotations
@@ -29,11 +28,11 @@ WsCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
 
 class AgentCoordinator:
-    """Legacy facade backed by :class:`QuestionPipeline`.
+    """由 :class:`QuestionPipeline` 支持的遗留门面类。
 
-    New code should prefer ``DeepQuestionCapability`` or ``QuestionPipeline``
-    directly. This class exists so older WebSocket routes and the
-    ``tools.question.exam_mimic`` helper keep importing and running.
+    新代码应直接使用 ``DeepQuestionCapability`` 或 ``QuestionPipeline``。
+    此类存在的目的是让旧的 WebSocket 路由和 ``tools.question.exam_mimic``
+    辅助函数可以继续导入和运行。
     """
 
     def __init__(
@@ -48,8 +47,8 @@ class AgentCoordinator:
         enabled_tools: list[str] | None = None,
         enable_idea_rag: bool | None = None,
     ) -> None:
-        # The new pipeline reads provider settings from the shared config
-        # service. Keep these attributes only for compatibility/debugging.
+        # 新管线从共享配置服务读取提供商设置。
+        # 保留这些属性仅用于兼容性/调试。
         self.api_key = api_key
         self.base_url = base_url
         self.api_version = api_version
@@ -72,7 +71,7 @@ class AgentCoordinator:
         question_types: list[str] | None = None,
         per_type_counts: dict[str, int] | None = None,
     ) -> dict[str, Any]:
-        """Generate a quiz from a topic using the new pipeline."""
+        """使用新管线从主题生成测验。"""
 
         context = self._build_context(user_message=user_topic)
         pipeline = self._build_pipeline()
@@ -98,7 +97,7 @@ class AgentCoordinator:
         max_questions: int = 10,
         paper_mode: str = "upload",
     ) -> dict[str, Any]:
-        """Generate mimic questions from an uploaded PDF or parsed paper dir."""
+        """从上传的 PDF 或已解析的试卷目录生成模拟题目。"""
 
         paper_path = str(exam_paper_path or "").strip()
         if not paper_path:
@@ -177,7 +176,7 @@ class AgentCoordinator:
         stream: StreamBus,
         pipeline_call: Awaitable[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Run a pipeline coroutine and forward its stream events if possible."""
+        """运行管线协程并在可能时转发其流事件。"""
 
         forwarder = asyncio.create_task(self._forward_stream(stream))
         try:

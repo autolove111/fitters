@@ -1,32 +1,25 @@
-r"""One streaming LLM call with protocol-label routing.
+r"""带协议标签路由的单次流式 LLM 调用。
 
-The core single-round-trip primitive. Given an OpenAI-compatible streaming
-client, optional tool schemas, and a label protocol, this:
+核心单轮往返原语。给定一个 OpenAI 兼容的流式客户端、可选的工具 schema
+和标签协议，该模块会：
 
-* Parses the first chunks for a ``\`\`LABEL\`\``` prefix.
-* For *non-final* labels (e.g. ``THINK``, ``TOOL``, ``REPLAN``), streams
-  post-label text live to ``stream.thinking`` under the supplied
-  ``iter_meta`` — i.e. into a reasoning sub-trace.
-* For *final* labels (e.g. ``FINISH``, ``PLAN``, ``SUMMARY``), buffers the
-  post-label text and returns it to the caller; the caller decides whether
-  to emit it as body content (so a mixed ``FINISH+TOOL`` reply never leaks
-  prose into the answer area before the protocol is validated).
-* Accumulates ``tool_calls`` deltas. When ``tool_label`` is set and tool-call
-  deltas arrive before the label resolves, force-resolves the label to that
-  value (tool-call presence is authoritative).
-* When a reasoning model prepends a literal ``<think>...</think>`` block
-  *before* the protocol label, that prelude is detected and streamed live
-  into the reasoning sub-trace (same routing as the ``THINK`` label).
-  Label probing resumes on the content after ``</think>``: if the label
-  resolves to an intermediate label (e.g. ``THINK``) the post-label text
-  continues into the *same* sub-trace; if it resolves to a final label
-  (e.g. ``FINISH``) the post-label text routes to the final-response area
-  as usual. The ``<think>``/``</think>`` markers themselves are not emitted
-  live, only kept in the accumulated buffer so ``clean_thinking_tags`` can
-  strip the block from the returned text.
+* 解析前几个块中的 ``\`\`LABEL\`\``` 前缀。
+* 对于*非终结*标签（如 ``THINK``、``TOOL``、``REPLAN``），将标签后的文本
+  实时流式传输到 ``stream.thinking`` 下的推理子追踪（使用提供的 ``iter_meta``）。
+* 对于*终结*标签（如 ``FINISH``、``PLAN``、``SUMMARY``），缓冲标签后的文本
+  并返回给调用方；由调用方决定是否将其作为正文内容发出（这样混合的
+  ``FINISH+TOOL`` 回复在协议验证前不会将文本泄漏到回答区域）。
+* 累积 ``tool_calls`` 增量。当 ``tool_label`` 已设置且工具调用增量在标签
+  解析之前到达时，强制将标签解析为该值（工具调用的存在具有决定性）。
+* 当推理模型在协议标签前附加了字面 ```` 块时，
+  检测该前导部分并将其实时流式传输到推理子追踪中（与 ``THINK`` 标签
+  使用相同的路由）。标签探测从 ``</think>`` 之后的内容继续：
+  如果标签解析为中间标签（如 ``THINK``），标签后的文本继续流入*同一*子追踪；
+  如果解析为终结标签（如 ``FINISH``），标签后的文本按常规路由到最终响应区域。
+  ``<think>``/``</think>`` 标记本身不会实时发出，仅保留在累积缓冲区中，
+  以便 ``clean_thinking_tags`` 可以从返回的文本中去除该块。
 
-Returns the resolved label, the accumulated post-label text (with provider
-``<think>`` tags stripped), and the parsed tool calls.
+返回解析后的标签、累积的标签后文本（已去除提供商的 think 标签）和解析的工具调用。
 """
 
 from __future__ import annotations
@@ -48,17 +41,14 @@ from aidlearning.core.stream_bus import StreamBus
 from aidlearning.core.trace import merge_trace_metadata
 from aidlearning.services.llm import clean_thinking_tags
 
-# Reasoning models (Qwen, Deepseek-R1 via certain proxies, etc.) sometimes
-# inline a literal ``<think>...</think>`` block in the content stream before
-# emitting the protocol label. Match the opening tag *only* at the start of
-# the (whitespace-stripped) probe buffer — anything later belongs to the
-# post-label body and is handled by ``clean_thinking_tags`` at the end.
+# 推理模型（Qwen、通过某些代理的 Deepseek-R1 等）有时会在内容流中
+# 发射协议标签之前内联一个字面 ``<think>...</think>`` 块。仅在探测缓冲区
+# 的开头（去除空白后）匹配开始标签 — 之后的任何内容属于标签后的正文，
+# 由 ``clean_thinking_tags`` 在末尾处理。
 #
-# Backticks must appear in matched pairs (e.g. `` `<think>` `` or
-# ``<think>``) — a lone optional ``backtick on either side would greedily
-# eat a leading ```` of the protocol label that follows (e.g. ``</think>``
-# immediately preceding ``\`\`FINISH\`\```), corrupting the post-prelude
-# label probe.
+# 反引号必须成对出现（如 `` `<think>` `` 或 ``<think>``）—
+# 任一侧单独的可选反引号会贪婪地吞掉后面协议标签的开头反引号
+# （如 ``</think>`` 紧接 ``\`\`FINISH\`\``` 之前），从而损坏前导标签探测。
 _THINK_OPEN_RE = re.compile(
     r"\A(?:`<\s*think(?:ing)?\b[^>]*>`|<\s*think(?:ing)?\b[^>]*>)",
     re.IGNORECASE,
@@ -67,38 +57,37 @@ _THINK_CLOSE_RE = re.compile(
     r"(?:`<\s*/\s*think(?:ing)?\s*>`|<\s*/\s*think(?:ing)?\s*>)",
     re.IGNORECASE,
 )
-# Headroom for ``</think>`` plus optional surrounding backticks/whitespace.
-# We keep at most this many trailing chars of the prelude unsent so a close
-# tag that arrives split across chunks is still detectable.
+# ``</think>`` 加上可选的周围反引号/空白的余量。
+# 我们最多保留这么多前导部分的尾部字符未发送，以便跨块分割的
+# 结束标签仍可被检测到。
 _THINK_CLOSE_TAIL_GUARD = 24
-# Once a provider has explicitly sent ``finish_reason`` the text generation is
-# done. Some OpenAI-compatible gateways keep the SSE connection open while
-# waiting for an optional usage trailer; wait briefly for that frame, then
-# close locally so the UI can receive RESULT/DONE promptly.
+# 一旦提供商明确发送了 ``finish_reason``，文本生成就完成了。
+# 某些 OpenAI 兼容网关在等待可选的使用量尾部数据时会保持 SSE 连接打开；
+# 短暂等待该帧，然后本地关闭，以便 UI 能及时收到 RESULT/DONE。
 _USAGE_TRAILER_GRACE_TIMEOUT_S = 1.0
-# Defensive fallback for gateways that never emit ``finish_reason`` but have
-# already sent a final-label answer and then leave the stream idle.
+# 对于从不发射 ``finish_reason`` 但已经发送了终结标签答案然后
+# 让流空闲的网关的防御性回退。
 _FINAL_LABEL_IDLE_TIMEOUT_S = 8.0
 
 
 @dataclass(frozen=True)
 class LabeledStepResult:
-    """Outcome of a single labeled LLM call."""
+    """单次标签化 LLM 调用的结果。"""
 
-    label: str  # one of allowed_labels, or LABEL_UNKNOWN on protocol failure
-    text: str  # post-label content with provider <think> tags cleaned
+    label: str  # allowed_labels 之一，协议失败时为 LABEL_UNKNOWN
+    text: str   # 已去除提供商 think 标签的标签后内容
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
 
 
 class _UsageShim:
-    """Adapt streaming ``CompletionUsage`` to the shape ``UsageTracker`` wants."""
+    """将流式 ``CompletionUsage`` 适配为 ``UsageTracker`` 所需的形状。"""
 
     def __init__(self, raw: Any) -> None:
         self.usage = raw
 
 
 def _message_content_chars(message: dict[str, Any]) -> int:
-    """Best-effort character count for usage fallback estimates."""
+    """用于使用量回退估算的最佳努力字符计数。"""
     content = message.get("content")
     if isinstance(content, str):
         return len(content)
@@ -119,7 +108,7 @@ def _message_content_chars(message: dict[str, Any]) -> int:
 
 
 def _is_stream_options_unsupported(exc: Exception) -> bool:
-    """Detect providers that reject OpenAI's ``stream_options`` parameter."""
+    """检测拒绝 OpenAI 的 ``stream_options`` 参数的提供商。"""
     response = getattr(exc, "response", None)
     body = (
         getattr(exc, "body", None)
@@ -144,7 +133,7 @@ def _is_stream_options_unsupported(exc: Exception) -> bool:
 
 
 def _is_tool_schema_unsupported(exc: Exception) -> bool:
-    """Detect providers that reject native tool/function-calling schemas."""
+    """检测拒绝原生工具/函数调用 schema 的提供商。"""
     response = getattr(exc, "response", None)
     body = (
         getattr(exc, "body", None)
@@ -189,34 +178,26 @@ async def run_labeled_step(
     eager_sub_trace: bool = False,
     implicit_think_label: str | None = None,
 ) -> LabeledStepResult:
-    """Drive one streaming LLM call under the label protocol.
+    """在标签协议下驱动一次流式 LLM 调用。
 
-    ``final_meta`` opts the post-label stream into **live body streaming**:
-    when set, every chunk that resolves under a label in ``final_labels``
-    is emitted as a :py:meth:`StreamBus.content` event using ``final_meta``
-    (with ``trace_kind="llm_chunk"``), so the chat bubble fills up
-    chunk-by-chunk instead of appearing in one shot at the end. When
-    ``final_meta`` is ``None`` (chat's existing behavior), final-label
-    text is buffered and the caller emits it after protocol validation.
+    ``final_meta`` 使标签后流启用**实时正文流式传输**：
+    设置后，每个解析到 ``final_labels`` 中标签的块都会使用 ``final_meta``
+    作为 :py:meth:`StreamBus.content` 事件发出（trace_kind="llm_chunk"），
+    使聊天气泡逐块填充而非最后一次性出现。当 ``final_meta`` 为 ``None``
+    （chat 的现有行为）时，终结标签的文本会被缓冲，调用方在协议验证后发出。
 
-    ``eager_sub_trace=True`` opens the iteration's sub-trace card before
-    the LLM stream begins, so the trace panel renders a "running" indicator
-    immediately instead of after the first chunk arrives. This closes the
-    visual gap during the time-to-first-token of each call (often 0.5–3s
-    of network + model warm-up). Lazy default keeps chat's existing
-    behavior — its cards only open when there is actual reasoning text to
-    show, avoiding empty "Reasoning…" cards for direct FINISH replies.
+    ``eager_sub_trace=True`` 在 LLM 流开始前打开迭代的子追踪卡片，
+    使追踪面板立即渲染"运行中"指示器，而非等到第一个块到达后才显示。
+    这消除了每次调用的首 token 时间（通常 0.5-3 秒的网络+模型预热）
+    期间的视觉空白。惰性默认保持 chat 的现有行为 — 其卡片仅在有实际
+    推理文本可显示时才打开，避免为直接 FINISH 回复生成空的"推理中…"卡片。
 
-    ``implicit_think_label`` lets a caller (e.g. chat) say "if a reasoning
-    model emits ``<think>...</think>`` without following it with one of my
-    protocol labels, treat the whole iteration as *this* label". The intent
-    is to gracefully accept native-format reasoning models — they think in
-    ``<think>`` blocks and may not parrot back the protocol's
-    ``\`\`THINK\`\``` token. Without this, the loop would see a missing
-    label and burn iterations on repair-retries. When the implicit
-    resolution fires, the prelude markers are preserved in the returned
-    ``text`` so the next iteration's assistant context still shows the
-    model's reasoning verbatim.
+    ``implicit_think_label`` 允许调用方（如 chat）声明"如果推理模型发出了
+    ``<think>...</think>`` 但没有跟上我的协议标签，将整个迭代视为*该*标签"。
+    其目的是优雅地接受原生格式的推理模型 — 它们在 ``<think>`` 块中思考，
+    可能不会原样回显协议的 ``\`\`THINK\`\``` 令牌。没有此选项，循环会看到
+    缺失标签而浪费迭代进行修复重试。当隐式解析触发时，前导标记保留在
+    返回的 ``text`` 中，以便下一次迭代的助手上下文仍能逐字展示模型的推理。
     """
     kwargs: dict[str, Any] = {
         "model": model,
@@ -235,13 +216,12 @@ async def run_labeled_step(
     label: str | None = None
     label_buf = ""
     in_prelude_think = False
-    # Trailing slice of the in-progress prelude held back so a ``</think>``
-    # split across chunks is still detectable.
+    # 正在进行的前导部分的尾部切片，被暂留以便跨块分割的
+    # ``</think>`` 仍可被检测到。
     prelude_tail = ""
-    # True once we have observed a pre-label ``<think>`` opener. The final
-    # ``clean_thinking_tags`` pass is gated on ``binding`` to preserve
-    # existing behavior; we always force the cleanup when a prelude was
-    # detected so the synthetic markers we recorded don't leak out.
+    # 一旦我们观察到标签前 ``<think>`` 开始标记则为 True。最终的
+    # ``clean_thinking_tags`` 处理由 ``binding`` 门控以保留现有行为；
+    # 当检测到前导时我们始终强制清理，以防止记录的合成标记泄漏。
     saw_pre_label_think = False
     sub_trace_opened = False
     content_acc: list[str] = []
@@ -267,12 +247,12 @@ async def run_labeled_step(
         sub_trace_opened = True
 
     async def _emit_text(text: str) -> None:
-        """Route post-label fragments.
+        """路由标签后的文本片段。
 
-        * Final-label text: buffered. If ``final_meta`` was supplied, the
-          fragment is *also* emitted live as a ``content`` event so the chat
-          bubble streams chunk-by-chunk (call_kind ``llm_final_response``).
-        * Non-final labels: streamed into the reasoning sub-trace.
+        * 终结标签的文本：被缓冲。如果提供了 ``final_meta``，该片段
+          *也*作为 ``content`` 事件实时发出，使聊天气泡逐块流式传输
+          （call_kind 为 llm_final_response）。
+        * 非终结标签：流式传输到推理子追踪。
         """
         nonlocal output_chars_seen
         if not text:
@@ -297,12 +277,11 @@ async def run_labeled_step(
         )
 
     async def _emit_prelude_content(text: str) -> None:
-        """Stream pre-label ``<think>`` body content into the reasoning
-        sub-trace, identical to the routing used for the non-final ``THINK``
-        label so a real ``THINK`` label that follows naturally merges into
-        the same trace. The raw text is also retained in ``content_acc`` so
-        :func:`clean_thinking_tags` can strip the entire prelude block from
-        the returned text at the end.
+        """将标签前 ``<think>`` 正文内容流式传输到推理子追踪，
+        路由方式与非终结 ``THINK`` 标签完全相同，这样后面出现的
+        真正 ``THINK`` 标签自然合并到同一追踪中。原始文本也保留在
+        ``content_acc`` 中，以便 :func:`clean_thinking_tags` 在最后
+        可以从返回的文本中去除整个前导块。
         """
         nonlocal output_chars_seen
         if not text:
@@ -318,14 +297,12 @@ async def run_labeled_step(
         )
 
     async def _emit_prelude_marker(tag_text: str) -> None:
-        """Stream a ``<think>``/``</think>`` marker live into the reasoning
-        sub-trace AND record it in ``content_acc``.
+        """将 ``<think>``/``</think>`` 标记实时流式传输到推理子追踪，
+        并同时记录到 ``content_acc`` 中。
 
-        The marker is visible in the trace UI (so users see the actual
-        ``<think>...</think>`` structure the model emitted) and the
-        accumulated buffer keeps the literal tag so downstream consumers
-        — including the implicit-``THINK`` resolution path — can preserve
-        or strip the prelude block as needed.
+        该标记在追踪 UI 中可见（因此用户能看到模型发出的实际
+        ``<think>...</think>`` 结构），累积缓冲区保留字面标签，
+        使下游消费者（包括隐式 ``THINK`` 解析路径）可以按需保留或去除前导块。
         """
         nonlocal output_chars_seen
         if not tag_text:
@@ -341,11 +318,10 @@ async def run_labeled_step(
         )
 
     async def _close_prelude_artificially() -> None:
-        """Force-end an in-progress ``<think>`` prelude (used when tool
-        calls arrive mid-prelude or the stream ends with no close tag).
-        Flushes any held-back tail to the live sub-trace and emits a
-        synthesized ``</think>`` marker so both the trace and the
-        accumulated buffer reflect a clean close."""
+        """强制结束正在进行的 ``<think>`` 前导（用于工具调用在前导中途到达
+        或流在没有结束标签的情况下结束时）。将任何暂留的尾部刷新到
+        实时子追踪，并发出合成的 ``</think>`` 标记，使追踪和累积缓冲区
+        都反映一个干净的关闭。"""
         nonlocal in_prelude_think, prelude_tail
         if prelude_tail:
             await _emit_prelude_content(prelude_tail)
@@ -354,13 +330,11 @@ async def run_labeled_step(
         in_prelude_think = False
 
     async def _drain_prelude_or_close() -> None:
-        """While ``in_prelude_think`` is set, scan ``prelude_tail`` for a
-        ``</think>`` close tag. If found, emit the content before the tag
-        live, emit the close marker live, and move whatever follows the
-        tag into ``label_buf`` so label probing resumes. If not found,
-        emit as much of the tail as we can while keeping a small guard
-        window so a close tag split across chunks is still detectable
-        next time."""
+        """当 ``in_prelude_think`` 为 True 时，扫描 ``prelude_tail`` 中的
+        ``</think>`` 结束标签。如果找到，将标签前的内容实时发出，
+        将结束标记实时发出，并将标签后的内容移入 ``label_buf`` 以恢复标签探测。
+        如果未找到，在保持小的防护窗口的前提下尽可能多地发出尾部内容，
+        以便下次跨块分割的结束标签仍可被检测到。"""
         nonlocal in_prelude_think, prelude_tail, label_buf
         close_m = _THINK_CLOSE_RE.search(prelude_tail)
         if close_m is None:
@@ -379,12 +353,11 @@ async def run_labeled_step(
         prelude_tail = ""
 
     async def _ingest_pre_label(text: str) -> None:
-        """Drive the pre-label state machine for one streamed chunk.
+        """为单个流式块驱动标签前状态机。
 
-        Handles, in a single chunk if the data permits: continuing an open
-        ``<think>`` prelude, entering a new prelude when the buffer opens
-        with ``<think>``, closing a prelude on ``</think>``, resolving the
-        protocol label, and the probe-overflow fallback.
+        在单个块中处理（如果数据允许）：继续打开的 ``<think>`` 前导、
+        在缓冲区以 ``<think>`` 开头时进入新前导、在 ``</think>`` 时关闭前导、
+        解析协议标签以及探测溢出回退。
         """
         nonlocal label, label_buf, in_prelude_think, prelude_tail
         nonlocal saw_pre_label_think
@@ -394,38 +367,35 @@ async def run_labeled_step(
         elif text:
             label_buf += text
 
-        # Drive the state machine forward as long as the current buffers
-        # allow progress. A single chunk can carry the entire prelude AND
-        # the label AND the post-label text, so we keep looping until either
-        # the label resolves or we run out of decidable input.
+        # 只要当前缓冲区允许进展就驱动状态机前进。单个块可以携带
+        # 整个前导、标签和标签后文本，因此我们持续循环直到标签解析
+        # 或可判定的输入耗尽。
         while True:
             if in_prelude_think:
                 await _drain_prelude_or_close()
                 if in_prelude_think:
-                    return  # waiting for ``</think>``
-                # ``</think>`` consumed; ``label_buf`` now holds the
-                # post-prelude remainder. Continue to label probing.
+                    return  # 等待 ``</think>``
+                # ``</think>`` 已消费；``label_buf`` 现在持有前导后的剩余内容。
+                # 继续进行标签探测。
 
             stripped = strip_label_probe_prefix(label_buf)
             open_m = _THINK_OPEN_RE.match(stripped)
             if open_m:
                 leading_len = len(label_buf) - len(stripped)
                 if leading_len:
-                    # Preserve incidental leading whitespace verbatim — the
-                    # final ``cleaned.strip()`` inside
-                    # ``clean_thinking_tags`` will smooth over it.
+                    # 逐字保留附带的前导空白 — 最终的
+                    # ``cleaned.strip()``（在 ``clean_thinking_tags`` 内）
+                    # 会将其平滑处理。
                     content_acc.append(label_buf[:leading_len])
                 in_prelude_think = True
                 saw_pre_label_think = True
                 prelude_tail = stripped[open_m.end() :]
                 label_buf = ""
-                # Emit the ``<think>`` marker live so the reasoning sub-
-                # trace shows the model's native structure. This also
-                # opens the sub-trace card immediately, so short preludes
-                # (≤24 chars) still surface UI activity even before the
-                # close-tag guard window flushes any content.
+                # 实时发出 ``<think>`` 标记，使推理子追踪显示模型的原生结构。
+                # 这也立即打开子追踪卡片，因此简短的前导（<=24 字符）
+                # 在关闭标签防护窗口刷新内容之前就能在 UI 中显示活动。
                 await _emit_prelude_marker(open_m.group(0))
-                continue  # re-enter loop to drain the new prelude
+                continue  # 重新进入循环以排空前导
 
             parsed = classify_label(label_buf, allowed_labels=allowed_labels)
             if parsed is not None:
@@ -435,12 +405,10 @@ async def run_labeled_step(
                 return
 
             if len(label_buf) > LABEL_PROBE_MAX_CHARS:
-                # Probe window exhausted with no protocol label match. If
-                # we previously consumed a ``<think>`` prelude AND the
-                # caller opted into implicit-THINK semantics, treat this
-                # iteration as an implicit ``THINK`` — the model is a
-                # reasoning model speaking its native dialect. Otherwise
-                # fall to ``LABEL_UNKNOWN`` so the caller can repair.
+                # 探测窗口用尽且无协议标签匹配。如果我们之前消费了
+                # ``<think>`` 前导且调用方启用了隐式 THINK 语义，
+                # 将此迭代视为隐式 ``THINK`` — 模型是说原生方言的推理模型。
+                # 否则回退到 ``LABEL_UNKNOWN`` 让调用方修复。
                 if (
                     saw_pre_label_think
                     and implicit_think_label
@@ -454,12 +422,11 @@ async def run_labeled_step(
                 await _emit_text(flushed)
                 return
 
-            return  # no further decision possible without more input
+            return  # 无法在没有更多输入的情况下做出进一步决定
 
     if eager_sub_trace:
-        # Open the sub-trace card *before* the LLM stream begins so the
-        # trace panel renders activity during the time-to-first-token of
-        # the upcoming call (which would otherwise be silent UI).
+        # 在 LLM 流开始*之前*打开子追踪卡片，使追踪面板在即将到来的
+        # 调用的首 token 时间（否则是静默 UI）期间渲染活动。
         await _open_sub_trace()
 
     async def _create_response_stream() -> Any:
@@ -507,9 +474,8 @@ async def run_labeled_step(
             except StopAsyncIteration:
                 break
             except asyncio.TimeoutError:
-                # Terminal enough for the chat UI: the model already sent a
-                # final-label answer (or an explicit finish_reason), but the
-                # gateway is holding the connection open.
+                # 对于聊天 UI 来说足够终止：模型已经发送了终结标签答案
+                # （或显式的 finish_reason），但网关仍保持连接打开。
                 if finish_reason_seen or label in final_labels:
                     break
                 raise
@@ -525,17 +491,14 @@ async def run_labeled_step(
             if delta is None:
                 continue
 
-            # Reasoning models that surface chain-of-thought via the dedicated
-            # ``reasoning_content`` (or ``reasoning``) field — e.g. DeepSeek-R1
-            # via certain providers, OpenAI o1/o3 in some compatibility modes
-            # — emit *no* ``delta.content`` during the reasoning phase. Without
-            # this branch the UI would sit frozen for the entire reasoning
-            # duration, then the answer chunk would arrive and the user would
-            # see only the answer with no reasoning trace. Route the reasoning
-            # stream live into the same sub-trace the inline-``<think>``
-            # prelude uses, so both flavors of reasoning model surface
-            # identically. ``saw_pre_label_think`` forces the final cleanup
-            # path to run even when ``binding`` is unset.
+            # 通过专用 ``reasoning_content``（或 ``reasoning``）字段
+            # 呈现思维链的推理模型 — 如通过某些提供商的 DeepSeek-R1、
+            # 某些兼容模式下的 OpenAI o1/o3 — 在推理阶段不发出
+            # ``delta.content``。没有此分支，UI 会在整个推理期间冻结，
+            # 然后答案块到达，用户只看到答案而没有推理追踪。将推理流
+            # 实时路由到与内联 ``<think>`` 前导使用的同一子追踪，使两种
+            # 风格的推理模型表现一致。``saw_pre_label_think`` 强制最终
+            # 清理路径在 ``binding`` 未设置时也能运行。
             reasoning_text = getattr(delta, "reasoning_content", None) or getattr(
                 delta, "reasoning", None
             )
@@ -561,16 +524,14 @@ async def run_labeled_step(
                 fn_for_chars = getattr(tc_delta, "function", None)
                 output_chars_seen += len(str(getattr(fn_for_chars, "name", "") or ""))
                 output_chars_seen += len(str(getattr(fn_for_chars, "arguments", "") or ""))
-                # Tool-call deltas are authoritative for the tool branch. If
-                # we're still buffering a label when tool-call deltas arrive,
-                # force-resolve to ``tool_label`` so the buffered prose
-                # flushes into the reasoning sub-trace and subsequent prose
-                # continues there.
+                # 工具调用增量对工具分支具有决定性。如果我们在
+                # 工具调用增量到达时仍在缓冲标签，强制解析为 ``tool_label``
+                # 使缓冲的文本刷新到推理子追踪，后续文本继续在那里。
                 if label is None and tool_label:
                     label = tool_label
                     if in_prelude_think:
-                        # Close out the prelude before treating any buffered
-                        # prose as the tool branch's reasoning preamble.
+                        # 在将任何缓冲的文本视为工具分支的推理前导之前
+                        # 关闭前导。
                         await _close_prelude_artificially()
                     flushed = label_buf
                     label_buf = ""
@@ -592,19 +553,16 @@ async def run_labeled_step(
             with suppress(Exception):
                 await close()
 
-    # Stream ended while still buffering a label. Decide how to resolve:
+    # 流在仍在缓冲标签时结束。决定如何解析：
     #
-    # - If we saw a ``<think>`` prelude and the caller opted into
-    #   implicit-THINK semantics, treat the iteration as an implicit
-    #   ``THINK`` so the loop continues (reasoning models that natively
-    #   speak ``<think>...</think>`` get accepted instead of treated as
-    #   protocol violators).
-    # - Otherwise fall to ``LABEL_UNKNOWN`` and let the caller repair.
+    # - 如果我们看到了 ``<think>`` 前导且调用方启用了隐式 THINK 语义，
+    #   将此迭代视为隐式 ``THINK``，使循环继续（原生说
+    #   ``<think>...</think>`` 的推理模型被接受而非被视为协议违反者）。
+    # - 否则回退到 ``LABEL_UNKNOWN`` 让调用方修复。
     if label is None:
         if in_prelude_think:
-            # Stream ended mid-prelude — flush remaining reasoning live so
-            # the user sees what the model managed to produce, then close
-            # the block synthetically.
+            # 流在前导中途结束 — 将剩余的推理内容实时刷新，
+            # 让用户看到模型设法产生的内容，然后合成关闭块。
             await _close_prelude_artificially()
         final_parsed = classify_label(
             label_buf,
@@ -650,12 +608,10 @@ async def run_labeled_step(
         )
 
     text = "".join(content_acc)
-    # Preserve the literal ``<think>...</think>`` block when we resolved the
-    # iteration implicitly as ``THINK`` — the next iteration's assistant
-    # context should reflect the model's reasoning verbatim, not a stripped
-    # empty draft. For all other resolutions, fall through to the standard
-    # cleanup so downstream consumers (assistant messages, final-response
-    # text) aren't polluted with the prelude markers.
+    # 当我们隐式地将迭代解析为 ``THINK`` 时，保留字面 ``<think>...</think>`` 块 —
+    # 下一次迭代的助手上下文应该逐字反映模型的推理，而非被剥离的空草稿。
+    # 对于所有其他解析，回退到标准清理，使下游消费者（助手消息、最终响应文本）
+    # 不会被前导标记污染。
     implicit_think_resolved = bool(
         saw_pre_label_think and implicit_think_label and label == implicit_think_label
     )

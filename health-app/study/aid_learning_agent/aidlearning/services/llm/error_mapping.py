@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 
-# Import unified exceptions from exceptions.py
+# 从 exceptions.py 导入统一异常
 from .exceptions import (
     LLMAPIError,
     LLMAuthenticationError,
@@ -93,8 +93,8 @@ except ImportError:
 
 
 def map_error(exc: Exception, provider: str | None = None) -> LLMError:
-    """Map provider-specific errors to unified internal exceptions."""
-    # Heuristic check for status codes before rules
+    """将 Provider 特定错误映射为统一内部异常。"""
+    # 规则之前的启发式状态码检查
     status_code = getattr(exc, "status_code", None)
     if status_code == 401:
         return LLMAuthenticationError(str(exc), provider=provider)

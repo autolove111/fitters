@@ -1,4 +1,4 @@
-"""Logical resource grants for non-admin users."""
+"""非管理员用户的逻辑资源授权。"""
 
 from __future__ import annotations
 
@@ -73,9 +73,9 @@ def save_grant(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_grant(grant: dict[str, Any]) -> None:
-    """Reject accidental secret/path material in grants.
+    """拒绝授权中意外包含的密钥/路径信息。
 
-    Grants carry logical ids only. Runtime resolution happens server-side.
+    授权仅包含逻辑 ID。运行时解析在服务端进行。
     """
     forbidden = {"api_key", "secret", "password", "token", "path", "base_url"}
 

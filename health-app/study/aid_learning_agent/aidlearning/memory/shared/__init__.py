@@ -1,8 +1,8 @@
-"""Shared foundations used by all memory layers.
+"""所有记忆层共享的基础。
 
-- ``ids``   : ULID-style trace and entry id generators
-- ``paths`` : per-user path resolution (Surface, L3Slot)
-- ``trace`` : L1 raw event capture (append-only JSONL per surface per day)
+- ``ids``   : ULID 风格的追踪和条目 id 生成器
+- ``paths`` : 每用户路径解析 (Surface, L3Slot)
+- ``trace`` : L1 原始事件捕获（每个 surface 每天仅追加 JSONL）
 """
 
 from .ids import is_entry_id, is_trace_id, new_entry_id, new_trace_id

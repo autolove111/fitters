@@ -23,8 +23,8 @@ OpenAICompat / Anthropic / Azure / ...         ← provider_core/*.py
   - get_llm_client(): 获取 LLM 客户端（旧接口）
 """
 
-# Note: cloud_provider and local_provider are lazy-loaded via __getattr__
-# to avoid importing optional heavy dependencies at module load time
+# 注意：cloud_provider 和 local_provider 通过 __getattr__ 延迟加载，
+# 以避免在模块加载时导入可选的重型依赖
 from .capabilities import (
     DEFAULT_CAPABILITIES,
     MODEL_OVERRIDES,
@@ -79,18 +79,18 @@ from .utils import (
 )
 
 __all__ = [
-    # Client (legacy, prefer factory functions)
+    # 客户端（旧版，优先使用工厂函数）
     "LLMClient",
     "get_llm_client",
     "reset_llm_client",
-    # Config
+    # 配置
     "LLMConfig",
     "get_llm_config",
     "clear_llm_config_cache",
     "reload_config",
     "uses_max_completion_tokens",
     "get_token_limit_kwargs",
-    # Capabilities
+    # 能力
     "PROVIDER_CAPABILITIES",
     "MODEL_OVERRIDES",
     "DEFAULT_CAPABILITIES",
@@ -102,10 +102,10 @@ __all__ = [
     "supports_tools",
     "supports_vision",
     "requires_api_version",
-    # Multimodal
+    # 多模态
     "MultimodalResult",
     "prepare_multimodal_messages",
-    # Exceptions
+    # 异常
     "LLMError",
     "LLMConfigError",
     "LLMProviderError",
@@ -114,21 +114,21 @@ __all__ = [
     "LLMRateLimitError",
     "LLMAuthenticationError",
     "LLMModelNotFoundError",
-    # Factory (main API)
+    # 工厂（主 API）
     "complete",
     "stream",
     "fetch_models",
     "get_provider_presets",
     "API_PROVIDER_PRESETS",
     "LOCAL_PROVIDER_PRESETS",
-    # Retry configuration
+    # 重试配置
     "DEFAULT_MAX_RETRIES",
     "DEFAULT_RETRY_DELAY",
     "DEFAULT_EXPONENTIAL_BACKOFF",
-    # Providers (lazy loaded)
+    # 提供商（延迟加载）
     "cloud_provider",
     "local_provider",
-    # Utils
+    # 工具函数
     "sanitize_url",
     "is_local_llm_server",
     "build_chat_url",
@@ -139,7 +139,7 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    """Lazy import for provider modules that depend on heavy libraries."""
+    """延迟导入依赖重型库的提供商模块。"""
     from importlib import import_module
 
     if name == "cloud_provider":

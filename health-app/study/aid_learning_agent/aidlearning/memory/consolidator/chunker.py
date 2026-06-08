@@ -1,13 +1,11 @@
-"""Character-based chunking with boundary expansion.
+"""基于字符的分块与边界扩展。
 
-The L2 / L3 update flow concatenates inputs into one string, then
-:func:`chunk_with_boundary` cuts it into ≤ budget pieces. Each piece's
-right edge is extended forward to the next paragraph or sentence
-boundary — content is **never truncated mid-statement**. Adjacent
-chunks overlap by a percentage of the target size so a fact straddling
-a cut still gets a fair read.
+L2 / L3 更新流程将输入拼接为一个字符串，
+然后 :func:`chunk_with_boundary` 将其切割为不超过 budget 个片段。
+每个片段的右边界向前扩展到下一个段落或句子边界 — 内容**绝不会在语句中间截断**。
+相邻块按目标大小的百分比重叠，使得跨越切口的事实仍能被完整读取。
 
-Pure functions: no I/O, no LLM. Easy to unit-test.
+纯函数：无 I/O，无 LLM。易于单元测试。
 """
 
 from __future__ import annotations
@@ -19,19 +17,18 @@ from typing import Literal
 
 Boundary = Literal["paragraph", "sentence"]
 
-# Paragraph boundary: one or more blank lines.
+# 段落边界：一个或多个空行。
 _PARA_BOUNDARY = re.compile(r"\n\s*\n+")
-# Sentence boundary: terminal punctuation followed by space/newline.
-# Covers ASCII (.!?) and CJK (。！？).
+# 句子边界：结尾标点后跟空格/换行。
+# 覆盖 ASCII (.!?) 和 CJK (。！？)。
 _SENT_BOUNDARY = re.compile(r"[.!?。！？](?:[\")»」』]+)?(?=\s|$)")
 
 
 @dataclass(frozen=True)
 class ChunkSpan:
-    """One chunk's coordinates inside the source text.
+    """一个块在源文本中的坐标。
 
-    ``start`` is inclusive, ``end`` exclusive. ``index`` is the 0-based
-    position in the returned list (useful for events).
+    ``start`` 包含，``end`` 不包含。``index`` 是返回列表中的从 0 开始的位置（用于事件）。
     """
 
     index: int
@@ -49,14 +46,12 @@ def chunk_with_boundary(
     max_chunk_chars: int,
     boundary: Boundary = "paragraph",
 ) -> list[ChunkSpan]:
-    """Cut ``text`` into ≤ ``budget`` chunks aligned to natural boundaries.
+    """将 ``text`` 切割为不超过 ``budget`` 个对齐到自然边界的块。
 
-    * Target size = ``clamp(ceil(len(text) / budget), min, max)``.
-    * Right edge of each chunk is extended forward to the next
-      ``boundary`` so no sentence/paragraph is split.
-    * Adjacent chunks overlap by ``round(target * overlap_ratio)`` chars.
-    * If the input is short enough to fit in a single chunk, returns
-      one ``ChunkSpan`` covering everything.
+    * 目标大小 = ``clamp(ceil(len(text) / budget), min, max)``。
+    * 每个块的右边界向前扩展到下一个 ``boundary``，以避免句子/段落被拆分。
+    * 相邻块重叠 ``round(target * overlap_ratio)`` 个字符。
+    * 如果输入足够短可以放入单个块，返回一个覆盖全部内容的 ``ChunkSpan``。
     """
     if not text.strip():
         return []
@@ -68,14 +63,13 @@ def chunk_with_boundary(
     target = max(min_chunk_chars, min(max_chunk_chars, target))
     overlap = max(0, min(target - 1, round(target * overlap_ratio)))
 
-    # Short-circuit: input fits in one chunk.
+    # 快速路径：输入可以放入单个块。
     if n <= target:
         return [ChunkSpan(index=0, start=0, end=n, text=text)]
 
-    # Hard cap on how far the right edge can be pulled to find a
-    # boundary. Beyond this we accept a non-boundary cut so chunks
-    # never grow past ``max_chunk_chars`` even in degenerate input
-    # (e.g. a single long line with no paragraph/sentence breaks).
+    # 右边界可以被拉伸以查找边界的硬性上限。
+    # 超过此限制则接受非边界切割，以确保即使在退化输入中
+    # （例如无段落/句子分隔的单行长文本），块也不会超过 ``max_chunk_chars``。
     spans: list[ChunkSpan] = []
     cursor = 0
     while cursor < n:
@@ -85,8 +79,7 @@ def chunk_with_boundary(
             end = n
         else:
             end = _expand_to_boundary(text, target_end, boundary, limit=hard_cap)
-        # Guarantee forward motion: the boundary expansion may pull us
-        # to len(text), or — degenerate input — to ``target_end`` itself.
+        # 保证前进：边界扩展可能将我们拉到 len(text)，或在退化输入中拉到 ``target_end`` 本身。
         if end <= cursor:
             end = min(n, cursor + max(1, target))
         spans.append(
@@ -100,8 +93,7 @@ def chunk_with_boundary(
         if end >= n:
             break
         next_cursor = end - overlap
-        # No infinite loop: must advance by at least one char even with
-        # huge overlap.
+        # 防止无限循环：即使重叠很大，也必须至少前进一个字符。
         if next_cursor <= cursor:
             next_cursor = cursor + 1
         cursor = next_cursor
@@ -109,17 +101,16 @@ def chunk_with_boundary(
     return spans
 
 
-# ── Internals ───────────────────────────────────────────────────────────
+# ── 内部函数 ───────────────────────────────────────────────────────────
 
 
 def _expand_to_boundary(text: str, target_end: int, boundary: Boundary, *, limit: int) -> int:
-    """Push ``target_end`` forward to the next natural boundary.
+    """将 ``target_end`` 向前推到下一个自然边界。
 
-    The search is bounded by ``limit`` (exclusive). If no boundary is
-    found within that window the function returns ``limit`` — a non-
-    boundary cut, but a bounded one. Without this the chunker can
-    inflate a single chunk to the end of the input on pathological
-    text with no paragraph/sentence markers.
+    搜索受 ``limit``（不包含）限制。如果在该窗口内未找到边界，
+    函数返回 ``limit`` — 虽非边界切割，但有界。
+    没有此限制的话，在无段落/句子标记的病态文本上，
+    分块器可能将单个块膨胀到输入末尾。
     """
     pattern = _PARA_BOUNDARY if boundary == "paragraph" else _SENT_BOUNDARY
     match = pattern.search(text, target_end, limit)

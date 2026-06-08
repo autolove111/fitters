@@ -1,11 +1,10 @@
-"""Mode strategy abstraction for deep research.
+"""深度研究的模式策略抽象。
 
-Each research mode (notes, report, comparison, learning_path) is represented
-as a ``ModeStrategy`` dataclass.  ``STRATEGIES`` acts as the single source of
-truth that ``request_config._build_mode_policy`` delegates to.
+每种研究模式（notes、report、comparison、learning_path）表示为一个
+``ModeStrategy`` 数据类。``STRATEGIES`` 作为 ``request_config._build_mode_policy``
+委托的单一事实来源。
 
-``validate_output`` provides lightweight post-generation checks so callers can
-surface warnings when the LLM drifted away from the mode contract.
+``validate_output`` 提供轻量级的生成后检查，以便调用方在 LLM 偏离模式契约时显示警告。
 """
 
 from __future__ import annotations
@@ -74,7 +73,7 @@ class ModeStrategy:
         }
 
     def validate_output(self, report: str) -> list[str]:
-        """Return a list of warnings if the report deviates from mode expectations."""
+        """如果报告偏离模式预期则返回警告列表。"""
         warnings: list[str] = []
         if not report or not report.strip():
             warnings.append("Report is empty.")

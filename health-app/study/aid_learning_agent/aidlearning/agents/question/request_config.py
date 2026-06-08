@@ -1,20 +1,15 @@
-"""Runtime config builder for ``QuestionPipeline``.
+"""``QuestionPipeline`` 的运行时配置构建器。
 
-Mirrors the shape used by :mod:`aidlearning.agents.research.request_config`,
-but with a much smaller surface — the question pipeline only needs a
-handful of knobs out of the service config:
+镜像 :mod:`aidlearning.agents.research.request_config` 使用的形状，但接口小得多
+—— 问题管线只需要服务配置中的少量旋钮：
 
-* ``exploring.max_iterations`` (int, default 8) — agentic-loop cap for the
-  Explore phase.
-* ``exploring.tool_summarizer.enabled`` (bool, default True) — toggle the
-  per-tool-result LLM reflection step that compresses raw tool output
-  before downstream phases see it.
-* ``exploring.tool_summarizer.max_tokens`` (int, default 800) — token cap
-  on each summarizer call.
+* ``exploring.max_iterations``（int，默认 8）—— Explore 阶段的 Agent 循环上限。
+* ``exploring.tool_summarizer.enabled``（bool，默认 True）—— 切换每工具结果的
+  LLM 反思步骤，该步骤在下游阶段看到之前压缩原始工具输出。
+* ``exploring.tool_summarizer.max_tokens``（int，默认 800）—— 每次摘要调用的 token 上限。
 
-The helper is intentionally tolerant: missing keys / wrong types collapse
-to defaults so callers can pass any base config (e.g. ``main.yaml``)
-without first defining a ``capabilities.deep_question`` section.
+此辅助函数故意宽容：缺失的键/错误的类型折叠为默认值，因此调用方可以传递任何基础配置
+（例如 ``main.yaml``），而无需先定义 ``capabilities.deep_question`` 部分。
 """
 
 from __future__ import annotations
@@ -40,10 +35,10 @@ def build_question_runtime_config(
     *,
     base_config: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Build the runtime_config dict passed to :class:`QuestionPipeline`.
+    """构建传递给 :class:`QuestionPipeline` 的 runtime_config 字典。
 
-    The pipeline reads its knobs from ``runtime_config["exploring"]`` —
-    everything else in ``base_config`` is currently ignored by question.
+    管线从 ``runtime_config["exploring"]`` 读取其旋钮 ——
+    ``base_config`` 中的其他内容目前被 question 忽略。
     """
     base = base_config if isinstance(base_config, dict) else {}
     capabilities = base.get("capabilities") if isinstance(base.get("capabilities"), dict) else {}

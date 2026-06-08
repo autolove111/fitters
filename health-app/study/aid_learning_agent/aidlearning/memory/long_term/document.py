@@ -1,6 +1,6 @@
-"""Markdown documents with footnote-style citations.
+"""带脚注式引用的 Markdown 文档。
 
-Each L2/L3 file is a markdown document of the form::
+每个 L2/L3 文件是如下形式的 markdown 文档::
 
     # <Title>
 
@@ -17,20 +17,18 @@ Each L2/L3 file is a markdown document of the form::
     [^2]: chat:def
     [^3]: chat:ghi
 
-Footnote labels are *integers* assigned per-document in first-appearance
-order over the bullet stream. Two entries citing the same source share a
-label, so duplicate footnote rows disappear from the rendered view.
+脚注标签是按文档中要点流的首次出现顺序分配的*整数*。
+两个引用同一来源的条目共享一个标签，
+因此重复的脚注行从渲染视图中消失。
 
-The HTML comment after each bullet (``<!--m_xxx-->``) is the entry id
-anchor. It survives round-trips and is used by audit / dedup line views
-and by ``DELETE /entry/{id}``. Parser also accepts the *legacy* format
-where the bullet ends in ``[^m_xxx]`` and footnote rows are
-``[^m_xxx]: ref1, ref2`` — this lets pre-existing docs continue working
-until the next save migrates them to the new layout.
+每个要点后的 HTML 注释（``<!--m_xxx-->``）是条目 id 锚点。
+它在往返过程中保留，被审计/去重行视图和 ``DELETE /entry/{id}`` 使用。
+解析器还接受*旧版*格式，其中要点以 ``[^m_xxx]`` 结尾，
+脚注行为 ``[^m_xxx]: ref1, ref2`` —
+这使已有文档在下次保存迁移到新布局之前继续工作。
 
-Parsing and serialization are pure functions — no I/O, no LLM. The
-round-trip ``serialize(parse(x))`` is idempotent for any document
-produced by ``serialize``.
+解析和序列化是纯函数 — 无 I/O，无 LLM。
+往返 ``serialize(parse(x))`` 对任何由 ``serialize`` 产生的文档都是幂等的。
 """
 
 from __future__ import annotations
@@ -43,24 +41,23 @@ _ENTRY_ID_RE = r"m_[0-9A-HJKMNP-TV-Z]{26}"
 _TITLE_RE = re.compile(r"^#\s+(.+?)\s*$")
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$")
 
-# New bullet:  "- text [^1], [^3] <!--m_xxx-->"
-# Markers are optional (an entry may cite no refs); commas + whitespace
-# between markers are tolerated so the rendered superscripts read
-# ``¹, ³`` instead of the visually-merged ``¹³``.
+# 新版要点："- text [^1], [^3] <!--m_xxx-->"
+# 标记是可选的（条目可能不引用任何引用）；标记之间的逗号+空白被容忍，
+# 以便渲染的上标显示为 ``¹, ³`` 而非视觉合并的 ``¹³``。
 _NEW_BULLET_RE = re.compile(
     rf"^\s*-\s+(?P<text>.*?)(?P<markers>(?:\s*,?\s*\[\^[^\]]+\])*)\s*<!--\s*(?P<id>{_ENTRY_ID_RE})\s*-->"
 )
-# Legacy bullet: "- text[^m_xxx]"
+# 旧版要点："- text[^m_xxx]"
 _OLD_BULLET_RE = re.compile(rf"^\s*-\s+(?P<text>.*?)\[\^(?P<id>{_ENTRY_ID_RE})\]\s*$")
 
-# Legacy footnote def: "[^m_xxx]: ref1, ref2"
+# 旧版脚注定义："[^m_xxx]: ref1, ref2"
 _OLD_FOOTNOTE_RE = re.compile(rf"^\[\^(?P<id>{_ENTRY_ID_RE})\]:\s*(?P<refs>.*?)\s*$")
-# New footnote def: "[^1]: notebook:abc"   (label is non-m_xxx)
+# 新版脚注定义："[^1]: notebook:abc"   (标签非 m_xxx)
 _NEW_FOOTNOTE_RE = re.compile(r"^\[\^(?P<label>[^\]]+)\]:\s*(?P<ref>.*?)\s*$")
 
 _MARKER_RE = re.compile(r"\[\^([^\]]+)\]")
 
-# Decay metadata comment: "<!--meta:created=123;accessed=456;count=3;imp=0.7-->"
+# 衰减元数据注释："< !--meta:created=123;accessed=456;count=3;imp=0.7-->"
 _META_COMMENT_RE = re.compile(
     r"<!--meta:created=(?P<created>[\d.]+);accessed=(?P<accessed>[\d.]+);count=(?P<count>\d+);imp=(?P<imp>[\d.]+)-->"
 )
@@ -72,7 +69,7 @@ class Entry:
     section: str
     text: str
     refs: list[str] = field(default_factory=list)
-    # Decay metadata (optional, for long-term memory entries)
+    # 衰减元数据（可选，用于长期记忆条目）
     created_at: float | None = None
     last_accessed: float | None = None
     access_count: int = 0
@@ -95,7 +92,7 @@ class Document:
         return None
 
     def section_entries(self, name: str) -> list[Entry]:
-        """Return the entry list for ``name``, creating the section if absent."""
+        """返回 ``name`` 的条目列表，如果节不存在则创建。"""
         for section, entries in self.sections:
             if section == name:
                 return entries
@@ -113,7 +110,7 @@ class Document:
 
 
 def _encode_entry_meta(entry: Entry) -> str:
-    """Encode decay metadata as an HTML comment, if any metadata exists."""
+    """如果存在元数据，将衰减元数据编码为 HTML 注释。"""
     if entry.created_at is None and entry.last_accessed is None and entry.access_count == 0:
         return ""  # No metadata to encode
     created = entry.created_at or 0.0
@@ -122,25 +119,25 @@ def _encode_entry_meta(entry: Entry) -> str:
 
 
 def _decode_entry_meta(text: str, entry: Entry) -> None:
-    """Extract decay metadata from trailing meta comment in text."""
+    """从文本尾部的元数据注释中提取衰减元数据。"""
     m = _META_COMMENT_RE.search(text)
     if m:
         entry.created_at = float(m.group("created"))
         entry.last_accessed = float(m.group("accessed"))
         entry.access_count = int(m.group("count"))
         entry.importance = float(m.group("imp"))
-        # Strip the meta comment from the text
+        # 从文本中去除元数据注释
         text = text[:m.start()].rstrip()
     return text
 
 
 def parse(md: str) -> Document:
-    """Parse memory md in either the new (ref-keyed) or legacy (entry-keyed) format."""
+    """解析新格式（引用键控）或旧格式（条目键控）的记忆 markdown。"""
     raw_lines = md.splitlines()
 
-    # Pass 1 — collect every footnote definition. We accept BOTH:
-    # * new ref-keyed: ``[^1]: notebook:abc``  → ref by label
-    # * old entry-keyed: ``[^m_xxx]: r1, r2``  → refs by entry id
+    # 第 1 遍 — 收集每个脚注定义。我们同时接受两种格式：
+    # * 新版引用键控：``[^1]: notebook:abc``  → 按标签引用
+    # * 旧版条目键控：``[^m_xxx]: r1, r2``  → 按条目 id 引用
     refs_by_entry: dict[str, list[str]] = {}
     ref_by_label: dict[str, str] = {}
     for raw in raw_lines:
@@ -156,11 +153,11 @@ def parse(md: str) -> Document:
         if m_new_fn:
             label = m_new_fn.group("label")
             if label.startswith("m_"):
-                # Skip — that was an entry-keyed row already handled above.
+                # 跳过 — 这是上面已处理的条目键控行。
                 continue
             ref_by_label[label] = m_new_fn.group("ref").strip()
 
-    # Pass 2 — title, sections, bullets.
+    # 第 2 遍 — 标题、节、要点。
     doc = Document()
     current_entries: list[Entry] | None = None
     current_section: str | None = None
@@ -180,7 +177,7 @@ def parse(md: str) -> Document:
             doc.sections.append((current_section, current_entries))
             continue
 
-        # New format first: bullet ends with HTML-comment entry-id anchor.
+        # 优先尝试新版格式：要点以 HTML 注释条目 id 锚点结尾。
         m_new_b = _NEW_BULLET_RE.match(line)
         if m_new_b and current_entries is not None and current_section is not None:
             entry_id = m_new_b.group("id")
@@ -192,12 +189,12 @@ def parse(md: str) -> Document:
                 if ref is not None and ref not in entry_refs:
                     entry_refs.append(ref)
             entry = Entry(id=entry_id, section=current_section, text=text, refs=entry_refs)
-            # Decode trailing decay metadata comment if present
+            # 如果存在，解码尾部的衰减元数据注释
             _decode_entry_meta(line, entry)
             current_entries.append(entry)
             continue
 
-        # Legacy bullet: refs come from refs_by_entry built in pass 1.
+        # 旧版要点：引用来自第 1 遍构建的 refs_by_entry。
         m_old_b = _OLD_BULLET_RE.match(line)
         if m_old_b and current_entries is not None and current_section is not None:
             entry_id = m_old_b.group("id")
@@ -216,14 +213,13 @@ def parse(md: str) -> Document:
 
 
 def serialize(doc: Document) -> str:
-    """Render the doc in the new consolidated, ref-keyed format.
+    """以新的合并、引用键控格式渲染文档。
 
-    Every unique ref across all entries gets one footnote label, assigned
-    in first-appearance order. Bullets cite their refs as ``[^1][^3]``
-    inline. The entry id is preserved as a trailing HTML comment so the
-    round-trip ``parse(serialize(d)) == d``.
+    所有条目中的每个唯一引用获得一个脚注标签，按首次出现顺序分配。
+    要点以内联方式引用其引用为 ``[^1][^3]``。
+    条目 id 作为尾部 HTML 注释保留，以确保往返 ``parse(serialize(d)) == d``。
     """
-    # 1. Build the consolidated ref → label map in first-appearance order.
+    # 1. 按首次出现顺序构建合并的 ref → label 映射。
     ref_order: list[str] = []
     ref_to_label: dict[str, int] = {}
     for entry in doc.all_entries():
@@ -244,9 +240,8 @@ def serialize(doc: Document) -> str:
         lines.append(f"## {section}")
         lines.append("")
         for entry in entries:
-            # ``, ``-separate markers so the rendered superscripts read
-            # "¹, ²" not "¹²" — important when the same bullet cites two
-            # different sources.
+            # 用逗号分隔标记，使渲染的上标显示为 "¹, ²" 而非 "¹²" —
+            # 当同一要点引用两个不同来源时很重要。
             markers = ", ".join(f"[^{ref_to_label[r]}]" for r in entry.refs if r in ref_to_label)
             text = entry.text.rstrip()
             meta_comment = _encode_entry_meta(entry)

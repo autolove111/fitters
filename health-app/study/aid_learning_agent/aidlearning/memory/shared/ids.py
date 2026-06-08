@@ -1,12 +1,11 @@
-"""Stable, time-ordered identifiers for trace events and document entries.
+"""追踪事件和文档条目的稳定、时间有序标识符。
 
-Format: 26-character Crockford-base32 (ULID-style).
+格式：26 字符 Crockford-base32（ULID 风格）。
 
-- Trace ids:  ``<surface>:<ULID>`` — e.g. ``chat:01HZK4ABCDEFGHJKMNPQRSTVWX``
-- Entry ids:  ``m_<ULID>``        — used in MD footnote labels
+- 追踪 id：``<surface>:<ULID>`` — 例如 ``chat:01HZK4ABCDEFGHJKMNPQRSTVWX``
+- 条目 id：``m_<ULID>``        — 用于 MD 脚注标签
 
-The ULID's leading 10 characters encode a millisecond timestamp, giving
-natural chronological sort across files and within a file.
+ULID 的前 10 个字符编码毫秒时间戳，提供跨文件和文件内的自然时间排序。
 """
 
 from __future__ import annotations
@@ -22,17 +21,14 @@ _ULID_LEN = _ULID_TS_LEN + _ULID_RAND_LEN
 
 _ENTRY_RE = re.compile(r"^m_[0-9A-HJKMNP-TV-Z]{26}$")
 _TRACE_RE = re.compile(r"^[a-z][a-z0-9_-]*:[0-9A-HJKMNP-TV-Z]{26}$")
-# Snapshot ref points to a current workspace entity. The id portion is
-# whatever the per-surface adapter chose (doc_id / record_id / kb_name /
-# bot name / session_id / "session:question" composites). Permissive
-# enough to allow embedded ``:``; restrictive enough to keep refs safe
-# to embed in the comma-separated footnote serialization.
+# 快照引用指向当前工作区实体。id 部分是每 surface 适配器选择的内容
+# （doc_id / record_id / kb_name / bot name / session_id / "session:question" 组合）。
+# 足够宽松以允许嵌入的 ``:``；足够严格以保持引用安全地嵌入逗号分隔的脚注序列化中。
 _SNAPSHOT_RE = re.compile(r"^[a-z][a-z0-9_-]*:[A-Za-z0-9_.:\-]+$")
-# L3 surface ref — bare surface name like ``chat``, ``notebook``. L3 is
-# a synthesis layer that points at L2 *files*, not L2 entries, so its
-# refs need no id portion. Whitelist (not a loose regex) so a malformed
-# ref like ``not-an-id`` doesn't accidentally validate. Mirrors
-# :data:`paths.SURFACES`; if you add a surface, add it here too.
+# L3 surface 引用 — 纯 surface 名称如 ``chat``、``notebook``。L3 是综合层，
+# 指向 L2 *文件*而非 L2 条目，因此其引用不需要 id 部分。
+# 白名单（非宽松正则），以防止格式错误的引用如 ``not-an-id`` 意外通过验证。
+# 镜像 :data:`paths.SURFACES`；如果添加 surface，也要在此处添加。
 _SHORTNAME_REFS = frozenset({"chat", "notebook", "quiz", "kb", "book", "tutorbot", "cowriter"})
 
 
@@ -71,10 +67,10 @@ def is_snapshot_ref(s: str) -> bool:
 
 
 def is_shortname_ref(s: str) -> bool:
-    """Bare surface name — the form used by L3 refs (whitelist)."""
+    """纯 surface 名称 — L3 引用使用的形式（白名单）。"""
     return s in _SHORTNAME_REFS
 
 
 def is_valid_ref(s: str) -> bool:
-    """Any form of ref the ops validator accepts."""
+    """操作验证器接受的任何形式的引用。"""
     return is_entry_id(s) or is_trace_id(s) or is_snapshot_ref(s) or is_shortname_ref(s)

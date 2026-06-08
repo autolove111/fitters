@@ -1,4 +1,4 @@
-"""Embedding adapter implementations and backend registry."""
+"""Embedding 适配器实现和后端注册表。"""
 
 from .base import (
     BaseEmbeddingAdapter,

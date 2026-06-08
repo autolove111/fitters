@@ -1,12 +1,12 @@
 """
-Configuration Settings for AidLearning
+AidLearning 的配置设置
 
-Environment Variables:
-    LLM_RETRY__MAX_RETRIES: Maximum retry attempts for LLM calls (default: 3)
-    LLM_RETRY__BASE_DELAY: Base delay between retries in seconds (default: 1.0)
-    LLM_RETRY__EXPONENTIAL_BACKOFF: Whether to use exponential backoff (default: True)
+环境变量：
+    LLM_RETRY__MAX_RETRIES: LLM 调用的最大重试次数（默认：3）
+    LLM_RETRY__BASE_DELAY: 重试之间的基础延迟秒数（默认：1.0）
+    LLM_RETRY__EXPONENTIAL_BACKOFF: 是否使用指数退避（默认：True）
 
-Examples:
+示例：
     export LLM_RETRY__MAX_RETRIES=5
     export LLM_RETRY__BASE_DELAY=2.0
     export LLM_RETRY__EXPONENTIAL_BACKOFF=false
@@ -25,10 +25,10 @@ class LLMRetryConfig(BaseModel):
 
 
 class Settings(BaseSettings):
-    # LLM retry configuration
+    # LLM 重试配置
     retry: LLMRetryConfig = Field(default_factory=LLMRetryConfig)
 
-    # Deprecated: use retry instead
+    # 已弃用：请改用 retry
     @property
     def llm_retry(self):
         import warnings
@@ -46,5 +46,5 @@ class Settings(BaseSettings):
     )
 
 
-# Global settings instance
+# 全局设置实例
 settings = Settings()

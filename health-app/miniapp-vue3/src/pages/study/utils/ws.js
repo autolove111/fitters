@@ -118,7 +118,13 @@ export class AidLearningWS {
 
   off(event, callback) {
     if (!this.listeners[event]) return
-    this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback)
+    if (callback) {
+      // 移除特定回调
+      this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback)
+    } else {
+      // 移除该事件的所有监听器
+      this.listeners[event] = []
+    }
   }
 
   _emit(event, data) {

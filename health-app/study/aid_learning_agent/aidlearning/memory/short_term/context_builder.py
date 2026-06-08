@@ -1,5 +1,5 @@
 """
-Build bounded conversation history for unified chat sessions.
+为统一聊天会话构建有界对话历史。
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from aidlearning.services.session.protocol import SessionStoreProtocol
 
 
 def count_tokens(text: str) -> int:
-    """Estimate token count with tiktoken when available."""
+    """在可用时使用 tiktoken 估算 token 数。"""
     if not text:
         return 0
     try:
@@ -72,7 +72,7 @@ class ContextBuildResult:
 
 
 class _ContextSummaryAgent(BaseAgent):
-    """Small helper agent for compressing older conversation turns."""
+    """用于压缩较旧对话轮次的小型辅助代理。"""
 
     def __init__(self, language: str = "en") -> None:
         super().__init__(
@@ -86,7 +86,7 @@ class _ContextSummaryAgent(BaseAgent):
 
 
 class ContextBuilder:
-    """Construct a bounded conversation history plus optional summary trace."""
+    """构建有界对话历史加上可选的摘要追踪。"""
 
     def __init__(
         self,
@@ -313,13 +313,12 @@ class ContextBuilder:
         leaf_message_id: int | None = None,
         buffer: Any | None = None,  # ConversationBuffer | None
     ) -> ContextBuildResult:
-        """Build bounded conversation history.
+        """构建有界对话历史。
 
-        When *buffer* is provided, reads from the in-memory buffer
-        instead of SQLite (zero I/O).  The buffer must provide the same
-        ``get_messages_for_context()`` interface as the SQLite store.
+        当提供 *buffer* 时，从内存缓冲区而非 SQLite 读取（零 I/O）。
+        缓冲区必须提供与 SQLite 存储相同的 ``get_messages_for_context()`` 接口。
         """
-        # ── Source selection: buffer first, then SQLite ───────────────
+        # ── 来源选择：优先缓冲区，然后 SQLite ───────────────
         if buffer is not None:
             messages = buffer.get_messages_for_context(
                 leaf_message_id=leaf_message_id
@@ -328,9 +327,8 @@ class ContextBuilder:
             summary_up_to_msg_id = buffer.summary_up_to_id
         else:
             session = await self.store.get_session(session_id)
-            # When ``leaf_message_id`` is given (edit-branch turn), only the
-            # ancestor path of that message is included in context — sibling
-            # branches at any depth are excluded.
+            # 当给出 ``leaf_message_id``（编辑分支轮次）时，
+            # 只有该消息的祖先路径被包含在上下文中 — 任何深度的兄弟分支都被排除。
             messages = await self.store.get_messages_for_context(
                 session_id, leaf_message_id=leaf_message_id
             )
@@ -391,7 +389,7 @@ class ContextBuilder:
 
         if new_summary:
             if buffer is not None:
-                # Write to buffer (will be flushed to SQLite async)
+                # 写入缓冲区（将异步刷新到 SQLite）
                 buffer.update_summary(new_summary, up_to_msg_id)
             else:
                 await self.store.update_summary(session_id, new_summary, up_to_msg_id)

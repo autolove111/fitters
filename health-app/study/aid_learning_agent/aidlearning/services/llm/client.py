@@ -1,10 +1,10 @@
 """
-LLM Client
+LLM 客户端
 ==========
 
-Unified LLM client for all AidLearning services.
+AidLearning 所有服务的统一 LLM 客户端。
 
-Note: This is a legacy interface. Prefer using the factory functions directly:
+注意：这是旧版接口。建议直接使用工厂函数：
     from aidlearning.services.llm import complete, stream
 """
 
@@ -19,18 +19,18 @@ from .utils import sanitize_url
 
 class LLMClient:
     """
-    Unified LLM client for all services.
+    所有服务的统一 LLM 客户端。
 
-    Wraps the LLM Factory with a class-based interface.
-    Prefer using factory functions (complete, stream) directly for new code.
+    以类接口封装 LLM 工厂。
+    新代码建议直接使用工厂函数（complete, stream）。
     """
 
     def __init__(self, config: LLMConfig | None = None) -> None:
         """
-        Initialize LLM client.
+        初始化 LLM 客户端。
 
         Args:
-            config: LLM configuration. If None, loads from environment.
+            config: LLM 配置。如果为 None，则从环境加载。
         """
 
         self.config = config or get_llm_config()
@@ -41,13 +41,13 @@ class LLMClient:
 
     def _setup_openai_env_vars(self) -> None:
         """
-        Set OpenAI environment variables for compatibility with OpenAI-style SDKs.
+        设置 OpenAI 环境变量以兼容 OpenAI 风格的 SDK。
         """
         import os
 
         binding = getattr(self.config, "binding", "openai")
 
-        # Only set env vars for OpenAI-compatible bindings
+        # 仅为 OpenAI 兼容绑定设置环境变量
         if binding in ("openai", "azure_openai", "gemini"):
             if self.config.api_key:
                 os.environ["OPENAI_API_KEY"] = self.config.api_key
@@ -68,16 +68,16 @@ class LLMClient:
         **kwargs: object,
     ) -> str:
         """
-        Call LLM completion via Factory.
+        通过工厂调用 LLM 补全。
 
         Args:
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            history: Optional conversation history
-            **kwargs: Additional arguments passed to the API
+            prompt: 用户提示
+            system_prompt: 可选的系统提示
+            history: 可选的对话历史
+            **kwargs: 传递给 API 的附加参数
 
         Returns:
-            LLM response text
+            LLM 响应文本
         """
         from . import factory
 
@@ -105,47 +105,47 @@ class LLMClient:
         **kwargs: object,
     ) -> str:
         """
-        Synchronous wrapper for complete().
+        complete() 的同步包装。
 
-        Use this when you need to call from non-async context.
+        当需要从非异步上下文调用时使用。
         """
         import asyncio
 
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            # No running event loop -> safe to run synchronously.
+            # 没有运行中的事件循环 -> 可以安全地同步运行。
             return asyncio.run(self.complete(prompt, system_prompt, history, **kwargs))
 
         raise RuntimeError(
-            "LLMClient.complete_sync() cannot be called from a running event loop. "
-            "Use `await llm.complete(...)` instead."
+            "LLMClient.complete_sync() 不能从运行中的事件循环调用。"
+            "请改用 `await llm.complete(...)`。"
         )
 
     def get_model_func(self) -> Callable[..., object]:
         """
-        Get an async callable compatible with generic llm_model_func hooks.
+        获取与通用 llm_model_func 钩子兼容的异步可调用对象。
 
         Returns:
-            Callable that can be used as llm_model_func
+            可用作 llm_model_func 的可调用对象
         """
         return self._build_factory_model_func(allow_multimodal=False)
 
     def get_vision_model_func(self) -> Callable[..., object]:
         """
-        Get an async callable compatible with vision_model_func hooks.
+        获取与 vision_model_func 钩子兼容的异步可调用对象。
 
         Returns:
-            Callable that can be used as vision_model_func
+            可用作 vision_model_func 的可调用对象
         """
         return self._build_factory_model_func(allow_multimodal=True)
 
     def supports_multimodal_images(self) -> bool:
-        """Return whether the configured LLM can accept image input."""
+        """返回已配置的 LLM 是否能接受图片输入。"""
         return supports_vision(getattr(self.config, "binding", "openai"), self.config.model)
 
     def _build_factory_model_func(self, allow_multimodal: bool) -> Callable[..., object]:
-        """Build adapter callables on top of the unified factory.complete API."""
+        """在统一的 factory.complete API 之上构建适配器可调用对象。"""
         from . import factory
 
         async def model_func(
@@ -158,7 +158,7 @@ class LLMClient:
         ) -> str:
             payload_kwargs: dict[str, object] = dict(kwargs)
 
-            # Normalize aliases from legacy callsites.
+            # 标准化旧版调用点的别名。
             payload_kwargs.pop("history_messages", None)
             payload_kwargs.pop("messages", None)
             payload_kwargs.pop("prompt", None)
@@ -192,13 +192,13 @@ _client: LLMClient | None = None
 
 def get_llm_client(config: LLMConfig | None = None) -> LLMClient:
     """
-    Get or create the singleton LLM client.
+    获取或创建 LLM 客户端单例。
 
     Args:
-        config: Optional configuration. Only used on first call.
+        config: 可选配置。仅在首次调用时使用。
 
     Returns:
-        LLMClient instance
+        LLMClient 实例
     """
     global _client
     if _client is None:
@@ -207,6 +207,6 @@ def get_llm_client(config: LLMConfig | None = None) -> LLMClient:
 
 
 def reset_llm_client() -> None:
-    """Reset the singleton LLM client."""
+    """重置 LLM 客户端单例。"""
     global _client
     _client = None

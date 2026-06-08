@@ -1,9 +1,9 @@
 """
-Stream Event Protocol
+流式事件协议
 =====================
 
-Defines the unified streaming event format used by all tools, capabilities,
-and plugins to communicate progress and results to consumers (CLI, WebSocket, SDK).
+定义所有工具、能力和插件用于向消费者（CLI、WebSocket、SDK）
+传达进度和结果的统一流式事件格式。
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from typing import Any
 
 
 class StreamEventType(str, Enum):
-    """All possible event types in a streaming session."""
+    """流式会话中所有可能的事件类型。"""
 
     STAGE_START = "stage_start"
     STAGE_END = "stage_end"
@@ -36,15 +36,15 @@ class StreamEventType(str, Enum):
 @dataclass
 class StreamEvent:
     """
-    A single streaming event emitted during a chat turn.
+    聊天轮次中发出的单个流式事件。
 
-    Attributes:
-        type: The semantic kind of this event.
-        source: Which tool / capability / plugin produced it (e.g. "deep_solve").
-        stage: Current stage within the source (e.g. "planning").
-        content: Human-readable text payload.
-        metadata: Arbitrary structured data (tool args, sources, metrics, …).
-        timestamp: Unix epoch seconds when the event was created.
+    属性：
+        type: 此事件的语义类型。
+        source: 产生该事件的工具/能力/插件（如 "deep_solve"）。
+        stage: 来源中的当前阶段（如 "planning"）。
+        content: 人类可读的文本负载。
+        metadata: 任意结构化数据（工具参数、来源、指标等）。
+        timestamp: 事件创建时的 Unix 纪元秒数。
     """
 
     type: StreamEventType

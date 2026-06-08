@@ -1,7 +1,7 @@
-"""Anthropic provider — direct SDK integration for Claude models.
+"""Anthropic 提供商 —— 直接 SDK 集成 Claude 模型。
 
-Handles message format conversion (OpenAI -> Anthropic Messages API),
-prompt caching, extended thinking, tool calls, and streaming.
+处理消息格式转换（OpenAI -> Anthropic Messages API）、
+提示词缓存、扩展思考、工具调用和流式传输。
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _gen_tool_id() -> str:
 
 
 class AnthropicProvider(LLMProvider):
-    """LLM provider using the native Anthropic SDK for Claude models."""
+    """使用原生 Anthropic SDK 的 Claude 模型 LLM 提供商。"""
 
     def __init__(
         self,
@@ -77,14 +77,14 @@ class AnthropicProvider(LLMProvider):
         return model
 
     # ------------------------------------------------------------------
-    # Message conversion: OpenAI chat format -> Anthropic Messages API
+    # 消息转换：OpenAI 聊天格式 -> Anthropic Messages API
     # ------------------------------------------------------------------
 
     def _convert_messages(
         self,
         messages: list[dict[str, Any]],
     ) -> tuple[str | list[dict[str, Any]], list[dict[str, Any]]]:
-        """Return ``(system, anthropic_messages)``."""
+        """返回 ``(system, anthropic_messages)``。"""
         system: str | list[dict[str, Any]] = ""
         raw: list[dict[str, Any]] = []
 
@@ -217,7 +217,7 @@ class AnthropicProvider(LLMProvider):
 
     @staticmethod
     def _merge_consecutive(msgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Anthropic requires alternating user/assistant roles."""
+        """Anthropic 要求 user/assistant 角色交替出现。"""
         merged: list[dict[str, Any]] = []
         for msg in msgs:
             if merged and merged[-1]["role"] == msg["role"]:
@@ -235,7 +235,7 @@ class AnthropicProvider(LLMProvider):
         return merged
 
     # ------------------------------------------------------------------
-    # Tool definition conversion
+    # 工具定义转换
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -277,7 +277,7 @@ class AnthropicProvider(LLMProvider):
         return {"type": "auto"}
 
     # ------------------------------------------------------------------
-    # Prompt caching
+    # 提示词缓存
     # ------------------------------------------------------------------
 
     @classmethod
@@ -318,7 +318,7 @@ class AnthropicProvider(LLMProvider):
         return system, new_msgs, new_tools
 
     # ------------------------------------------------------------------
-    # Build API kwargs
+    # 构建 API 参数
     # ------------------------------------------------------------------
 
     def _build_kwargs(
@@ -381,7 +381,7 @@ class AnthropicProvider(LLMProvider):
         return kwargs
 
     # ------------------------------------------------------------------
-    # Response parsing
+    # 响应解析
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -434,7 +434,7 @@ class AnthropicProvider(LLMProvider):
         )
 
     # ------------------------------------------------------------------
-    # Public API
+    # 公共 API
     # ------------------------------------------------------------------
 
     async def chat(

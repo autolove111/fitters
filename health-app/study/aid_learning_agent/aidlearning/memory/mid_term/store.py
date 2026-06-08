@@ -1,12 +1,10 @@
-"""Mid-term memory store backed by SQLite.
+"""基于 SQLite 的中期记忆存储。
 
-Mid-term memory captures structured interaction records (task logs, Q&A
-pairs, operation results) that persist across sessions and support both
-time-range queries ("what did I do last week?") and semantic search.
+中期记忆捕获结构化交互记录（任务日志、问答对、操作结果），
+跨会话持久化，支持时间范围查询（"上周我做了什么？"）和语义搜索。
 
-The table lives in the same ``chat_history.db`` as sessions/messages.
-Embeddings are stored as raw ``float32`` BLOBs for zero-dependency
-vector search via numpy.
+表与会话/消息在同一个 ``chat_history.db`` 中。
+嵌入以原始 ``float32`` BLOB 存储，通过 numpy 实现零依赖向量搜索。
 """
 
 from __future__ import annotations
@@ -27,7 +25,7 @@ from aidlearning.memory.shared.ids import new_entry_id
 
 logger = logging.getLogger(__name__)
 
-# ── SQL ────────────────────────────────────────────────────────────────
+# ── SQL 语句 ────────────────────────────────────────────────────────────────
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS mid_term_memory (
@@ -58,11 +56,11 @@ _INDEXES = [
 ]
 
 
-# ── Data types ─────────────────────────────────────────────────────────
+# ── 数据类型 ─────────────────────────────────────────────────────────
 
 @dataclass
 class MidTermEntry:
-    """One mid-term memory record."""
+    """一条中期记忆记录。"""
     id: str
     session_id: str
     turn_id: str
@@ -99,7 +97,7 @@ class MidTermEntry:
 
 @dataclass
 class MidTermResult:
-    """A search result with scoring details."""
+    """带评分详情的搜索结果。"""
     entry: MidTermEntry
     similarity: float
     decay: float
@@ -108,7 +106,7 @@ class MidTermResult:
 
 @dataclass
 class CleanupResult:
-    """Result of a stale-entry cleanup pass."""
+    """过时条目清理过程的结果。"""
     entries_scanned: int = 0
     entries_archived: int = 0
     entries_deleted: int = 0
@@ -130,13 +128,13 @@ def _unpack_embedding(blob: bytes | None) -> list[float] | None:
     return list(struct.unpack(f"<{n}f", blob))
 
 
-# ── Store ──────────────────────────────────────────────────────────────
+# ── 存储 ──────────────────────────────────────────────────────────────
 
 EmbedFn = Callable[[list[str]], Awaitable[list[list[float]]]]
 
 
 class MidTermMemoryStore:
-    """Mid-term memory manager. Uses the same SQLite DB as sessions."""
+    """中期记忆管理器。使用与会话相同的 SQLite DB。"""
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
@@ -155,7 +153,7 @@ class MidTermMemoryStore:
         conn.row_factory = sqlite3.Row
         return conn
 
-    # ── Write ─────────────────────────────────────────────────────────
+    # ── 写入 ─────────────────────────────────────────────────────────
 
     async def record(
         self,
@@ -169,7 +167,7 @@ class MidTermMemoryStore:
         importance: float = 0.5,
         source_entry_id: str = "",
     ) -> str:
-        """Write a mid-term memory entry. Returns the new entry ID."""
+        """写入一条中期记忆条目。返回新条目 ID。"""
         entry_id = new_entry_id()
         now = time.time()
         payload_str = json.dumps(raw_payload, ensure_ascii=False) if raw_payload is not None else ""
@@ -195,7 +193,7 @@ class MidTermMemoryStore:
         entry_ids: list[str],
         embed_fn: EmbedFn,
     ) -> int:
-        """Generate embeddings for specified entries. Returns success count."""
+        """为指定条目生成嵌入。返回成功计数。"""
         if not entry_ids:
             return 0
 
@@ -237,7 +235,7 @@ class MidTermMemoryStore:
         async with self._lock:
             return await asyncio.to_thread(_update)
 
-    # ── Search ────────────────────────────────────────────────────────
+    # ── 搜索 ────────────────────────────────────────────────────────
 
     async def search(
         self,
@@ -248,10 +246,10 @@ class MidTermMemoryStore:
         time_range: tuple[float, float] | None = None,
         embed_fn: EmbedFn | None = None,
     ) -> list[MidTermResult]:
-        """Semantic search over mid-term memory.
+        """中期记忆的语义搜索。
 
-        If *embed_fn* is provided, uses vector similarity.
-        Falls back to keyword-only search otherwise.
+        如果提供了 *embed_fn*，使用向量相似度。
+        否则回退到纯关键词搜索。
         """
         if embed_fn is not None:
             try:
@@ -277,7 +275,7 @@ class MidTermMemoryStore:
         surface_filter: str | None,
         time_range: tuple[float, float] | None,
     ) -> list[MidTermResult]:
-        """Cosine similarity search using numpy."""
+        """使用 numpy 的余弦相似度搜索。"""
         import numpy as np
 
         def _fetch() -> list[tuple[str, bytes, float, float, int, float]]:
@@ -310,18 +308,18 @@ class MidTermMemoryStore:
 
         ids, blobs, createds, accesseds, counts, imps = zip(*rows)
 
-        # Build matrix
+        # 构建矩阵
         vecs = np.array([_unpack_embedding(b) for b in blobs], dtype=np.float32)
         q = np.array(query_vec, dtype=np.float32)
 
-        # Cosine similarity
+        # 余弦相似度
         norms = np.linalg.norm(vecs, axis=1)
         q_norm = np.linalg.norm(q)
         if q_norm == 0:
             return []
         sims = vecs @ q / (norms * q_norm + 1e-10)
 
-        # Score each result
+        # 为每个结果评分
         now = time.time()
         results: list[MidTermResult] = []
         for i in range(len(ids)):
@@ -332,7 +330,7 @@ class MidTermMemoryStore:
             )
             final = 0.55 * sim_norm + 0.20 * decay + 0.15 * imps[i] + 0.10 * sim_norm
 
-            # Fetch full entry lazily (only for top results)
+            # 延迟获取完整条目（仅对顶部结果）
             entry = MidTermEntry(
                 id=ids[i], session_id="", turn_id="", surface="",
                 kind="", content="", raw_payload="",
@@ -344,9 +342,9 @@ class MidTermMemoryStore:
             results.append(MidTermResult(entry=entry, similarity=sim_norm, decay=decay, final_score=final))
 
         results.sort(key=lambda r: r.final_score, reverse=True)
-        top = results[:top_k * 2]  # over-fetch for dedup
+        top = results[:top_k * 2]  # 超额获取以用于去重
 
-        # Fetch full entries for the top results
+        # 为顶部结果获取完整条目
         top_ids = [r.entry.id for r in top[:top_k]]
 
         def _fetch_full() -> dict[str, MidTermEntry]:
@@ -378,7 +376,7 @@ class MidTermMemoryStore:
         async with self._lock:
             full_map = await asyncio.to_thread(_fetch_full)
 
-        # Merge and update access stats
+        # 合并并更新访问统计
         final_results: list[MidTermResult] = []
         hit_ids: list[str] = []
         for r in top[:top_k]:
@@ -401,7 +399,7 @@ class MidTermMemoryStore:
         surface_filter: str | None,
         time_range: tuple[float, float] | None,
     ) -> list[MidTermResult]:
-        """Fallback keyword search using SQL LIKE."""
+        """使用 SQL LIKE 的回退关键词搜索。"""
         clauses = ["superseded_by = ''"]
         params: list[Any] = []
         if surface_filter:
@@ -411,7 +409,7 @@ class MidTermMemoryStore:
             clauses.append("created_at BETWEEN ? AND ?")
             params.extend(time_range)
 
-        # Simple token matching
+        # 简单 token 匹配
         tokens = [t.strip() for t in query.split() if t.strip()]
         if tokens:
             like_clauses = []
@@ -440,7 +438,7 @@ class MidTermMemoryStore:
                 r["created_at"], r["last_accessed"],
                 r["access_count"], r["importance"], now=now,
             )
-            # Keyword score: fraction of query tokens found in content
+            # 关键词分数：在内容中找到的查询 token 比例
             content_lower = r["content"].lower()
             kw_score = sum(1 for t in tokens if t.lower() in content_lower) / max(len(tokens), 1)
             final = 0.40 * kw_score + 0.30 * decay + 0.20 * r["importance"] + 0.10
@@ -467,7 +465,7 @@ class MidTermMemoryStore:
         return final
 
     async def _touch_access(self, entry_ids: list[str]) -> None:
-        """Update last_accessed and access_count for retrieved entries."""
+        """更新检索条目的 last_accessed 和 access_count。"""
         now = time.time()
 
         def _update() -> None:
@@ -483,7 +481,7 @@ class MidTermMemoryStore:
         async with self._lock:
             await asyncio.to_thread(_update)
 
-    # ── Time-range queries ────────────────────────────────────────────
+    # ── 时间范围查询 ────────────────────────────────────────────
 
     async def search_by_time(
         self,
@@ -491,7 +489,7 @@ class MidTermMemoryStore:
         surface: str | None = None,
         limit: int = 50,
     ) -> list[MidTermEntry]:
-        """Query entries by time range. For "what did I do last week?"."""
+        """按时间范围查询条目。用于"上周我做了什么？"。"""
         clauses = ["created_at >= ?", "superseded_by = ''"]
         params: list[Any] = [since]
         if surface:
@@ -525,10 +523,10 @@ class MidTermMemoryStore:
         async with self._lock:
             return await asyncio.to_thread(_fetch)
 
-    # ── Decay management ──────────────────────────────────────────────
+    # ── 衰减管理 ──────────────────────────────────────────────
 
     async def refresh_decay_scores(self) -> int:
-        """Recompute decay_score for all entries. Returns count updated."""
+        """重新计算所有条目的 decay_score。返回更新计数。"""
         now = time.time()
 
         def _refresh() -> int:
@@ -557,7 +555,7 @@ class MidTermMemoryStore:
         threshold: float = 0.05,
         archive_path: Path | None = None,
     ) -> CleanupResult:
-        """Remove entries with decay_score below threshold."""
+        """移除 decay_score 低于阈值的条目。"""
         result = CleanupResult()
 
         def _cleanup() -> None:
@@ -578,7 +576,7 @@ class MidTermMemoryStore:
                     conn.execute("DELETE FROM mid_term_memory WHERE id = ?", (r["id"],))
                     result.entries_deleted += 1
 
-                # Also clean up superseded entries
+                # 同时清理被取代的条目
                 sup_count = conn.execute(
                     "SELECT COUNT(*) FROM mid_term_memory WHERE superseded_by != ''"
                 ).fetchone()[0]
@@ -591,10 +589,10 @@ class MidTermMemoryStore:
 
         return result
 
-    # ── Stats ─────────────────────────────────────────────────────────
+    # ── 统计 ─────────────────────────────────────────────────────────
 
     async def count(self, surface: str | None = None) -> int:
-        """Count entries, optionally filtered by surface."""
+        """统计条目数，可按 surface 过滤。"""
         def _count() -> int:
             with self._conn() as conn:
                 if surface:
@@ -612,7 +610,7 @@ class MidTermMemoryStore:
             return await asyncio.to_thread(_count)
 
     async def stats(self) -> dict[str, Any]:
-        """Return summary stats for the workbench overview."""
+        """返回工作台概览的摘要统计。"""
         def _stats() -> dict[str, Any]:
             with self._conn() as conn:
                 total = conn.execute("SELECT COUNT(*) FROM mid_term_memory").fetchone()[0]
@@ -657,7 +655,7 @@ def get_mid_term_store(db_path: Path | None = None) -> MidTermMemoryStore:
 
 
 def reset_mid_term_store() -> None:
-    """Reset the singleton (for testing)."""
+    """重置单例（用于测试）。"""
     global _store
     _store = None
 

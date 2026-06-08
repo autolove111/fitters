@@ -13,16 +13,16 @@ Provider Capabilities — LLM Provider 能力配置
 替代了之前散落在各处的硬编码判断。
 """
 
-# Provider capabilities configuration
-# Keys are binding names (lowercase), values are capability dictionaries
+# Provider 能力配置
+# 键为绑定名称（小写），值为能力字典
 PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
-    # OpenAI and OpenAI-compatible providers
+    # OpenAI 和 OpenAI 兼容 Provider
     "openai": {
         "supports_response_format": True,
         "supports_streaming": True,
         "supports_tools": True,
         "supports_vision": True,
-        "system_in_messages": True,  # System prompt goes in messages array
+        "system_in_messages": True,  # 系统提示放入 messages 数组
         "newer_models_use_max_completion_tokens": True,
     },
     "azure_openai": {
@@ -36,15 +36,15 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
     },
     # Anthropic
     "anthropic": {
-        "supports_response_format": False,  # Anthropic uses different format
+        "supports_response_format": False,  # Anthropic 使用不同的格式
         "supports_streaming": True,
         "supports_tools": True,
         "supports_vision": True,
-        "vision_url_supported": False,  # Our adapter only emits base64 image source
-        "system_in_messages": False,  # System is a separate parameter
+        "vision_url_supported": False,  # 我们的适配器仅输出 base64 图片源
+        "system_in_messages": False,  # 系统提示是单独的参数
         "has_thinking_tags": False,
     },
-    "claude": {  # Alias for anthropic
+    "claude": {  # anthropic 的别名
         "supports_response_format": False,
         "supports_streaming": True,
         "supports_tools": True,
@@ -55,22 +55,22 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
     },
     # DeepSeek
     "deepseek": {
-        "supports_response_format": False,  # DeepSeek doesn't support strict JSON schema yet
+        "supports_response_format": False,  # DeepSeek 尚不支持严格的 JSON Schema
         "supports_streaming": True,
         "supports_tools": True,
         "supports_vision": False,
         "system_in_messages": True,
-        "has_thinking_tags": True,  # DeepSeek reasoner has thinking tags
+        "has_thinking_tags": True,  # DeepSeek 推理模型有思考标签
     },
-    # OpenRouter (aggregator, generally OpenAI-compatible)
+    # OpenRouter（聚合器，通常兼容 OpenAI）
     "openrouter": {
-        "supports_response_format": True,  # Depends on underlying model
+        "supports_response_format": True,  # 取决于底层模型
         "supports_streaming": True,
         "supports_tools": True,
-        "supports_vision": True,  # Depends on underlying model
+        "supports_vision": True,  # 取决于底层模型
         "system_in_messages": True,
     },
-    # Groq (fast inference)
+    # Groq（快速推理）
     "groq": {
         "supports_response_format": True,
         "supports_streaming": True,
@@ -86,7 +86,7 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
         "supports_vision": True,
         "system_in_messages": True,
     },
-    "together_ai": {  # Alias
+    "together_ai": {  # 别名
         "supports_response_format": True,
         "supports_streaming": True,
         "supports_tools": True,
@@ -101,10 +101,9 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
         "supports_vision": True,
         "system_in_messages": True,
     },
-    # Moonshot / Kimi — vision is per-model (see MODEL_OVERRIDES below).
-    # Per the official docs the image input must be base64-encoded inline; URL
-    # form is rejected. We therefore force the multimodal layer to resolve any
-    # url-only attachment to bytes before sending.
+    # Moonshot / Kimi — 视觉支持按模型区分（见下方 MODEL_OVERRIDES）。
+    # 根据官方文档，图片输入必须为 base64 内联编码；URL 形式会被拒绝。
+    # 因此我们强制多模态层在发送前将纯 URL 附件解析为字节。
     "moonshot": {
         "supports_response_format": True,
         "supports_streaming": True,
@@ -113,9 +112,8 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
         "vision_url_supported": False,
         "system_in_messages": True,
     },
-    # MiniMax's OpenAI-compatible endpoint supports Chat Completions tools /
-    # function calling for M-series text models. Response-format support is
-    # still disabled by the model override below.
+    # MiniMax 的 OpenAI 兼容端点支持 M 系列文本模型的 Chat Completions 工具/函数调用。
+    # 响应格式支持仍被下方的模型覆盖禁用。
     "minimax": {
         "supports_response_format": False,
         "supports_streaming": True,
@@ -123,12 +121,12 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
         "supports_vision": False,
         "system_in_messages": True,
     },
-    # Local providers (generally OpenAI-compatible)
+    # 本地 Provider（通常兼容 OpenAI）
     "ollama": {
-        "supports_response_format": True,  # Ollama supports JSON mode
+        "supports_response_format": True,  # Ollama 支持 JSON 模式
         "supports_streaming": True,
-        "supports_tools": False,  # Limited tool support
-        "supports_vision": False,  # Depends on model; set True via model overrides
+        "supports_tools": False,  # 工具支持有限
+        "supports_vision": False,  # 取决于模型；通过模型覆盖设为 True
         "system_in_messages": True,
     },
     "lm_studio": {
@@ -146,7 +144,7 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
         "system_in_messages": True,
     },
     "llama_cpp": {
-        "supports_response_format": True,  # llama.cpp server supports JSON grammar
+        "supports_response_format": True,  # llama.cpp 服务器支持 JSON 语法
         "supports_streaming": True,
         "supports_tools": False,
         "supports_vision": False,
@@ -154,21 +152,21 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, object]] = {
     },
 }
 
-# Default capabilities for unknown providers (assume OpenAI-compatible)
+# 未知 Provider 的默认能力（假设兼容 OpenAI）
 DEFAULT_CAPABILITIES: dict[str, object] = {
     "supports_response_format": True,
     "supports_streaming": True,
     "supports_tools": False,
     "supports_vision": False,
-    "vision_url_supported": True,  # Most OpenAI-compat providers accept image_url URLs
+    "vision_url_supported": True,  # 大多数 OpenAI 兼容 Provider 接受 image_url URL
     "system_in_messages": True,
     "has_thinking_tags": False,
-    "forced_temperature": None,  # None means no forced value, use requested temperature
+    "forced_temperature": None,  # None 表示无强制值，使用请求的温度
 }
 
-# Model-specific overrides
-# Format: {model_pattern: {capability: value}}
-# Patterns are matched with case-insensitive startswith
+# 模型特定覆盖
+# 格式：{model_pattern: {capability: value}}
+# 模式通过不区分大小写的 startswith 匹配
 MODEL_OVERRIDES: dict[str, dict[str, object]] = {
     "deepseek": {
         "supports_response_format": False,
@@ -180,9 +178,9 @@ MODEL_OVERRIDES: dict[str, dict[str, object]] = {
         "has_thinking_tags": True,
         "supports_vision": False,
     },
-    # Qwen text models often share the same provider/gateway as Qwen-VL.
-    # Keep thinking-tag handling broad, but only mark explicit VL/vision model
-    # names as image-capable so RAG image indexing can fail closed.
+    # Qwen 文本模型通常与 Qwen-VL 共享同一 Provider/网关。
+    # 保持思考标签处理的广泛性，但仅将明确的 VL/视觉模型名称标记为支持图片，
+    # 以便 RAG 图片索引能安全失败。
     "qwen/qwen2.5-vl": {"has_thinking_tags": True, "supports_vision": True},
     "qwen/qwen3-vl": {"has_thinking_tags": True, "supports_vision": True},
     "qwen/qwen2-vl": {"has_thinking_tags": True, "supports_vision": True},
@@ -201,14 +199,14 @@ MODEL_OVERRIDES: dict[str, dict[str, object]] = {
     "minimax": {
         "supports_response_format": False,
     },
-    # NOTE: supports_response_format and system_in_messages are binding-level
-    # capabilities, NOT model-level. When using OpenRouter or other OpenAI-compatible
-    # proxies (binding="openai"), they handle response_format translation and expect
-    # system prompts in messages. The native Anthropic limitations are already
-    # handled by PROVIDER_CAPABILITIES["anthropic"] / ["claude"] above.
-    # Only model-intrinsic capabilities (like has_thinking_tags) belong here.
-    # Reasoning models - only support temperature=1.0
-    # See: https://github.com/HKUDS/AidLearning/issues/141
+    # 注意：supports_response_format 和 system_in_messages 是绑定级别
+    # 的能力，而非模型级别。使用 OpenRouter 或其他 OpenAI 兼容代理
+    # （binding="openai"）时，它们处理 response_format 转换并期望
+    # 系统提示在 messages 中。Anthropic 的原生限制已由上方的
+    # PROVIDER_CAPABILITIES["anthropic"] / ["claude"] 处理。
+    # 仅模型固有能力（如 has_thinking_tags）应在此处。
+    # 推理模型 - 仅支持 temperature=1.0
+    # 参见：https://github.com/HKUDS/AidLearning/issues/141
     "gpt-5": {
         "forced_temperature": 1.0,
     },
@@ -218,7 +216,7 @@ MODEL_OVERRIDES: dict[str, dict[str, object]] = {
     "o3": {
         "forced_temperature": 1.0,
     },
-    # Vision-capable model families
+    # 支持视觉的模型系列
     "gpt-4o": {"supports_vision": True},
     "gpt-4-turbo": {"supports_vision": True},
     "gpt-4-vision": {"supports_vision": True},
@@ -231,7 +229,7 @@ MODEL_OVERRIDES: dict[str, dict[str, object]] = {
     "moondream": {"supports_vision": True},
     "minicpm-v": {"supports_vision": True},
     "gpt-3.5": {"supports_vision": False},
-    # Moonshot / Kimi vision models
+    # Moonshot / Kimi 视觉模型
     # https://platform.kimi.com/docs/guide/use-kimi-vision-model
     "moonshot-v1-8k-vision": {"supports_vision": True},
     "moonshot-v1-32k-vision": {"supports_vision": True},
@@ -248,64 +246,63 @@ def get_capability(
     default: object = None,
 ) -> object:
     """
-    Get a capability value for a provider/model combination.
+    获取 Provider/模型组合的能力值。
 
-    Checks in order:
-    1. Model-specific overrides (matched by prefix)
-    2. Provider/binding capabilities
-    3. Default capabilities for unknown providers
-    4. Explicit default value
+    按以下顺序检查：
+    1. 模型特定覆盖（按前缀匹配）
+    2. Provider/绑定能力
+    3. 未知 Provider 的默认能力
+    4. 显式默认值
 
     Args:
-        binding: Provider binding name (e.g., "openai", "anthropic", "deepseek")
-        capability: Capability name (e.g., "supports_response_format")
-        model: Optional model name for model-specific overrides
-        default: Default value if capability is not defined
+        binding: Provider 绑定名称（如 "openai", "anthropic", "deepseek"）
+        capability: 能力名称（如 "supports_response_format"）
+        model: 可选的模型名称，用于模型特定覆盖
+        default: 如果能力未定义则使用默认值
 
     Returns:
-        Capability value or default
+        能力值或默认值
     """
     binding_lower = (binding or "openai").lower()
 
-    # 1. Check model-specific overrides first
+    # 1. 首先检查模型特定覆盖
     if model:
         model_lower = model.lower()
-        # Sort by pattern length descending to match most specific first
+        # 按模式长度降序排列以优先匹配最具体的
         for pattern, overrides in sorted(MODEL_OVERRIDES.items(), key=lambda x: -len(x[0])):
             if model_lower.startswith(pattern):
                 if capability in overrides:
                     return overrides[capability]
 
-    # 2. Check provider capabilities
+    # 2. 检查 Provider 能力
     provider_caps = PROVIDER_CAPABILITIES.get(binding_lower, {})
     if capability in provider_caps:
         return provider_caps[capability]
 
-    # 3. Check default capabilities for unknown providers
+    # 3. 检查未知 Provider 的默认能力
     if capability in DEFAULT_CAPABILITIES:
         return DEFAULT_CAPABILITIES[capability]
 
-    # 4. Return explicit default
+    # 4. 返回显式默认值
     return default
 
 
-# Runtime cache for response_format incompatibilities discovered at request time.
-# Keyed by (binding_lower, model_lower). Populated when a provider rejects a
-# request with response_format={"type": "json_object"} (commonly LM Studio /
-# Ollama serving Gemma/Qwen-style models that only accept "json_schema" or "text").
-# Once a pair is recorded here, subsequent calls skip response_format entirely
-# instead of paying the cost of a failed request + retry.
+# 运行时缓存，记录请求时发现的 response_format 不兼容情况。
+# 以 (binding_lower, model_lower) 为键。当 Provider 拒绝
+# response_format={"type": "json_object"} 的请求时填充
+# （常见于 LM Studio / Ollama 服务 Gemma/Qwen 风格模型，仅接受 "json_schema" 或 "text"）。
+# 一旦记录了某对组合，后续调用将完全跳过 response_format，
+# 而非付出失败请求 + 重试的代价。
 _RUNTIME_DISABLED_RESPONSE_FORMAT: set[tuple[str, str]] = set()
 
 
 def disable_response_format_at_runtime(binding: str | None, model: str | None) -> None:
-    """Mark a (binding, model) pair as not supporting ``response_format``.
+    """标记 (binding, model) 对不支持 ``response_format``。
 
-    Subsequent calls to :func:`supports_response_format` for the same pair
-    will return ``False`` without re-checking the static configuration. This
-    is useful when a provider unexpectedly rejects ``response_format`` at
-    runtime (e.g. LM Studio + ``gemma-4-e2b`` returning
-    ``"'response_format.type' must be 'json_schema' or 'text'"``).
+    后续对同一对调用 :func:`supports_response_format` 将返回 ``False``，
+    无需重新检查静态配置。当 Provider 在运行时意外拒绝 ``response_format`` 时
+    （如 LM Studio + ``gemma-4-e2b`` 返回
+    ``"'response_format.type' must be 'json_schema' or 'text'"``），此功能非常有用。
     """
     if not binding or not model:
         return
@@ -313,7 +310,7 @@ def disable_response_format_at_runtime(binding: str | None, model: str | None) -
 
 
 def is_response_format_disabled_at_runtime(binding: str | None, model: str | None) -> bool:
-    """Return True if (binding, model) was disabled via :func:`disable_response_format_at_runtime`."""
+    """如果 (binding, model) 已通过 :func:`disable_response_format_at_runtime` 禁用则返回 True。"""
     if not binding or not model:
         return False
     return (binding.lower(), model.lower()) in _RUNTIME_DISABLED_RESPONSE_FORMAT
@@ -321,18 +318,18 @@ def is_response_format_disabled_at_runtime(binding: str | None, model: str | Non
 
 def supports_response_format(binding: str, model: str | None = None) -> bool:
     """
-    Check if the provider/model supports response_format parameter.
+    检查 Provider/模型是否支持 response_format 参数。
 
-    This is a convenience function for the most common capability check.
-    A runtime override (set via :func:`disable_response_format_at_runtime`)
-    always wins over static capability configuration.
+    这是最常见能力检查的便捷函数。
+    运行时覆盖（通过 :func:`disable_response_format_at_runtime` 设置）
+    始终优先于静态能力配置。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name for model-specific overrides
+        binding: Provider 绑定名称
+        model: 可选的模型名称，用于模型特定覆盖
 
     Returns:
-        True if response_format is supported
+        如果支持 response_format 则返回 True
     """
     if is_response_format_disabled_at_runtime(binding, model):
         return False
@@ -342,14 +339,14 @@ def supports_response_format(binding: str, model: str | None = None) -> bool:
 
 def supports_streaming(binding: str, model: str | None = None) -> bool:
     """
-    Check if the provider/model supports streaming responses.
+    检查 Provider/模型是否支持流式响应。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name
+        binding: Provider 绑定名称
+        model: 可选的模型名称
 
     Returns:
-        True if streaming is supported
+        如果支持流式则返回 True
     """
     value = get_capability(binding, "supports_streaming", model, default=True)
     return bool(value)
@@ -357,15 +354,15 @@ def supports_streaming(binding: str, model: str | None = None) -> bool:
 
 def system_in_messages(binding: str, model: str | None = None) -> bool:
     """
-    Check if system prompt should be in messages array (OpenAI style)
-    or as a separate parameter (Anthropic style).
+    检查系统提示应放在 messages 数组中（OpenAI 风格）
+    还是作为单独参数（Anthropic 风格）。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name
+        binding: Provider 绑定名称
+        model: 可选的模型名称
 
     Returns:
-        True if system prompt goes in messages array
+        如果系统提示在 messages 数组中则返回 True
     """
     value = get_capability(binding, "system_in_messages", model, default=True)
     return bool(value)
@@ -388,14 +385,14 @@ def has_thinking_tags(binding: str, model: str | None = None) -> bool:
 
 def supports_tools(binding: str, model: str | None = None) -> bool:
     """
-    Check if the provider/model supports function calling / tools.
+    检查 Provider/模型是否支持函数调用/工具。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name
+        binding: Provider 绑定名称
+        model: 可选的模型名称
 
     Returns:
-        True if tools/function calling is supported
+        如果支持工具/函数调用则返回 True
     """
     value = get_capability(binding, "supports_tools", model, default=False)
     return bool(value)
@@ -403,26 +400,25 @@ def supports_tools(binding: str, model: str | None = None) -> bool:
 
 def supports_vision(binding: str, model: str | None = None) -> bool:
     """
-    Check if the provider/model supports multimodal (image) input.
+    检查 Provider/模型是否支持多模态（图片）输入。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name for model-specific overrides
+        binding: Provider 绑定名称
+        model: 可选的模型名称，用于模型特定覆盖
 
     Returns:
-        True if the model can accept image content in messages
+        如果模型能接受消息中的图片内容则返回 True
     """
     value = get_capability(binding, "supports_vision", model, default=False)
     return bool(value)
 
 
 def supports_vision_url(binding: str, model: str | None = None) -> bool:
-    """Whether the provider accepts remote URL image references.
+    """Provider 是否接受远程 URL 图片引用。
 
-    Some providers (Moonshot, our Anthropic adapter) only accept inline
-    base64-encoded image bytes. The multimodal layer consults this flag to
-    decide whether url-only attachments need to be resolved to bytes before
-    being forwarded.
+    某些 Provider（Moonshot、我们的 Anthropic 适配器）仅接受内联
+    base64 编码的图片字节。多模态层查询此标志以决定
+    纯 URL 附件是否需要在转发前解析为字节。
     """
     value = get_capability(binding, "vision_url_supported", model, default=True)
     return bool(value)
@@ -430,14 +426,14 @@ def supports_vision_url(binding: str, model: str | None = None) -> bool:
 
 def requires_api_version(binding: str, model: str | None = None) -> bool:
     """
-    Check if the provider requires an API version parameter (e.g., Azure OpenAI).
+    检查 Provider 是否需要 API 版本参数（如 Azure OpenAI）。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name
+        binding: Provider 绑定名称
+        model: 可选的模型名称
 
     Returns:
-        True if api_version is required
+        如果需要 api_version 则返回 True
     """
     value = get_capability(binding, "requires_api_version", model, default=False)
     return bool(value)
@@ -449,18 +445,18 @@ def get_effective_temperature(
     requested_temp: float = 0.7,
 ) -> float:
     """
-    Get the effective temperature value for a model.
+    获取模型的有效温度值。
 
-    Some models (e.g., o1, o3, gpt-5) only support a fixed temperature value (1.0).
-    This function returns the forced temperature if defined, otherwise the requested value.
+    某些模型（如 o1、o3、gpt-5）仅支持固定的温度值（1.0）。
+    如果定义了强制温度则返回该值，否则返回请求的值。
 
     Args:
-        binding: Provider binding name
-        model: Optional model name for model-specific overrides
-        requested_temp: The temperature value requested by the caller (default: 0.7)
+        binding: Provider 绑定名称
+        model: 可选的模型名称，用于模型特定覆盖
+        requested_temp: 调用方请求的温度值（默认：0.7）
 
     Returns:
-        The effective temperature to use for the API call
+        API 调用应使用的有效温度
     """
     forced_temp = get_capability(binding, "forced_temperature", model)
     if isinstance(forced_temp, (int, float)):

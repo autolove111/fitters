@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-System Setup and Initialization
-Combines user directory initialization and port configuration management.
+系统设置和初始化
+结合用户目录初始化和端口配置管理。
 """
 
 import json
@@ -12,7 +12,7 @@ import yaml
 
 from aidlearning.services.path_service import get_path_service
 
-# Initialize logger for setup operations
+# 初始化设置操作的日志记录器
 _setup_logger = None
 
 DEFAULT_INTERFACE_SETTINGS = {
@@ -88,7 +88,7 @@ DEFAULT_AGENTS_SETTINGS = {
 
 
 def _get_setup_logger():
-    """Get logger for setup operations"""
+    """获取设置操作的日志记录器"""
     global _setup_logger
     if _setup_logger is None:
         _setup_logger = logging.getLogger(__name__)
@@ -96,21 +96,20 @@ def _get_setup_logger():
 
 
 # ============================================================================
-# User Directory Initialization
+# 用户目录初始化
 # ============================================================================
 
 
 def init_user_directories(project_root: Path | None = None) -> None:
     """
-    Initialize essential user data files if they don't exist.
+    初始化必要的用户数据文件（如果不存在）。
 
-    This function uses lazy initialization - directories are created on-demand
-    when files are saved, rather than pre-creating all directories at startup.
+    此函数使用延迟初始化 - 目录在文件保存时按需创建，
+    而非在启动时预创建所有目录。
 
-    Only essential configuration files (like settings/interface.json) are
-    created at startup if they don't exist.
+    仅在启动时创建必要的配置文件（如 settings/interface.json）。
 
-    Directory structure (created on-demand by each module):
+    目录结构（由各模块按需创建）：
     data/user/
     ├── chat_history.db
     ├── logs/
@@ -129,23 +128,23 @@ def init_user_directories(project_root: Path | None = None) -> None:
             └── _detached_code_execution/
 
     Args:
-        project_root: Project root directory (ignored, kept for API compatibility)
+        project_root: 项目根目录（已忽略，保留以兼容 API）
     """
-    # Use PathService for all paths
+    # 使用 PathService 获取所有路径
     path_service = get_path_service()
     path_service.ensure_all_directories()
 
-    # Only initialize essential configuration files
-    # Directories will be created on-demand when files are saved
+    # 仅初始化必要的配置文件
+    # 目录将在文件保存时按需创建
     _ensure_essential_settings(path_service)
 
 
 def _ensure_essential_settings(path_service) -> None:
     """
-    Ensure essential settings files exist.
+    确保必要的设置文件存在。
 
-    This is the minimal initialization needed at startup.
-    All other directories are created on-demand when files are saved.
+    这是启动时所需的最小初始化。
+    其他所有目录将在文件保存时按需创建。
     """
     interface_file = path_service.get_settings_file("interface")
     _write_json_if_missing(interface_file, DEFAULT_INTERFACE_SETTINGS)
@@ -165,7 +164,7 @@ def _ensure_essential_settings(path_service) -> None:
 
 
 def _write_json_if_missing(file_path: Path, payload: dict) -> None:
-    """Write JSON defaults once; never overwrite user-managed files."""
+    """写入 JSON 默认值（仅一次）；不覆盖用户管理的文件。"""
     if file_path.exists():
         return
     try:
@@ -178,7 +177,7 @@ def _write_json_if_missing(file_path: Path, payload: dict) -> None:
 
 
 def _write_yaml_if_missing(file_path: Path, payload: dict) -> None:
-    """Write YAML defaults once; never overwrite user-managed files."""
+    """写入 YAML 默认值（仅一次）；不覆盖用户管理的文件。"""
     if file_path.exists():
         return
     try:
@@ -191,18 +190,18 @@ def _write_yaml_if_missing(file_path: Path, payload: dict) -> None:
 
 
 # ============================================================================
-# Port Configuration Management
+# 端口配置管理
 # ============================================================================
-# Ports are configured via data/user/settings/system.json.
+# 端口通过 data/user/settings/system.json 配置。
 # ============================================================================
 
 
 def get_backend_port(project_root: Path | None = None) -> int:
     """
-    Get backend port from runtime settings.
+    从运行时设置获取后端端口。
 
     Returns:
-        Backend port number (default: 8001)
+        后端端口号（默认：8001）
     """
     try:
         from aidlearning.services.config.launch_settings import load_launch_settings
@@ -216,10 +215,10 @@ def get_backend_port(project_root: Path | None = None) -> int:
 
 def get_frontend_port(project_root: Path | None = None) -> int:
     """
-    Get frontend port from runtime settings.
+    从运行时设置获取前端端口。
 
     Returns:
-        Frontend port number (default: 3782)
+        前端端口号（默认：3782）
     """
     try:
         from aidlearning.services.config.launch_settings import load_launch_settings
@@ -233,16 +232,16 @@ def get_frontend_port(project_root: Path | None = None) -> int:
 
 def get_ports(project_root: Path | None = None) -> tuple[int, int]:
     """
-    Get both backend and frontend ports from configuration.
+    从配置获取后端和前端端口。
 
     Args:
-        project_root: Project root directory (if None, will try to detect)
+        project_root: 项目根目录（如果为 None，将尝试自动检测）
 
     Returns:
-        Tuple of (backend_port, frontend_port)
+        (backend_port, frontend_port) 元组
 
     Raises:
-        SystemExit: If ports are not configured
+        SystemExit: 如果端口未配置
     """
     backend_port = get_backend_port(project_root)
     frontend_port = get_frontend_port(project_root)
@@ -250,9 +249,9 @@ def get_ports(project_root: Path | None = None) -> tuple[int, int]:
 
 
 __all__ = [
-    # User directory initialization
+    # 用户目录初始化
     "init_user_directories",
-    # Port configuration
+    # 端口配置
     "get_backend_port",
     "get_frontend_port",
     "get_ports",

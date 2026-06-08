@@ -1,27 +1,25 @@
-"""Merge mode — consolidate footnote references on a single doc.
+"""合并模式 — 在单个文档上合并脚注引用。
 
-This mode is a *no-LLM* refactor pass. It loads the L2 or L3 document
-and rewrites it through :func:`serialize`, which:
+此模式是*无需 LLM*的重构过程。它加载 L2 或 L3 文档，
+并通过 :func:`serialize` 重写，该函数：
 
-1. Migrates legacy entry-keyed footnotes (``[^m_xxx]: r1, r2``) to the
-   new ref-keyed layout (``[^1]: r1``, ``[^2]: r2``).
-2. Collapses duplicate footnote definitions — N entries citing the same
-   source share one footnote label, so the rendered view stops repeating
-   ``notebook:3a563e6f`` once per entry.
-3. Re-numbers labels in first-appearance order so the output is stable.
+1. 将旧版条目键控脚注（``[^m_xxx]: r1, r2``）迁移到新的引用键控布局
+   （``[^1]: r1``, ``[^2]: r2``）。
+2. 合并重复的脚注定义 — N 个引用同一来源的条目共享一个脚注标签，
+   因此渲染视图不再为每个条目重复 ``notebook:3a563e6f``。
+3. 按首次出现顺序重新编号标签，使输出稳定。
 
-For **L3 docs only**, merge ALSO runs a one-shot data migration: every
-legacy ``m_<ULID>`` ref (which used to point at an L2 entry) is resolved
-to its owning surface name, so the doc becomes citeable as
-``L3 → L2 md → L1 raw traces``. After the next update pass nothing is
-left for this migration to do — it's a pure clean-up of pre-pivot docs.
+**仅对 L3 文档**，合并还会运行一次数据迁移：
+每个旧版 ``m_<ULID>`` 引用（曾经指向 L2 条目）会被解析为其所属 surface 名称，
+这样文档就可以被引用为 ``L3 → L2 md → L1 原始追踪``。
+在下一次更新过程后，此迁移无需再做任何事 —
+它纯粹是对 pivot 之前文档的清理。
 
-Merge is invoked either:
+合并被调用的方式：
 
-* automatically after a successful :func:`run_update`, :func:`run_audit`,
-  or :func:`run_dedup` (controlled by the three
-  ``memory.merge.auto_after_*`` settings), or
-* explicitly via the workbench `[Merge]` button → ``mode="merge"``.
+* 在成功的 :func:`run_update`、:func:`run_audit` 或 :func:`run_dedup` 之后自动调用
+  （由三个 ``memory.merge.auto_after_*`` 设置控制），或
+* 通过工作台的 `[Merge]` 按钮显式调用 → ``mode="merge"``。
 """
 
 from __future__ import annotations
@@ -41,11 +39,10 @@ from aidlearning.memory.shared.ids import is_entry_id
 
 logger = logging.getLogger(__name__)
 
-# Cheap pre-write check: count footnote definitions in the on-disk text to
-# tell the workbench how many rows the merge collapsed. We do this on the
-# *raw* bytes rather than on parsed entries because the parsed model
-# already has consolidated refs (`Entry.refs` carries unique refs per
-# entry), so the meaningful "before" number is what's in the file.
+# 低成本预写检查：计算磁盘文本中的脚注定义数，
+# 以告知工作台合并减少了多少行。我们在*原始*字节而非解析后的条目上执行，
+# 因为解析后的模型已有合并的引用（`Entry.refs` 每条目携带唯一引用），
+# 所以有意义的"之前"数字是文件中的内容。
 _FOOTNOTE_DEF_RE = re.compile(r"^\[\^[^\]]+\]:\s*", re.MULTILINE)
 
 
@@ -67,14 +64,13 @@ async def run_merge(
     user_label: str = "anonymous",
     on_event: OnEvent | None = None,
 ) -> MergeResult:
-    """Re-serialize ``layer/key``; collapse duplicate refs into one footnote each.
+    """重新序列化 ``layer/key``；将重复引用合并为每个一个脚注。
 
-    Idempotent: re-running on an already-merged doc rewrites the same
-    bytes and reports ``rewrote=False`` (no checkpoint is pushed).
+    幂等：在已合并的文档上重新运行会重写相同的字节
+    并报告 ``rewrote=False``（不推送检查点）。
     """
-    # NOTE: ``language`` / ``user_label`` are accepted for signature symmetry
-    # with the other modes; merge itself does no localized work and no LLM
-    # calls, so neither is used inside the body.
+    # 注意：``language`` / ``user_label`` 为与其他模式的签名对称而接受；
+    # 合合本身不做本地化工作也不调用 LLM，因此在函数体中均未使用。
     del language, user_label
 
     path = _path_for(layer, key)
@@ -92,8 +88,7 @@ async def run_merge(
     if layer == "L3":
         legacy_migrated = _migrate_l3_legacy_refs(doc)
 
-    # Count unique refs across the doc — this is the "after" footnote-row
-    # count once :func:`serialize` consolidates them.
+    # 统计文档中的唯一引用数 — 这是 :func:`serialize` 合并后的"之后"脚注行数。
     unique_refs: set[str] = set()
     for entry in doc.all_entries():
         for ref in entry.refs:
@@ -111,10 +106,9 @@ async def run_merge(
         },
     )
 
-    # We always rewrite when the doc has any entries — even when
-    # before == after, the act of re-serializing renormalizes whitespace
-    # and migrates legacy entry-keyed layouts. Skip only when the file is
-    # byte-equal to what :func:`serialize` would produce.
+    # 当文档有条目时我们总是重写 — 即使 before == after，
+    # 重新序列化的行为也会重新规范化空白并迁移旧版条目键控布局。
+    # 仅当文件与 :func:`serialize` 将产生的内容字节相等时才跳过。
     from aidlearning.memory.long_term.document import serialize
 
     expected = serialize(doc)
@@ -151,25 +145,24 @@ async def run_merge(
     )
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────
+# ── 辅助函数 ─────────────────────────────────────────────────────────────
 
 
 def _migrate_l3_legacy_refs(doc) -> int:
-    """Resolve legacy ``m_<ULID>`` L3 refs to bare surface names.
+    """将旧版 ``m_<ULID>`` L3 引用解析为纯 surface 名称。
 
-    Pre-pivot L3 docs cited L2 entries by their entry id. The current
-    design wants surface-level provenance only ("which L2 md did this
-    synthesize from"). For each ``m_<ULID>`` ref we scan every L2 md
-    for the owning entry and substitute the surface name.
+    Pivot 之前的 L3 文档通过条目 id 引用 L2 条目。当前设计
+    只需要 surface 级别的来源（"该综合来自哪个 L2 markdown"）。
+    对于每个 ``m_<ULID>`` 引用，我们扫描每个 L2 markdown
+    寻找拥有该条目的文档并替换为 surface 名称。
 
-    Returns the number of entry refs that were migrated. Unresolvable
-    ids (entry deleted, or never existed) are dropped silently — the
-    next ``run_update`` round will re-synthesize from current L2 text.
+    返回已迁移的条目引用数。无法解析的 id（条目已删除或从未存在）
+    被静默丢弃 — 下一轮 ``run_update`` 将从当前 L2 文本重新综合。
     """
     from aidlearning.memory.long_term.document import parse
 
-    # Cache L2 entry-id → surface lookups: one scan per L2 md, reused
-    # across every L3 ref in the doc.
+    # 缓存 L2 entry-id → surface 查找：每个 L2 markdown 扫描一次，
+    # 在文档中的每个 L3 引用之间复用。
     l2_owner: dict[str, str] = {}
     for target in paths.L2_TARGETS:
         l2_path = paths.l2_file(target)  # type: ignore[arg-type]
@@ -177,7 +170,7 @@ def _migrate_l3_legacy_refs(doc) -> int:
             continue
         try:
             l2_doc = parse(l2_path.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001 — malformed L2 should not block L3 migration
+        except Exception:  # noqa: BLE001 — 格式错误的 L2 不应阻止 L3 迁移
             continue
         for entry in l2_doc.all_entries():
             l2_owner.setdefault(entry.id, surface)

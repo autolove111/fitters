@@ -1,12 +1,10 @@
-"""Routing provider bridging legacy provider functions.
+"""桥接旧版提供商函数的路由提供商。
 
-This provider delegates to the existing function-based providers
-(`cloud_provider` / `local_provider`) while inheriting the hardened
-execution pipeline from `BaseLLMProvider` (traffic control, circuit
-breaker, and exception mapping).
+此提供商委托给现有的基于函数的提供商
+（`cloud_provider` / `local_provider`），同时继承
+`BaseLLMProvider` 的加固执行管线（流量控制、熔断器和异常映射）。
 
-It exists to keep the public API stable while incrementally migrating
-call sites to provider objects.
+它的存在是为了在逐步将调用点迁移到提供商对象的同时保持公共 API 稳定。
 """
 
 from __future__ import annotations
@@ -65,16 +63,16 @@ def _coerce_str(value: object, default: str) -> str:
 
 @register_provider("routing")
 class RoutingProvider(BaseLLMProvider):
-    """Provider that routes between cloud and local function providers."""
+    """在云端和本地函数提供商之间路由的提供商。"""
 
     def __init__(self, config: LLMConfig) -> None:
         super().__init__(config)
-        # Use per-route provider name for circuit-breaker/metrics when possible.
+        # 尽可能使用每个路由的提供商名称用于熔断器/指标。
         if is_local_llm_server(self.base_url or ""):
             self.provider_name = "local"
 
     async def complete(self, prompt: str, **kwargs: object) -> TutorResponse:
-        """Complete via local_provider/cloud_provider with retries."""
+        """通过 local_provider/cloud_provider 执行带重试的补全。"""
         model = _coerce_str(kwargs.pop("model", None), self.config.model)
         if not model:
             raise LLMConfigError("Model is required")
@@ -113,7 +111,7 @@ class RoutingProvider(BaseLLMProvider):
             cache_module: CacheModule | None = None
             if cache_enabled:
                 try:
-                    # Import lazily to keep routing provider lightweight.
+                    # 延迟导入以保持路由提供商轻量。
                     module = import_module("aidlearning.services.llm.cache")
                     cache_module = cast(CacheModule, module)
                 except ModuleNotFoundError:
@@ -183,9 +181,9 @@ class RoutingProvider(BaseLLMProvider):
         )
 
     def stream(self, prompt: str, **kwargs: object) -> AsyncStreamGenerator:
-        """Stream via local_provider/cloud_provider.
+        """通过 local_provider/cloud_provider 进行流式传输。
 
-        Retry applies only to failures before the first yielded chunk.
+        重试仅适用于第一个分块产出之前的故障。
         """
         model = _coerce_str(kwargs.pop("model", None), self.config.model)
         if not model:

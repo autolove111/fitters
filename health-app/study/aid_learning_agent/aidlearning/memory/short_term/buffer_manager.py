@@ -1,11 +1,10 @@
-"""Global buffer manager — one ``ConversationBuffer`` per session.
+"""全局缓冲区管理器 — 每个会话一个 ``ConversationBuffer``。
 
-Buffers are created on first access and kept alive for the process
-lifetime.  On first access for a session, existing messages are loaded
-from SQLite so the buffer has a complete history.
+缓冲区在首次访问时创建并在进程生命周期内保持存活。
+会话首次访问时，从 SQLite 加载已有消息，
+以便缓冲区拥有完整的历史记录。
 
-The manager provides a default ``compress_fn`` that uses the LLM to
-compress old messages into a summary.
+管理器提供默认的 ``compress_fn``，使用 LLM 将旧消息压缩为摘要。
 """
 
 from __future__ import annotations
@@ -28,9 +27,9 @@ async def _default_compress_fn(
     old_messages: list[dict[str, Any]],
     existing_summary: str,
 ) -> str:
-    """Default compression: call LLM to summarize old messages.
+    """默认压缩：调用 LLM 总结旧消息。
 
-    Uses the same prompt as the old ``_ContextSummaryAgent``.
+    使用与旧版 ``_ContextSummaryAgent`` 相同的提示词。
     """
     from aidlearning.services.llm import complete as llm_complete
 
@@ -75,7 +74,7 @@ async def _default_compress_fn(
 
 
 class BufferManager:
-    """Process-wide manager for per-session conversation buffers."""
+    """每会话对话缓冲区的进程级管理器。"""
 
     def __init__(
         self,
@@ -92,7 +91,7 @@ class BufferManager:
         session_id: str,
         sqlite_store: Any | None = None,
     ) -> ConversationBuffer:
-        """Return the buffer for *session_id*, creating and hydrating if needed."""
+        """返回 *session_id* 的缓冲区，如需要则创建并加载数据。"""
         buf = self._buffers.get(session_id)
         if buf is None:
             buf = ConversationBuffer(
@@ -112,7 +111,7 @@ class BufferManager:
         return session_id in self._buffers
 
     def remove(self, session_id: str) -> None:
-        """Drop the buffer for a session."""
+        """丢弃会话的缓冲区。"""
         self._buffers.pop(session_id, None)
         self._initialized.discard(session_id)
 
@@ -122,13 +121,13 @@ class BufferManager:
         buf: ConversationBuffer,
         sqlite_store: Any,
     ) -> None:
-        """Load buffer state from SQLite, restoring the exact window."""
+        """从 SQLite 加载缓冲区状态，恢复精确的窗口。"""
         try:
-            # Try loading saved buffer state first
+            # 首先尝试加载已保存的缓冲区状态
             state = await sqlite_store.load_buffer_state(session_id)
 
             if state and state.get("window_message_ids"):
-                # Restore from saved buffer state
+                # 从已保存的缓冲区状态恢复
                 buf.summary = state.get("summary", "")
                 buf.summary_tokens = state.get("summary_tokens", 0)
                 buf._compressed_count = state.get("compressed_count", 0)
@@ -158,7 +157,7 @@ class BufferManager:
                 )
                 return
 
-            # Fallback: load from sessions table + messages table
+            # 回退：从 sessions 表 + messages 表加载
             session = await sqlite_store.get_session(session_id)
             if session:
                 buf.summary = str(session.get("compressed_summary", "") or "").strip()
@@ -179,7 +178,7 @@ class BufferManager:
                         flushed=True,
                     ))
 
-            # Remove messages already covered by summary
+            # 移除已被摘要覆盖的消息
             session_data = await sqlite_store.get_session(session_id)
             if session_data:
                 summary_up_to = int(session_data.get("summary_up_to_msg_id", 0) or 0)
@@ -197,7 +196,7 @@ class BufferManager:
             logger.warning("Failed to hydrate buffer for session %s", session_id, exc_info=True)
 
     async def flush(self, session_id: str, sqlite_store: Any) -> None:
-        """Flush pending messages and buffer state to SQLite."""
+        """将待处理消息和缓冲区状态刷新到 SQLite。"""
         buf = self._buffers.get(session_id)
         if buf is None:
             return
@@ -222,7 +221,7 @@ class BufferManager:
             if flushed_ids:
                 buf.mark_flushed(flushed_ids)
 
-        # Persist summary to sessions table
+        # 将摘要持久化到 sessions 表
         if buf.summary:
             try:
                 await sqlite_store.update_summary(
@@ -231,7 +230,7 @@ class BufferManager:
             except Exception:
                 logger.warning("Failed to persist summary", exc_info=True)
 
-        # Persist buffer window state
+        # 持久化缓冲区窗口状态
         try:
             with buf._lock:
                 window_ids = [m.msg_id for m in buf._messages]
@@ -246,7 +245,7 @@ class BufferManager:
             logger.warning("Failed to persist buffer state", exc_info=True)
 
 
-# ── Singleton ──────────────────────────────────────────────────────────
+# ── 单例 ──────────────────────────────────────────────────────────
 
 _manager: BufferManager | None = None
 

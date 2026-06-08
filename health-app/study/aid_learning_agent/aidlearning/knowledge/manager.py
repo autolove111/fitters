@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Knowledge Base Manager
+知识库管理器
 
-Manages multiple knowledge bases and provides utilities for accessing them.
+管理多个知识库并提供访问工具。
 """
 
 from contextlib import contextmanager
@@ -23,20 +23,18 @@ from aidlearning.services.rag.file_routing import FileTypeRouter
 logger = logging.getLogger(__name__)
 
 
-# How long an entry can be missing its KB directory before ``list_knowledge_bases``
-# treats it as a stale orphan. The KB create flow writes the "initializing"
-# config entry before the on-disk folder is created, so a too-short grace would
-# let a list-call mid-creation racy-delete the entry. 60s is comfortably longer
-# than the create handshake while still keeping multi-day zombies out.
+# 一个条目在被 ``list_knowledge_bases`` 视为过期孤立条目之前，允许其 KB 目录缺失的时间。
+# KB 创建流程会在磁盘文件夹创建之前写入 "initializing" 配置条目，
+# 因此宽限期太短会导致创建过程中的列表调用竞态删除该条目。
+# 60 秒足以超过创建握手时间，同时仍能排除多日未清理的僵尸条目。
 _ORPHAN_PRUNE_GRACE_SECONDS = 60
 
 
 def _entry_updated_after(kb_entry: dict | None, cutoff: datetime) -> bool:
-    """Return True when the entry's ``updated_at`` is strictly after ``cutoff``.
+    """当条目的 ``updated_at`` 严格晚于 ``cutoff`` 时返回 True。
 
-    Entries without a parseable timestamp are treated as old (return False) —
-    a long-stuck orphan that crashed before recording a timestamp should still
-    get pruned.
+    无法解析时间戳的条目被视为旧条目（返回 False）——
+    长时间卡住且在记录时间戳之前崩溃的孤立条目仍应被清理。
     """
     if not isinstance(kb_entry, dict):
         return False
@@ -49,10 +47,10 @@ def _entry_updated_after(kb_entry: dict | None, cutoff: datetime) -> bool:
         return False
 
 
-# Cross-platform file locking
+# 跨平台文件锁
 @contextmanager
 def file_lock_shared(file_handle):
-    """Acquire a shared (read) lock on a file - cross-platform."""
+    """获取文件的共享（读）锁 - 跨平台。"""
     if sys.platform == "win32":
         import msvcrt
 
@@ -74,7 +72,7 @@ def file_lock_shared(file_handle):
 
 @contextmanager
 def file_lock_exclusive(file_handle):
-    """Acquire an exclusive (write) lock on a file - cross-platform."""
+    """获取文件的排他（写）锁 - 跨平台。"""
     if sys.platform == "win32":
         import msvcrt
 
@@ -95,7 +93,7 @@ def file_lock_exclusive(file_handle):
 
 
 def _get_embedding_fingerprint() -> tuple[str, int] | None:
-    """Return ``(model_name, dimension)`` of the active embedding config."""
+    """返回当前活跃 embedding 配置的 ``(model_name, dimension)``。"""
     try:
         from aidlearning.services.embedding import get_embedding_config
 
@@ -106,18 +104,17 @@ def _get_embedding_fingerprint() -> tuple[str, int] | None:
 
 
 def _reconcile_embedding_flags(knowledge_bases: dict, base_dir: Path | None = None) -> bool:
-    """Reconcile per-KB embedding flags against the on-disk index versions.
+    """将每个知识库的 embedding 标志与磁盘上的索引版本进行对账。
 
-    For each KB we check the flat ``version-N`` directories (plus legacy
-    layouts) for a version matching the active embedding signature:
+    对于每个知识库，我们检查扁平的 ``version-N`` 目录（以及旧版布局）
+    中是否有与活跃 embedding 签名匹配的版本：
 
-    * Match found → clear ``needs_reindex`` and ``embedding_mismatch`` (the
-      user has switched back to a previously-indexed configuration).
-    * No match, but the KB has a stored ``embedding_model`` that differs
-      from the active fingerprint → set both flags so the UI surfaces a
-      "Re-index" CTA.
+    * 找到匹配 → 清除 ``needs_reindex`` 和 ``embedding_mismatch``
+      （用户已切换回之前已索引的配置）。
+    * 未匹配，但知识库存储的 ``embedding_model`` 与当前指纹不同
+      → 设置两个标志，以便 UI 显示"重新索引"操作提示。
 
-    Returns ``True`` when any entry changed.
+    当任何条目发生更改时返回 ``True``。
     """
     from aidlearning.services.rag.embedding_signature import signature_from_embedding_config
     from aidlearning.services.rag.index_versioning import (
@@ -151,16 +148,15 @@ def _reconcile_embedding_flags(knowledge_bases: dict, base_dir: Path | None = No
                 mutated_local = True
             if mutated_local:
                 changed = True
-            # Refresh the surfaced version list either way so the UI sees
-            # accurate state.
+            # 无论如何都刷新展示的版本列表，以便 UI 看到准确的状态。
             if kb_dir is not None:
                 kb_entry["index_versions"] = list_kb_versions(kb_dir)
             continue
 
-        # No matching ready index version on disk.
+        # 磁盘上没有匹配的就绪索引版本。
         stored_model = kb_entry.get("embedding_model")
-        # Empty/in-progress version dirs are created before indexing finishes.
-        # They should not mark a brand-new KB as needing re-index.
+        # 空的/进行中的版本目录在索引完成之前创建。
+        # 它们不应将全新知识库标记为需要重新索引。
         versions: list[dict] = []
         has_ready_version = False
         if kb_dir is not None:
@@ -177,7 +173,7 @@ def _reconcile_embedding_flags(knowledge_bases: dict, base_dir: Path | None = No
         mismatch = (stored_model and stored_model != current_model) or (
             stored_dim is not None and current_dim and stored_dim != current_dim
         )
-        # If ready versions exist but none match active signature, that's also a mismatch.
+        # 如果存在就绪版本但没有一个匹配活跃签名，那也是不匹配。
         if has_ready_version:
             mismatch = True
 
@@ -194,47 +190,47 @@ def _reconcile_embedding_flags(knowledge_bases: dict, base_dir: Path | None = No
 
 
 class KnowledgeBaseManager:
-    """Manager for knowledge bases"""
+    """知识库管理器"""
 
     def __init__(self, base_dir="./data/knowledge_bases"):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-        # Config file to track knowledge bases
+        # 用于跟踪知识库的配置文件
         self.config_file = self.base_dir / "kb_config.json"
         self.config = self._load_config()
 
-        # PocketBase sync — enabled when integrations.pocketbase_url is set.
-        # The local JSON file stays the source of truth; PocketBase gets a
-        # mirrored copy for admin-panel visibility and future multi-user access.
+        # PocketBase 同步 — 当 integrations.pocketbase_url 设置时启用。
+        # 本地 JSON 文件仍然是数据源；PocketBase 获得镜像副本，
+        # 用于管理面板可见性和未来的多用户访问。
         from aidlearning.services.pocketbase_client import is_pocketbase_enabled
 
         self._pb_enabled = is_pocketbase_enabled()
 
     def _load_config(self) -> dict:
-        """Load knowledge base configuration from the canonical kb_config.json file."""
+        """从规范的 kb_config.json 文件加载知识库配置。"""
         if self.config_file.exists():
             try:
                 with open(self.config_file, encoding="utf-8") as f:
                     with file_lock_shared(f):
                         content = f.read()
                         if not content.strip():
-                            # Empty file, return default
+                            # 空文件，返回默认值
                             return {"knowledge_bases": {}}
                         config = json.loads(content)
 
-                # Ensure knowledge_bases key exists
+                # 确保 knowledge_bases 键存在
                 if "knowledge_bases" not in config:
                     config["knowledge_bases"] = {}
 
-                # Migration: remove old "default" field if present
+                # 迁移：如果存在旧的 "default" 字段则移除
                 if "default" in config:
                     del config["default"]
-                    # Note: Don't save during load to avoid recursion issues
-                    # The next _save_config() call will persist this change
+                    # 注意：不要在加载期间保存以避免递归问题
+                    # 下一次 _save_config() 调用将持久化此更改
 
-                # Migration: normalize legacy providers to llamaindex and
-                # mark legacy index-only KBs as needs_reindex.
+                # 迁移：将旧版提供者规范化为 llamaindex，
+                # 并将仅旧版索引的知识库标记为 needs_reindex。
                 from aidlearning.services.rag.index_versioning import list_kb_versions
 
                 knowledge_bases = config.get("knowledge_bases", {})
@@ -290,18 +286,18 @@ class KnowledgeBaseManager:
         return {"knowledge_bases": {}}
 
     def _save_config(self):
-        """Save knowledge base configuration (thread-safe with file locking)"""
-        # Use exclusive lock for writing
+        """保存知识库配置（通过文件锁实现线程安全）"""
+        # 使用排他锁进行写入
         with open(self.config_file, "w", encoding="utf-8") as f:
             with file_lock_exclusive(f):
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
                 f.flush()
-                os.fsync(f.fileno())  # Ensure data is written to disk
+                os.fsync(f.fileno())  # 确保数据写入磁盘
 
     def _sync_kb_to_pb(self, name: str, kb_entry: dict) -> None:
         """
-        Mirror a KB metadata entry to PocketBase (best-effort, non-blocking).
-        Called after every local config save when PocketBase is enabled.
+        将知识库元数据条目镜像到 PocketBase（尽力而为，非阻塞）。
+        当 PocketBase 启用时，在每次本地配置保存后调用。
         """
         if not self._pb_enabled:
             return
@@ -334,31 +330,31 @@ class KnowledgeBaseManager:
         progress: dict | None = None,
     ):
         """
-        Update knowledge base status and progress in kb_config.json.
+        更新 kb_config.json 中的知识库状态和进度。
 
-        When PocketBase is enabled, the updated entry is also mirrored to the
-        PocketBase knowledge_bases collection (best-effort).
+        当 PocketBase 启用时，更新的条目也会镜像到
+        PocketBase knowledge_bases 集合（尽力而为）。
 
         Args:
-            name: Knowledge base name
-            status: Status string ("initializing", "processing", "ready", "error")
-            progress: Optional progress dict with keys like:
-                - stage: Current stage name
-                - message: Human-readable message
-                - percent: Progress percentage (0-100)
-                - current: Current item number
-                - total: Total items
-                - file_name: Current file being processed
-                - error: Error message (if status is "error")
+            name: 知识库名称
+            status: 状态字符串（"initializing"、"processing"、"ready"、"error"）
+            progress: 可选的进度字典，包含以下键：
+                - stage: 当前阶段名称
+                - message: 人类可读的消息
+                - percent: 进度百分比（0-100）
+                - current: 当前项目编号
+                - total: 总项目数
+                - file_name: 当前正在处理的文件
+                - error: 错误消息（如果状态为 "error"）
         """
-        # Reload config to get latest state
+        # 重新加载配置以获取最新状态
         self.config = self._load_config()
 
         if "knowledge_bases" not in self.config:
             self.config["knowledge_bases"] = {}
 
         if name not in self.config["knowledge_bases"]:
-            # Auto-register if not exists
+            # 如果不存在则自动注册
             self.config["knowledge_bases"][name] = {
                 "path": name,
                 "description": f"Knowledge base: {name}",
@@ -390,8 +386,8 @@ class KnowledgeBaseManager:
                 index_action = raw_index_action.strip()
 
         if status == "ready":
-            # Ready KBs should look like stable resources in the UI instead of
-            # permanently carrying a "completed" progress banner.
+            # 就绪的知识库在 UI 中应显示为稳定资源，
+            # 而不是永久携带 "completed" 进度横幅。
             kb_config.pop("progress", None)
             if progress is not None:
                 kb_config["last_completed_at"] = (
@@ -410,8 +406,8 @@ class KnowledgeBaseManager:
             fp = _get_embedding_fingerprint()
             if fp:
                 kb_config["embedding_model"], kb_config["embedding_dim"] = fp
-            # Record the active signature + the on-disk version registry so
-            # the UI can render version chips without recomputing.
+            # 记录活跃签名和磁盘上的版本注册表，
+            # 以便 UI 可以渲染版本标签而无需重新计算。
             try:
                 from aidlearning.services.rag.embedding_signature import (
                     signature_from_embedding_config,
@@ -426,14 +422,14 @@ class KnowledgeBaseManager:
                 kb_dir = self.base_dir / name
                 if kb_dir.is_dir():
                     kb_config["index_versions"] = list_kb_versions(kb_dir)
-            except Exception:  # pragma: no cover - best-effort metadata
+            except Exception:  # pragma: no cover - 尽力而为的元数据
                 pass
 
         self._save_config()
         self._sync_kb_to_pb(name, kb_config)
 
     def get_kb_status(self, name: str) -> dict | None:
-        """Get status and progress for a knowledge base."""
+        """获取知识库的状态和进度。"""
         self.config = self._load_config()
         kb_config = self.config.get("knowledge_bases", {}).get(name)
         if not kb_config:
@@ -445,33 +441,31 @@ class KnowledgeBaseManager:
         }
 
     def list_knowledge_bases(self) -> list[str]:
-        """List all available knowledge bases.
+        """列出所有可用的知识库。
 
-        This method:
-        1. Loads registered KBs from kb_config.json
-        2. Drops registered entries whose on-disk directory no longer exists
-           (orphans from failed inits or manual ``rm -rf`` of a KB folder).
-        3. Scans the directory for existing KBs not yet registered
-        4. Auto-registers discovered KBs with valid raw/index structure
+        此方法：
+        1. 从 kb_config.json 加载已注册的知识库
+        2. 移除磁盘目录已不存在的已注册条目
+           （初始化失败或手动 ``rm -rf`` 知识库文件夹产生的孤立条目）。
+        3. 扫描目录中尚未注册的现有知识库
+        4. 自动注册发现的有效 raw/index 结构的知识库
         """
-        # Always reload config from file to ensure we have the latest data
+        # 始终从文件重新加载配置以确保拥有最新数据
         self.config = self._load_config()
 
         config_kbs = self.config.get("knowledge_bases", {})
         kb_list: set[str] = set()
         config_changed = False
 
-        # Filter out orphan entries whose KB directory is gone. The on-disk
-        # folder is the source of truth for existence — without it the KB
-        # has no documents, no index, and surfacing it in the UI just shows
-        # zombies that the user can't act on.
+        # 过滤掉 KB 目录已消失的孤立条目。磁盘上的文件夹是存在性的
+        # 真实来源——没有它，知识库就没有文档、没有索引，在 UI 中
+        # 显示它只会展示用户无法操作的僵尸条目。
         #
-        # Grace period: a freshly-created KB writes its config entry before
-        # ``create_directory_structure`` mkdir-s the folder (so the UI can
-        # render the "initializing" row immediately). If ``list`` races into
-        # that window we'd prune a perfectly healthy in-flight KB. Skip the
-        # prune when ``updated_at`` is recent enough that an init could still
-        # be wiring things up.
+        # 宽限期：新创建的知识库在 ``create_directory_structure`` 创建
+        # 文件夹之前就写入了配置条目（以便 UI 可以立即渲染 "initializing"
+        # 行）。如果 ``list`` 在该窗口期竞态调用，我们会错误地清理一个
+        # 完全健康的正在创建的知识库。当 ``updated_at`` 足够新（初始化
+        # 可能仍在进行中）时跳过清理。
         base_exists = self.base_dir.exists()
         grace_cutoff = datetime.now() - timedelta(seconds=_ORPHAN_PRUNE_GRACE_SECONDS)
         for kb_name, kb_entry in list(config_kbs.items()):
@@ -491,18 +485,18 @@ class KnowledgeBaseManager:
                 continue
             kb_list.add(kb_name)
 
-        # Also scan directory for KBs that may not be registered yet
-        # This ensures backward compatibility and auto-discovery
+        # 同时扫描目录中可能尚未注册的知识库
+        # 这确保了向后兼容性和自动发现
         if base_exists:
             for item in self.base_dir.iterdir():
                 if not item.is_dir() or item.name.startswith(("__", ".")):
                     continue
 
-                # Skip if already in config
+                # 如果已在配置中则跳过
                 if item.name in kb_list:
                     continue
 
-                # Check if this is a valid KB directory (flat versions or legacy stores)
+                # 检查这是否是有效的知识库目录（扁平版本或旧版存储）
                 from aidlearning.services.rag.index_versioning import list_kb_versions
 
                 rag_storage = item / "rag_storage"
@@ -511,39 +505,39 @@ class KnowledgeBaseManager:
                 ) or (rag_storage.exists() and rag_storage.is_dir())
 
                 if is_valid_kb:
-                    # Auto-register this KB to kb_config.json
+                    # 将此知识库自动注册到 kb_config.json
                     kb_list.add(item.name)
                     self._auto_register_kb(item.name)
                     config_changed = True
 
-        # Save config if we pruned orphans or registered new KBs
+        # 如果清理了孤立条目或注册了新知识库，则保存配置
         if config_changed:
             self._save_config()
 
         return sorted(kb_list)
 
     def _auto_register_kb(self, name: str):
-        """Auto-register an existing KB to kb_config.json.
+        """将现有知识库自动注册到 kb_config.json。
 
-        Reads info from metadata.json (if exists) for backward compatibility.
+        从 metadata.json（如果存在）读取信息以保持向后兼容。
         """
         kb_dir = self.base_dir / name
 
-        # Default values
+        # 默认值
         kb_entry: dict[str, Any] = {
             "path": name,
             "description": f"Knowledge base: {name}",
-            "status": "ready",  # Existing KB with storage is considered ready
+            "status": "ready",  # 已有存储的现有知识库被视为就绪
             "updated_at": datetime.now().isoformat(),
         }
 
-        # Try to read metadata.json for existing info (backward compatibility)
+        # 尝试从 metadata.json 读取现有信息（向后兼容）
         metadata_file = kb_dir / "metadata.json"
         if metadata_file.exists():
             try:
                 with open(metadata_file, encoding="utf-8") as f:
                     metadata = json.load(f)
-                # Migrate relevant fields
+                # 迁移相关字段
                 if metadata.get("description"):
                     kb_entry["description"] = metadata["description"]
                 if metadata.get("rag_provider"):
@@ -566,7 +560,7 @@ class KnowledgeBaseManager:
             except Exception as e:
                 logger.warning(f"Failed to read metadata.json for '{name}': {e}")
 
-        # Detect rag_provider from storage type if not set
+        # 如果未设置，从存储类型检测 rag_provider
         if "rag_provider" not in kb_entry:
             from aidlearning.services.rag.index_versioning import list_kb_versions
 
@@ -577,7 +571,7 @@ class KnowledgeBaseManager:
                 kb_entry["rag_provider"] = DEFAULT_PROVIDER
                 kb_entry["needs_reindex"] = True
 
-        # Add to config
+        # 添加到配置
         if "knowledge_bases" not in self.config:
             self.config["knowledge_bases"] = {}
         self.config["knowledge_bases"][name] = kb_entry
@@ -585,7 +579,7 @@ class KnowledgeBaseManager:
         logger.info(f"Auto-registered KB '{name}' to kb_config.json")
 
     def register_knowledge_base(self, name: str, description: str = "", set_default: bool = False):
-        """Register a knowledge base"""
+        """注册知识库"""
         kb_dir = self.base_dir / name
         if not kb_dir.exists():
             raise ValueError(f"Knowledge base directory does not exist: {kb_dir}")
@@ -595,14 +589,14 @@ class KnowledgeBaseManager:
 
         self.config["knowledge_bases"][name] = {"path": name, "description": description}
 
-        # Only set default if explicitly requested
+        # 仅在明确请求时设置默认值
         if set_default:
             self.set_default(name)
 
         self._save_config()
 
     def get_knowledge_base_path(self, name: str | None = None) -> Path:
-        """Get path to a knowledge base"""
+        """获取知识库路径"""
         if name is None:
             name = self.config.get("default")
             if name is None:
@@ -615,7 +609,7 @@ class KnowledgeBaseManager:
         return kb_dir
 
     def get_rag_storage_path(self, name: str | None = None) -> Path:
-        """Get active index storage path for a knowledge base."""
+        """获取知识库的活跃索引存储路径。"""
         kb_dir = self.get_knowledge_base_path(name)
         from aidlearning.services.rag.embedding_signature import signature_from_embedding_config
         from aidlearning.services.rag.index_versioning import (
@@ -631,26 +625,26 @@ class KnowledgeBaseManager:
         raise ValueError(f"Index storage not found for knowledge base: {name or 'default'}")
 
     def get_images_path(self, name: str | None = None) -> Path:
-        """Get images path for a knowledge base"""
+        """获取知识库的图片路径"""
         kb_dir = self.get_knowledge_base_path(name)
         return kb_dir / "images"
 
     def get_content_list_path(self, name: str | None = None) -> Path:
-        """Get content list path for a knowledge base"""
+        """获取知识库的内容列表路径"""
         kb_dir = self.get_knowledge_base_path(name)
         return kb_dir / "content_list"
 
     def get_raw_path(self, name: str | None = None) -> Path:
-        """Get raw documents path for a knowledge base"""
+        """获取知识库的原始文档路径"""
         kb_dir = self.get_knowledge_base_path(name)
         return kb_dir / "raw"
 
     def set_default(self, name: str):
-        """Set default knowledge base using centralized config service."""
+        """使用集中配置服务设置默认知识库。"""
         if name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {name}")
 
-        # Persist default KB selection via the canonical KB config service.
+        # 通过规范的 KB 配置服务持久化默认知识库选择。
         try:
             from aidlearning.services.config import get_kb_config_service
 
@@ -661,13 +655,13 @@ class KnowledgeBaseManager:
 
     def get_default(self) -> str | None:
         """
-        Get default knowledge base name.
+        获取默认知识库名称。
 
-        Priority:
-        1. Canonical KB config service (`data/knowledge_bases/kb_config.json`)
-        2. First knowledge base in the list (auto-fallback)
+        优先级：
+        1. 规范 KB 配置服务（`data/knowledge_bases/kb_config.json`）
+        2. 列表中的第一个知识库（自动回退）
         """
-        # Try centralized config first
+        # 首先尝试集中配置
         try:
             from aidlearning.services.config import get_kb_config_service
 
@@ -678,7 +672,7 @@ class KnowledgeBaseManager:
         except Exception:
             pass
 
-        # Fallback to first knowledge base in sorted list
+        # 回退到排序列表中的第一个知识库
         kb_list = self.list_knowledge_bases()
         if kb_list:
             return kb_list[0]
@@ -687,7 +681,7 @@ class KnowledgeBaseManager:
 
     @staticmethod
     def _embedding_fields(kb_config: dict) -> dict:
-        """Extract embedding fingerprint fields from a KB config entry."""
+        """从知识库配置条目中提取 embedding 指纹字段。"""
         fields = {}
         for key in ("embedding_model", "embedding_dim"):
             val = kb_config.get(key)
@@ -698,10 +692,10 @@ class KnowledgeBaseManager:
         return fields
 
     def get_metadata(self, name: str | None = None) -> dict:
-        """Get knowledge base metadata.
+        """获取知识库元数据。
 
-        Source:
-        1. kb_config.json (authoritative source)
+        来源：
+        1. kb_config.json（权威来源）
         """
         kb_name = name
         if kb_name is None:
@@ -709,12 +703,12 @@ class KnowledgeBaseManager:
             if kb_name is None:
                 return {}
 
-        # First, try kb_config.json (authoritative source)
+        # 首先尝试 kb_config.json（权威来源）
         self.config = self._load_config()
         kb_config = self.config.get("knowledge_bases", {}).get(kb_name, {})
 
         if kb_config:
-            # Build metadata from config
+            # 从配置构建元数据
             metadata = {
                 "name": kb_name,
                 "description": kb_config.get("description", f"Knowledge base: {kb_name}"),
@@ -727,32 +721,32 @@ class KnowledgeBaseManager:
                 "last_indexed_action": kb_config.get("last_indexed_action"),
             }
             metadata.update(self._embedding_fields(kb_config))
-            # Remove None values
+            # 移除 None 值
             metadata = {k: v for k, v in metadata.items() if v is not None}
             return metadata
 
         return {}
 
     def get_info(self, name: str | None = None) -> dict:
-        """Get detailed information about a knowledge base.
+        """获取知识库的详细信息。
 
-        This method:
-        1. Gets the KB name (from parameter or default)
-        2. Reads all config from kb_config.json (authoritative source)
-        3. Falls back to metadata.json for legacy KBs
-        4. Collects statistics about files and RAG status
+        此方法：
+        1. 获取知识库名称（来自参数或默认值）
+        2. 从 kb_config.json（权威来源）读取所有配置
+        3. 对旧版知识库回退到 metadata.json
+        4. 收集文件和 RAG 状态的统计信息
         """
-        # Reload config to get latest status
+        # 重新加载配置以获取最新状态
         self.config = self._load_config()
 
         kb_name = name or self.get_default()
         if kb_name is None:
             raise ValueError("No knowledge base name provided and no default set")
 
-        # Get knowledge base path
+        # 获取知识库路径
         kb_dir = self.base_dir / kb_name
 
-        # Get config from kb_config.json (authoritative source)
+        # 从 kb_config.json（权威来源）获取配置
         kb_config = self.config.get("knowledge_bases", {}).get(kb_name, {})
         status = kb_config.get("status")
         progress = kb_config.get("progress")
@@ -767,7 +761,7 @@ class KnowledgeBaseManager:
             live_status = progress.get("stage") not in {"completed", "error"}
         effective_needs_reindex = needs_reindex and not live_status
 
-        # KB might not have a directory yet if still initializing
+        # 如果仍在初始化，知识库可能还没有目录
         dir_exists = kb_dir.exists()
         index_versions: list[dict[str, Any]] = []
         has_ready_llamaindex = False
@@ -777,7 +771,7 @@ class KnowledgeBaseManager:
             index_versions = list_kb_versions(kb_dir)
             has_ready_llamaindex = any(bool(version.get("ready")) for version in index_versions)
 
-        # For old KBs without status field, determine status from rag_storage
+        # 对于没有状态字段的旧版知识库，从 rag_storage 确定状态
         if effective_needs_reindex:
             status = "needs_reindex"
         elif (
@@ -785,14 +779,12 @@ class KnowledgeBaseManager:
             and has_ready_llamaindex
             and not (isinstance(progress, dict) and progress.get("stage") == "error")
         ):
-            # A ready index version exists on disk but the persisted status is
-            # still a "live" sentinel — typically because the progress writer
-            # crashed (or the process was killed) after the index was finalised
-            # but before status was promoted to "ready". Recover the actual
-            # state on read so the UI does not show a perpetual processing
-            # banner. The persistent kb_config.json is left untouched; the
-            # next legitimate update_kb_status() call will clean it up.
-            # See issue #418.
+            # 磁盘上存在就绪的索引版本，但持久化的状态仍是 "live" 哨兵值
+            # ——通常是因为进度写入器在索引完成之后、状态提升为 "ready"
+            # 之前崩溃（或进程被杀死）。在读取时恢复实际状态，以免 UI
+            # 显示永久的处理横幅。持久化的 kb_config.json 保持不变；
+            # 下一次合法的 update_kb_status() 调用会清理它。
+            # 参见 issue #418。
             status = "ready"
             progress = None
         elif not status and dir_exists:
@@ -808,7 +800,7 @@ class KnowledgeBaseManager:
         elif not status:
             status = "unknown"
 
-        # Build metadata from kb_config.json (authoritative source)
+        # 从 kb_config.json（权威来源）构建元数据
         metadata = {
             "name": kb_name,
             "description": description,
@@ -840,7 +832,7 @@ class KnowledgeBaseManager:
             "progress": progress,
         }
 
-        # Count files - handle errors gracefully
+        # 统计文件数量 - 优雅处理错误
         raw_dir = kb_dir / "raw" if dir_exists else None
         images_dir = kb_dir / "images" if dir_exists else None
         content_list_dir = kb_dir / "content_list" if dir_exists else None
@@ -869,7 +861,7 @@ class KnowledgeBaseManager:
             except Exception:
                 pass
 
-        # Check rag_initialized: flat versions OR legacy single-store/nested stores.
+        # 检查 rag_initialized：扁平版本或旧版单层/嵌套存储。
         from aidlearning.services.rag.embedding_signature import signature_from_embedding_config
         from aidlearning.services.rag.index_versioning import (
             find_matching_version,
@@ -895,7 +887,7 @@ class KnowledgeBaseManager:
             "index_versions": index_versions,
             "active_signature": active_signature.hash() if active_signature else None,
             "active_match": active_match,
-            # Include status and progress in statistics for backward compatibility
+            # 在统计信息中包含状态和进度以保持向后兼容
             "status": status,
             "progress": progress,
         }
@@ -904,32 +896,32 @@ class KnowledgeBaseManager:
 
     def delete_knowledge_base(self, name: str, confirm: bool = False) -> bool:
         """
-        Delete a knowledge base
+        删除知识库
 
         Args:
-            name: Knowledge base name
-            confirm: If True, skip confirmation (use with caution!)
+            name: 知识库名称
+            confirm: 如果为 True，跳过确认（请谨慎使用！）
 
         Returns:
-            True if deleted successfully
+            删除成功返回 True
         """
-        # Look up against the raw config rather than ``list_knowledge_bases``:
-        # the latter prunes orphan entries (dir missing) as a side effect, so
-        # calling it here would race-delete the entry we are about to clean up
-        # and then raise "not found" on the now-empty config.
+        # 对原始配置进行查找而不是 ``list_knowledge_bases``：
+        # 后者会作为副作用清理孤立条目（目录缺失），因此
+        # 在这里调用它会竞态删除我们即将清理的条目，
+        # 然后在现在为空的配置上抛出 "not found"。
         self.config = self._load_config()
         config_kbs = self.config.get("knowledge_bases", {})
         if name not in config_kbs and not (self.base_dir / name).exists():
             raise ValueError(f"Knowledge base not found: {name}")
 
-        # Resolve the directory directly to stay idempotent: if the on-disk
-        # folder was already removed (e.g. manually rm-rf'd) we still want to
-        # purge the orphaned entry from kb_config.json instead of failing.
+        # 直接解析目录以保持幂等性：如果磁盘上的文件夹已被移除
+        # （例如手动 rm-rf），我们仍希望从 kb_config.json 中清除
+        # 孤立条目而不是失败。
         kb_dir = self.base_dir / name
         dir_exists = kb_dir.exists()
 
         if not confirm:
-            # Ask for confirmation in CLI
+            # 在 CLI 中请求确认
             print(f"⚠️  Warning: This will permanently delete the knowledge base '{name}'")
             print(f"   Path: {kb_dir}")
             response = input("Are you sure? Type 'yes' to confirm: ")
@@ -942,14 +934,13 @@ class KnowledgeBaseManager:
             def _on_rmtree_error(func, path, exc_info):
                 exc = exc_info[1]
                 if isinstance(exc, FileNotFoundError):
-                    # Race: something else removed the entry between walk and unlink.
+                    # 竞态：其他进程在遍历和删除之间移除了该条目。
                     return
-                # On Windows (and some bind-mounted filesystems) a read-only bit
-                # or a stale handle from a failed RAG init can block removal.
-                # Clear the read-only bit and retry once; if it still fails, log
-                # and continue so the config entry gets cleaned up regardless —
-                # leaving the KB stuck in the list is worse than orphan files on
-                # disk (issue #370).
+                # 在 Windows（以及某些绑定挂载的文件系统）上，只读位
+                # 或失败的 RAG 初始化产生的过时句柄可能阻止删除。
+                # 清除只读位并重试一次；如果仍然失败，记录日志并继续，
+                # 以便配置条目无论如何都能被清理——让知识库卡在列表中
+                # 比磁盘上的孤立文件更糟糕（issue #370）。
                 try:
                     os.chmod(path, stat.S_IWRITE)
                     func(path)
@@ -965,11 +956,11 @@ class KnowledgeBaseManager:
                 f"KB directory '{kb_dir}' missing on disk; cleaning up orphaned config entry."
             )
 
-        # Remove from config
+        # 从配置中移除
         if name in self.config.get("knowledge_bases", {}):
             del self.config["knowledge_bases"][name]
 
-        # Update default if this was the default
+        # 如果这是默认值则更新默认值
         if self.config.get("default") == name:
             remaining = [n for n in self.config.get("knowledge_bases", {}).keys() if n != name]
             self.config["default"] = sorted(remaining)[0] if remaining else None
@@ -979,14 +970,14 @@ class KnowledgeBaseManager:
 
     def clean_rag_storage(self, name: str | None = None, backup: bool = True) -> bool:
         """
-        Clean (delete) index storage for a knowledge base.
+        清理（删除）知识库的索引存储。
 
         Args:
-            name: Knowledge base name (default if not specified)
-            backup: If True, backup storage before deleting
+            name: 知识库名称（未指定则使用默认值）
+            backup: 如果为 True，删除前备份存储
 
         Returns:
-            True if cleaned successfully
+            清理成功返回 True
         """
         kb_name = name or self.get_default()
         kb_dir = self.get_knowledge_base_path(kb_name)
@@ -1038,22 +1029,22 @@ class KnowledgeBaseManager:
 
     def link_folder(self, kb_name: str, folder_path: str) -> dict:
         """
-        Link a local folder to a knowledge base.
+        将本地文件夹链接到知识库。
 
         Args:
-            kb_name: Knowledge base name
-            folder_path: Path to local folder (supports ~, relative paths)
+            kb_name: 知识库名称
+            folder_path: 本地文件夹路径（支持 ~、相对路径）
 
         Returns:
-            Dict with folder info including id, path, and file count
+            包含文件夹信息的字典，包括 id、路径和文件数量
 
         Raises:
-            ValueError: If KB not found or folder doesn't exist
+            ValueError: 如果知识库未找到或文件夹不存在
         """
         if kb_name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {kb_name}")
 
-        # Normalize path (cross-platform: handles ~, relative paths, etc.)
+        # 规范化路径（跨平台：处理 ~、相对路径等）
         folder = Path(folder_path).expanduser().resolve()
 
         if not folder.exists():
@@ -1063,13 +1054,13 @@ class KnowledgeBaseManager:
 
         files = FileTypeRouter.collect_supported_files(folder, recursive=True)
 
-        # Generate folder ID
+        # 生成文件夹 ID
 
         folder_id = hashlib.md5(  # noqa: S324
             str(folder).encode(), usedforsecurity=False
         ).hexdigest()[:8]
 
-        # Load existing linked folders from metadata
+        # 从元数据加载已链接的文件夹
         kb_dir = self.base_dir / kb_name
         metadata_file = kb_dir / "metadata.json"
         metadata: dict = {}
@@ -1084,16 +1075,16 @@ class KnowledgeBaseManager:
         if "linked_folders" not in metadata:
             metadata["linked_folders"] = []
 
-        # Check if already linked
+        # 检查是否已链接
         existing_ids = [item["id"] for item in metadata.get("linked_folders", [])]
         if folder_id in existing_ids:
-            # If already linked, treat as success (idempotent)
-            # Find and return existing info
+            # 如果已链接，视为成功（幂等）
+            # 查找并返回现有信息
             for item in metadata.get("linked_folders", []):
                 if item["id"] == folder_id:
                     return item
 
-        # Add folder info
+        # 添加文件夹信息
         folder_info = {
             "id": folder_id,
             "path": str(folder),
@@ -1102,7 +1093,7 @@ class KnowledgeBaseManager:
         }
         metadata["linked_folders"].append(folder_info)
 
-        # Save metadata
+        # 保存元数据
         with open(metadata_file, "w", encoding="utf-8") as fp:
             json.dump(metadata, fp, indent=2, ensure_ascii=False)
 
@@ -1110,13 +1101,13 @@ class KnowledgeBaseManager:
 
     def get_linked_folders(self, kb_name: str) -> list[dict]:
         """
-        Get list of linked folders for a knowledge base.
+        获取知识库的已链接文件夹列表。
 
         Args:
-            kb_name: Knowledge base name
+            kb_name: 知识库名称
 
         Returns:
-            List of linked folder info dicts
+            已链接文件夹信息字典列表
         """
         if kb_name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {kb_name}")
@@ -1136,14 +1127,14 @@ class KnowledgeBaseManager:
 
     def unlink_folder(self, kb_name: str, folder_id: str) -> bool:
         """
-        Unlink a folder from a knowledge base.
+        取消文件夹与知识库的链接。
 
         Args:
-            kb_name: Knowledge base name
-            folder_id: Folder ID to unlink
+            kb_name: 知识库名称
+            folder_id: 要取消链接的文件夹 ID
 
         Returns:
-            True if unlinked successfully, False if not found
+            取消链接成功返回 True，未找到返回 False
         """
         if kb_name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {kb_name}")
@@ -1175,14 +1166,14 @@ class KnowledgeBaseManager:
 
     def scan_linked_folder(self, folder_path: str, provider: str = DEFAULT_PROVIDER) -> list[str]:
         """
-        Scan a linked folder and return list of supported file paths.
+        扫描已链接文件夹并返回支持的文件路径列表。
 
         Args:
-            folder_path: Path to folder
-            provider: RAG provider to determine supported extensions (default: llamaindex)
+            folder_path: 文件夹路径
+            provider: 用于确定支持扩展名的 RAG 提供者（默认：llamaindex）
 
         Returns:
-            List of file paths (as strings)
+            文件路径列表（字符串形式）
         """
         folder = Path(folder_path).expanduser().resolve()
 
@@ -1198,22 +1189,22 @@ class KnowledgeBaseManager:
 
     def detect_folder_changes(self, kb_name: str, folder_id: str) -> dict:
         """
-        Detect new and modified files in a linked folder since last sync.
+        检测已链接文件夹自上次同步以来的新文件和修改文件。
 
-        This enables automatic sync of changes from local folders that may
-        be synced with cloud services like SharePoint, Google Drive, etc.
+        这使得可以从可能与 SharePoint、Google Drive 等云服务
+        同步的本地文件夹自动同步更改。
 
         Args:
-            kb_name: Knowledge base name
-            folder_id: Folder ID to check for changes
+            kb_name: 知识库名称
+            folder_id: 要检查更改的文件夹 ID
 
         Returns:
-            Dict with 'new_files', 'modified_files', and 'has_changes' keys
+            包含 'new_files'、'modified_files' 和 'has_changes' 键的字典
         """
         if kb_name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {kb_name}")
 
-        # Get folder info
+        # 获取文件夹信息
         folders = self.get_linked_folders(kb_name)
         folder_info = next((f for f in folders if f["id"] == folder_id), None)
 
@@ -1224,7 +1215,7 @@ class KnowledgeBaseManager:
         last_sync = folder_info.get("last_sync")
         synced_files = folder_info.get("synced_files", {})
 
-        # Parse last sync timestamp
+        # 解析上次同步时间戳
         last_sync_time = None
         if last_sync:
             try:
@@ -1240,7 +1231,7 @@ class KnowledgeBaseManager:
             file_mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
 
             if file_str in synced_files:
-                # Check if modified since last sync
+                # 检查自上次同步以来是否被修改
                 prev_mtime_str = synced_files[file_str]
                 try:
                     prev_mtime = datetime.fromisoformat(prev_mtime_str)
@@ -1249,7 +1240,7 @@ class KnowledgeBaseManager:
                 except Exception:
                     modified_files.append(file_str)
             else:
-                # New file (not in synced files)
+                # 新文件（不在已同步文件中）
                 new_files.append(file_str)
 
         return {
@@ -1262,15 +1253,15 @@ class KnowledgeBaseManager:
 
     def update_folder_sync_state(self, kb_name: str, folder_id: str, synced_files: list[str]):
         """
-        Update the sync state for a linked folder after successful sync.
+        成功同步后更新已链接文件夹的同步状态。
 
-        Records which files were synced and their modification times,
-        enabling future change detection.
+        记录哪些文件已同步及其修改时间，
+        以便未来的更改检测。
 
         Args:
-            kb_name: Knowledge base name
-            folder_id: Folder ID
-            synced_files: List of file paths that were successfully synced
+            kb_name: 知识库名称
+            folder_id: 文件夹 ID
+            synced_files: 成功同步的文件路径列表
         """
         if kb_name not in self.list_knowledge_bases():
             raise ValueError(f"Knowledge base not found: {kb_name}")
@@ -1291,10 +1282,10 @@ class KnowledgeBaseManager:
 
         for folder in linked:
             if folder["id"] == folder_id:
-                # Record sync timestamp
+                # 记录同步时间戳
                 folder["last_sync"] = datetime.now().isoformat()
 
-                # Record file modification times
+                # 记录文件修改时间
                 file_states = folder.get("synced_files", {})
                 for file_path in synced_files:
                     try:
@@ -1311,7 +1302,7 @@ class KnowledgeBaseManager:
 
 
 def main():
-    """Command-line interface for knowledge base manager"""
+    """知识库管理器的命令行界面"""
     import argparse
 
     parser = argparse.ArgumentParser(description="Knowledge Base Manager")
@@ -1321,25 +1312,25 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
-    # List command
+    # 列表命令
     subparsers.add_parser("list", help="List all knowledge bases")
 
-    # Info command
+    # 信息命令
     info_parser = subparsers.add_parser("info", help="Show knowledge base information")
     info_parser.add_argument(
         "name", nargs="?", help="Knowledge base name (default if not specified)"
     )
 
-    # Set default command
+    # 设置默认命令
     default_parser = subparsers.add_parser("set-default", help="Set default knowledge base")
     default_parser.add_argument("name", help="Knowledge base name")
 
-    # Delete command
+    # 删除命令
     delete_parser = subparsers.add_parser("delete", help="Delete a knowledge base")
     delete_parser.add_argument("name", help="Knowledge base name")
     delete_parser.add_argument("--force", action="store_true", help="Skip confirmation")
 
-    # Clean RAG command
+    # 清理 RAG 命令
     clean_parser = subparsers.add_parser(
         "clean-rag", help="Clean RAG storage (useful for corrupted data)"
     )

@@ -1,19 +1,17 @@
-"""Update mode — chunk-based incremental fact extraction.
+"""更新模式 — 基于分块的增量事实提取。
 
-Algorithm
+算法
 ---------
-1. Compute "new since last update" by id-set diff against ``*.meta.json``.
-2. Concatenate the new inputs by time (oldest first).
-3. ``chunk_with_boundary`` cuts the concat into ≤ budget pieces, never
-   truncating mid-paragraph (or mid-sentence, per settings).
-4. For each chunk: LLM call → parse facts → filter by ref pool → append
-   to in-memory ``Document``.
-5. Atomic flush to disk + update ``*.meta.json``.
-6. If ``dedup.auto_after_update`` is set, kick off the dedup pass.
+1. 通过与 ``*.meta.json`` 的 id 集合差异计算"上次更新以来的新内容"。
+2. 按时间拼接新输入（最旧优先）。
+3. ``chunk_with_boundary`` 将拼接文本切割为不超过 budget 个片段，
+   绝不在段落中间（或按设置在句子中间）截断。
+4. 对每个块：LLM 调用 → 解析事实 → 按引用池过滤 → 追加到内存中的 ``Document``。
+5. 原子刷新到磁盘 + 更新 ``*.meta.json``。
+6. 如果设置了 ``dedup.auto_after_update``，启动去重过程。
 
-The append step uses the existing :class:`ops.AddOp` apply path so the
-document's invariants (id allocation, validation, footnote rebuild on
-serialize) stay centralized.
+追加步骤使用现有的 :class:`ops.AddOp` 应用路径，
+使文档的不变量（id 分配、验证、序列化时的脚注重建）保持集中。
 """
 
 from __future__ import annotations
@@ -74,7 +72,7 @@ class UpdateResult:
     no_new_input: bool = False
 
 
-# ── Public entry ────────────────────────────────────────────────────────
+# ── 公共入口 ────────────────────────────────────────────────────────
 
 
 async def run_update(
@@ -87,11 +85,10 @@ async def run_update(
     llm_selection: dict | None = None,
     on_event: OnEvent | None = None,
 ) -> UpdateResult:
-    """Dispatch to the layer-specific update implementation.
+    """分派到层特定的更新实现。
 
-    The chosen ``llm_selection`` (``{profile_id, model_id}``) is
-    installed as a scoped LLM config for the duration of the run so
-    every internal :func:`call_llm` resolves to the right provider.
+    选择的 ``llm_selection``（``{profile_id, model_id}``）在运行期间
+    作为作用域 LLM 配置安装，使每个内部 :func:`call_llm` 都解析到正确的提供商。
     """
     from aidlearning.services.model_selection.runtime import (
         activate_llm_selection,
@@ -134,7 +131,7 @@ async def run_update(
         reset_llm_selection(token)
 
 
-# ── L2 ──────────────────────────────────────────────────────────────────
+# ── L2 层 ──────────────────────────────────────────────────────────────────
 
 
 async def _run_update_l2(
@@ -150,11 +147,11 @@ async def _run_update_l2(
     meta = load_l2_meta(surface)
     seen_msg_ids = meta.seen_message_ids
 
-    # Read messages from SQLite instead of L1 traces
+    # 从 SQLite 而非 L1 追踪中读取消息
     from aidlearning.services.session.sqlite_store import get_sqlite_session_store
     sqlite_store = get_sqlite_session_store()
 
-    # Get new messages (get_all_messages already excludes seen IDs)
+    # 获取新消息（get_all_messages 已排除已见 ID）
     new_messages = await sqlite_store.get_all_messages(exclude_ids=seen_msg_ids)
     seen_now = seen_msg_ids | {int(m.get("id", 0)) for m in new_messages}
 
@@ -192,7 +189,7 @@ async def _run_update_l2(
 
     prompt = load_prompt("update_l2", language)
     focus, sections = surface_focus(language, surface)
-    # Route surface to its L2 target (all non-kb surfaces → chat.md)
+    # 将 surface 路由到其 L2 目标（所有非 kb surface → chat.md）
     l2_target = paths.l2_target(surface)
     l2_path = paths.l2_file(l2_target)  # type: ignore[arg-type]
     doc = load_doc(l2_path, default_title=f"{l2_target} memory")
@@ -220,7 +217,7 @@ async def _run_update_l2(
             focus=focus,
             today=today_iso(),
         )
-        # Build allowed refs from message IDs in this chunk
+        # 从此块中的消息 ID 构建允许的引用
         allowed = {f"msg:{m['id']}" for m in new_messages
                    if f"msg:{m['id']}" in chunk.text}
         user = prompt["user"].format(
@@ -304,7 +301,7 @@ async def _run_update_l2(
     )
 
     if settings.dedup.auto_after_update and facts_added > 0:
-        # Avoid a circular import: dedup imports settings, refs, line_doc.
+        # 避免循环导入：dedup 导入 settings、refs、line_doc。
         from aidlearning.memory.consolidator.modes.dedup import run_dedup
 
         await run_dedup(
@@ -338,7 +335,7 @@ async def _run_update_l2(
     )
 
 
-# ── L3 ──────────────────────────────────────────────────────────────────
+# ── L3 层 ──────────────────────────────────────────────────────────────────
 
 
 async def _run_update_l3(
@@ -361,7 +358,7 @@ async def _run_update_l3(
     for surface, doc in l2_docs.items():
         all_entries = doc.all_entries()
         seen_now[surface] = {e.id for e in all_entries}
-        # Sort by id (ULID) ascending → roughly time-ascending.
+        # 按 id (ULID) 升序排列 → 大致按时间升序。
         new_entries = sorted(
             (e for e in all_entries if e.id not in meta.seen_l2_entry_ids.get(surface, set())),
             key=lambda e: e.id,
@@ -444,12 +441,11 @@ async def _run_update_l3(
             focus=focus,
             today=today_iso(),
         )
-        # L3 refs are *surface names* (chat / notebook / ...). The pool
-        # is whichever surface blocks intersect this chunk; the LLM is
-        # told to cite from that list. Per-entry-id provenance was
-        # explicitly dropped — L3 points at L2 *files*, not L2 entries,
-        # which gives the user a clean 7-footnote chain
-        # (L3 → L2 md → L1 raw traces).
+        # L3 引用是*surface 名称*（chat / notebook / ...）。
+        # 池是与此块相交的 surface 块；LLM 被告知从该列表中引用。
+        # 逐条目 id 的来源已被明确丢弃 — L3 指向 L2 *文件*而非 L2 条目，
+        # 这给用户提供了清晰的 7 脚注链
+        # （L3 → L2 md → L1 原始追踪）。
         allowed = refs_in_span_l3(
             entries_by_surface=entries_by_surface,
             full_text=text,
@@ -567,11 +563,11 @@ async def _run_update_l3(
     )
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────
+# ── 辅助函数 ─────────────────────────────────────────────────────────────
 
 
 def _parse_facts(raw: str) -> list[ExtractedFact]:
-    """Tolerant JSON parse → list[ExtractedFact]. Empty on any failure."""
+    """容错 JSON 解析 → list[ExtractedFact]。任何失败时返回空列表。"""
     if not raw:
         return []
     snippet = _extract_json_object(raw)
@@ -614,14 +610,13 @@ def _extract_json_object(raw: str) -> str | None:
 def _append_facts_to_doc(
     doc: Document, facts: list[ExtractedFact], allowed_sections: list[str]
 ) -> list[str]:
-    """Append each fact as one AddOp; return the new entry ids."""
+    """将每个事实作为 AddOp 追加；返回新条目 id。"""
     new_ids: list[str] = []
     fallback_section = allowed_sections[0] if allowed_sections else "Notes"
     for fact in facts:
         section = fact.section if fact.section else fallback_section
         if allowed_sections and section not in allowed_sections:
-            # Map an off-list section into the first allowed one — keeps
-            # the section catalog stable across runs.
+            # 将不在列表中的节映射到第一个允许的节 — 保持节目录跨运行稳定。
             section = fallback_section
         op = AddOp(section=section, text=fact.text, refs=fact.refs)
         report = apply_ops(doc, [op])

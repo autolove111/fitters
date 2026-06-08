@@ -1,15 +1,15 @@
 """
-LLM Service Exceptions
-======================
+LLM 服务异常
+===========
 
-Custom exception classes for the LLM service.
-Provides a consistent exception hierarchy for better error handling.
-Maintains parity with upstream dev branch.
+LLM 服务的自定义异常类。
+提供一致的异常层级结构以改善错误处理。
+与上游开发分支保持同步。
 """
 
 
 class LLMError(Exception):
-    """Base exception for all LLM-related errors."""
+    """所有 LLM 相关错误的基异常。"""
 
     def __init__(
         self,
@@ -30,27 +30,27 @@ class LLMError(Exception):
 
 
 class LLMConfigError(LLMError):
-    """Raised when there's an error in LLM configuration."""
+    """当 LLM 配置出错时抛出。"""
 
     pass
 
 
 class LLMProviderError(LLMError):
-    """Raised when there's an error with the LLM provider."""
+    """当 LLM Provider 出错时抛出。"""
 
     pass
 
 
 class LLMCircuitBreakerError(LLMError):
-    """Raised when circuit breaker blocks LLM execution."""
+    """当断路器阻止 LLM 执行时抛出。"""
 
     pass
 
 
 class LLMAPIError(LLMError):
     """
-    Raised when an API call to an LLM provider fails.
-    Standardizes status_code and provider name.
+    当 LLM Provider 的 API 调用失败时抛出。
+    标准化 status_code 和 Provider 名称。
     """
 
     def __init__(
@@ -74,7 +74,7 @@ class LLMAPIError(LLMError):
 
 
 class LLMTimeoutError(LLMAPIError):
-    """Raised when an API call times out."""
+    """当 API 调用超时时抛出。"""
 
     def __init__(
         self,
@@ -87,7 +87,7 @@ class LLMTimeoutError(LLMAPIError):
 
 
 class LLMRateLimitError(LLMAPIError):
-    """Raised when rate limited by the API."""
+    """当 API 限流时抛出。"""
 
     def __init__(
         self,
@@ -100,7 +100,7 @@ class LLMRateLimitError(LLMAPIError):
 
 
 class LLMAuthenticationError(LLMAPIError):
-    """Raised when authentication fails (invalid API key, etc.)."""
+    """当认证失败时抛出（无效 API 密钥等）。"""
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ class LLMAuthenticationError(LLMAPIError):
 
 
 class LLMModelNotFoundError(LLMAPIError):
-    """Raised when the requested model is not found."""
+    """当请求的模型未找到时抛出。"""
 
     def __init__(
         self,
@@ -124,7 +124,7 @@ class LLMModelNotFoundError(LLMAPIError):
 
 
 class LLMParseError(LLMError):
-    """Raised when parsing LLM output fails."""
+    """当解析 LLM 输出失败时抛出。"""
 
     def __init__(
         self,
@@ -135,7 +135,7 @@ class LLMParseError(LLMError):
         super().__init__(message, details=details, provider=provider)
 
 
-# Multi-provider specific aliases for mapping rules
+# 多 Provider 特定别名，用于映射规则
 class ProviderQuotaExceededError(LLMRateLimitError):
     pass
 

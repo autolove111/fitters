@@ -1,5 +1,5 @@
 """
-SQLite-backed unified chat session store.
+基于 SQLite 的统一聊天会话存储。
 """
 
 from __future__ import annotations
@@ -22,11 +22,10 @@ def _json_dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-# Sentinel so ``add_message`` can distinguish "caller wants the legacy
-# auto-pick-latest-message default" from "caller explicitly wants the
-# message attached at the session root (parent = NULL)". Both surface as
-# ``None`` in the public ``parent_message_id`` arg, which is why we need
-# a sentinel separate from None.
+# 哨兵值，用于让 ``add_message`` 区分"调用方想要旧版自动选择最新消息的默认行为"
+# 和"调用方明确希望将消息挂载到会话根节点（parent = NULL）"。
+# 两者在公开的 ``parent_message_id`` 参数中都表现为 ``None``，
+# 因此需要一个独立于 None 的哨兵值。
 class _Unset:
     pass
 
@@ -71,7 +70,7 @@ class TurnRecord:
 
 
 class SQLiteSessionStore:
-    """Persist unified chat sessions and messages in a SQLite database."""
+    """在 SQLite 数据库中持久化统一聊天会话和消息。"""
 
     def __init__(self, db_path: Path | None = None) -> None:
         path_service = get_path_service()
@@ -82,15 +81,15 @@ class SQLiteSessionStore:
         self._initialize()
 
     def _migrate_legacy_db(self, path_service) -> None:
-        """Move the legacy ``data/chat_history.db`` into ``data/user/`` once."""
+        """将旧版 ``data/chat_history.db`` 一次性迁移到 ``data/user/``。"""
         legacy_path = path_service.project_root / "data" / "chat_history.db"
         if self.db_path.exists() or not legacy_path.exists() or legacy_path == self.db_path:
             return
         try:
             os.replace(legacy_path, self.db_path)
         except OSError:
-            # Fall back to leaving the legacy DB in place if an OS-level move
-            # is not possible; the new DB path will be initialized empty.
+            # 如果操作系统级别的移动不可行，则保留旧版数据库在原位；
+            # 新的数据库路径将以空状态初始化。
             pass
 
     def _initialize(self) -> None:
@@ -118,19 +117,17 @@ class SQLiteSessionStore:
                     attachments_json TEXT DEFAULT '',
                     metadata_json TEXT DEFAULT '{}',
                     created_at REAL NOT NULL,
-                    -- Edit-branching: NULL for the first message in a session;
-                    -- otherwise the immediately preceding message on the path
-                    -- this row continues. Siblings (same parent) are alternate
-                    -- branches the user can switch between.
+                    -- 编辑分支：会话中的第一条消息为 NULL；
+                    -- 否则为当前消息所在路径上的前一条消息。
+                    -- 兄弟节点（相同父节点）是用户可以切换的备选分支。
                     parent_message_id INTEGER
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_messages_session_created
                     ON messages(session_id, created_at, id);
-                -- ``idx_messages_parent`` is created after the
-                -- parent_message_id migration runs (see below). Putting it
-                -- in this script would fail on legacy DBs where the column
-                -- gets added by ALTER TABLE further down.
+                -- ``idx_messages_parent`` 在 parent_message_id 迁移完成后创建（见下文）。
+                -- 放在此脚本中会在旧版数据库上失败，因为该列是通过下方的
+                -- ALTER TABLE 添加的。
 
                 CREATE INDEX IF NOT EXISTS idx_sessions_updated_at
                     ON sessions(updated_at DESC);
@@ -217,8 +214,8 @@ class SQLiteSessionStore:
                 try:
                     conn.execute("ALTER TABLE sessions DROP COLUMN kind")
                 except sqlite3.OperationalError:
-                    # Older SQLite builds may not support DROP COLUMN. The
-                    # application no longer reads or writes this legacy field.
+                    # 较旧的 SQLite 版本可能不支持 DROP COLUMN。
+                    # 应用程序不再读取或写入此旧版字段。
                     pass
             message_columns = {
                 row[1] for row in conn.execute("PRAGMA table_info(messages)").fetchall()
@@ -227,11 +224,10 @@ class SQLiteSessionStore:
                 conn.execute("ALTER TABLE messages ADD COLUMN metadata_json TEXT DEFAULT '{}'")
             if "parent_message_id" not in message_columns:
                 conn.execute("ALTER TABLE messages ADD COLUMN parent_message_id INTEGER")
-                # Backfill: for every existing session, treat the message stream
-                # as a single linear path — each row's parent is the previous
-                # row (by id) in the same session. Rows with no predecessor stay
-                # NULL. We do this per session in pure Python to avoid relying
-                # on window functions, which older SQLite builds may not have.
+                # 回填：对于每个现有会话，将消息流视为单一的线性路径
+                # —— 每行的父节点是同一会话中的上一行（按 id 排序）。
+                # 没有前驱的行保持 NULL。使用纯 Python 逐会话处理，
+                # 避免依赖窗口函数（较旧的 SQLite 版本可能不支持）。
                 sessions_rows = conn.execute("SELECT id FROM sessions").fetchall()
                 for srow in sessions_rows:
                     prev_id: int | None = None
@@ -246,9 +242,8 @@ class SQLiteSessionStore:
                                 (prev_id, mrow[0]),
                             )
                         prev_id = mrow[0]
-            # Always ensure the parent-lookup index exists — covers both
-            # the legacy-migration case (just added the column) and the
-            # fresh-DB case (created above without the index inline).
+            # 始终确保父节点查找索引存在 —— 涵盖旧版迁移情况（刚添加列）
+            # 和全新数据库情况（上方创建时未内联索引）。
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_messages_parent "
                 "ON messages(session_id, parent_message_id)"
@@ -262,14 +257,13 @@ class SQLiteSessionStore:
 
     @staticmethod
     def _migrate_notebook_entries_add_turn_id(conn: sqlite3.Connection) -> None:
-        """Add ``turn_id`` to legacy notebook_entries and re-scope the UNIQUE
-        constraint to ``(session_id, turn_id, question_id)``.
+        """向旧版 notebook_entries 添加 ``turn_id``，并将 UNIQUE 约束
+        重新限定为 ``(session_id, turn_id, question_id)``。
 
-        The old unique constraint conflated quizzes generated in the same chat
-        (issue #487): regenerating a quiz with the same positional
-        ``question_id`` (e.g. ``q_1``) would collide with the previous quiz's
-        notebook entries and the UI hydrated stale answers. Scoping by
-        ``turn_id`` keeps each quiz isolated.
+        旧的唯一约束会混淆同一聊天中生成的测验（issue #487）：
+        使用相同位置 ``question_id``（如 ``q_1``）重新生成测验时会与
+        上一个测验的笔记本条目冲突，导致 UI 填充了过期的答案。
+        通过 ``turn_id`` 限定范围可保持每个测验的隔离性。
         """
         notebook_cols = {
             row[1] for row in conn.execute("PRAGMA table_info(notebook_entries)").fetchall()
@@ -278,11 +272,10 @@ class SQLiteSessionStore:
             return
         if "turn_id" not in notebook_cols:
             conn.execute("ALTER TABLE notebook_entries ADD COLUMN turn_id TEXT NOT NULL DEFAULT ''")
-        # SQLite stores table-level UNIQUE constraints as auto-indexes whose
-        # names start with ``sqlite_autoindex_notebook_entries_``; the columns
-        # they cover live in PRAGMA index_info. Detect whether any existing
-        # auto-index still covers only (session_id, question_id) and, if so,
-        # rebuild the table to swap in the new scope.
+        # SQLite 将表级 UNIQUE 约束存储为以 ``sqlite_autoindex_notebook_entries_``
+        # 开头的自动索引；它们覆盖的列在 PRAGMA index_info 中。
+        # 检测是否存在仅覆盖 (session_id, question_id) 的自动索引，
+        # 如果存在则重建表以替换为新的范围。
         needs_rebuild = False
         for idx_row in conn.execute("PRAGMA index_list(notebook_entries)").fetchall():
             idx_name = idx_row[1]
@@ -344,12 +337,11 @@ class SQLiteSessionStore:
     def _migrate_notebook_entries_add_user_answer_images(
         conn: sqlite3.Connection,
     ) -> None:
-        """Back-fill ``user_answer_images_json`` on legacy DBs.
+        """在旧版数据库上回填 ``user_answer_images_json``。
 
-        The column stores a JSON array of ``{id, url, filename, mime_type}``
-        records for image attachments uploaded as part of the learner's
-        answer. The bytes themselves live in the AttachmentStore; we only
-        keep references in the row so notebook_entries stays lean.
+        该列存储 ``{id, url, filename, mime_type}`` 记录的 JSON 数组，
+        用于学习者作答时上传的图片附件。图片字节本身存储在 AttachmentStore 中；
+        我们只在行中保留引用，以保持 notebook_entries 的精简。
         """
         cols = {row[1] for row in conn.execute("PRAGMA table_info(notebook_entries)").fetchall()}
         if not cols:
@@ -363,11 +355,10 @@ class SQLiteSessionStore:
     def _migrate_notebook_entries_add_ai_judgment(
         conn: sqlite3.Connection,
     ) -> None:
-        """Back-fill ``ai_judgment`` on legacy DBs.
+        """在旧版数据库上回填 ``ai_judgment``。
 
-        Stores the latest AI-judge text per entry as plain markdown. Empty
-        string means the learner has not run the AI judge for this entry
-        yet.
+        以纯 Markdown 格式存储每个条目的最新 AI 评判文本。
+        空字符串表示学习者尚未对此条目运行 AI 评判。
         """
         cols = {row[1] for row in conn.execute("PRAGMA table_info(notebook_entries)").fetchall()}
         if not cols:
@@ -377,14 +368,12 @@ class SQLiteSessionStore:
 
     @staticmethod
     def _ensure_fts_table(conn: sqlite3.Connection) -> None:
-        """Create FTS5 full-text search index on messages table.
+        """在消息表上创建 FTS5 全文搜索索引。
 
-        This enables ``session_search`` — the mid-term memory tool that
-        lets the LLM recall past conversations by keyword.  FTS5 provides
-        efficient full-text search across all message content without
-        requiring embeddings or a vector database.
+        这启用了 ``session_search`` —— 一个让 LLM 通过关键词回忆过去对话的中期记忆工具。
+        FTS5 提供对所有消息内容的高效全文搜索，无需嵌入向量或向量数据库。
         """
-        # Check if FTS5 is available by trying to create a temp table
+        # 通过尝试创建临时表来检查 FTS5 是否可用
         has_fts5 = False
         try:
             conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_test USING fts5(content)")
@@ -396,9 +385,9 @@ class SQLiteSessionStore:
         if not has_fts5:
             return
 
-        # Create the FTS5 virtual table if it doesn't exist.
-        # content=messages links it to the messages table for
-        # automatic sync on INSERT/UPDATE/DELETE.
+        # 如果不存在则创建 FTS5 虚拟表。
+        # content=messages 将其链接到消息表，
+        # 以便在 INSERT/UPDATE/DELETE 时自动同步。
         conn.execute(
             """
             CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts
@@ -406,9 +395,8 @@ class SQLiteSessionStore:
             """
         )
 
-        # Populate the FTS index from existing messages (idempotent).
-        # The REPLACE INTO trick ensures we don't duplicate rows that
-        # are already indexed.
+        # 从现有消息填充 FTS 索引（幂等操作）。
+        # REPLACE INTO 技巧确保不会重复已索引的行。
         conn.execute(
             """
             INSERT OR IGNORE INTO messages_fts(rowid, content)
@@ -418,9 +406,9 @@ class SQLiteSessionStore:
 
     @staticmethod
     def _ensure_buffer_state_table(conn: sqlite3.Connection) -> None:
-        """Create buffer_state table for persisting conversation buffer snapshots.
+        """创建 buffer_state 表用于持久化对话缓冲区快照。
 
-        Stores the sliding window state so buffers survive process restarts.
+        存储滑动窗口状态，使缓冲区在进程重启后能够恢复。
         """
         conn.executescript(
             """
@@ -443,7 +431,7 @@ class SQLiteSessionStore:
         compressed_count: int,
         window_message_ids: list[int],
     ) -> None:
-        """Persist buffer window state to SQLite."""
+        """将缓冲区窗口状态持久化到 SQLite。"""
         import json
         with self._connect() as conn:
             conn.execute(
@@ -460,7 +448,7 @@ class SQLiteSessionStore:
         self,
         session_id: str,
     ) -> dict[str, Any] | None:
-        """Load buffer window state from SQLite."""
+        """从 SQLite 加载缓冲区窗口状态。"""
         import json
         with self._connect() as conn:
             row = conn.execute(
@@ -484,7 +472,7 @@ class SQLiteSessionStore:
         compressed_count: int,
         window_message_ids: list[int],
     ) -> None:
-        """Public async interface for saving buffer state."""
+        """保存缓冲区状态的公开异步接口。"""
         import functools
         fn = functools.partial(
             self._save_buffer_state_sync,
@@ -494,7 +482,7 @@ class SQLiteSessionStore:
         await self._run(fn)
 
     async def load_buffer_state(self, session_id: str) -> dict[str, Any] | None:
-        """Public async interface for loading buffer state."""
+        """加载缓冲区状态的公开异步接口。"""
         import functools
         fn = functools.partial(self._load_buffer_state_sync, session_id)
         return await self._run(fn)
@@ -507,19 +495,18 @@ class SQLiteSessionStore:
         since: float | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
-        """Full-text search across message content.
+        """跨消息内容的全文搜索。
 
-        Uses FTS5 if available, falls back to LIKE queries otherwise.
-        Returns matching messages with session context, ordered by
-        recency.  Used by the ``session_search`` tool for mid-term
-        memory recall.
+        如果可用则使用 FTS5，否则回退到 LIKE 查询。
+        返回带有会话上下文的匹配消息，按时间排序。
+        供 ``session_search`` 工具用于中期记忆回忆。
         """
         tokens = [t.strip() for t in query.split() if t.strip()]
         if not tokens:
             return []
 
         with self._connect() as conn:
-            # Try FTS5 first
+            # 优先尝试 FTS5
             has_fts = False
             try:
                 conn.execute("SELECT count(*) FROM messages_fts LIMIT 1")
@@ -528,7 +515,7 @@ class SQLiteSessionStore:
                 pass
 
             if has_fts:
-                # FTS5 path
+                # FTS5 路径
                 fts_expr = " OR ".join(f'"{t}"' for t in tokens[:10])
                 clauses = ["messages_fts MATCH ?"]
                 params: list[Any] = [fts_expr]
@@ -555,7 +542,7 @@ class SQLiteSessionStore:
                     params,
                 ).fetchall()
             else:
-                # LIKE fallback
+                # LIKE 回退路径
                 like_clauses = []
                 like_params: list[Any] = []
                 for t in tokens[:5]:
@@ -610,7 +597,7 @@ class SQLiteSessionStore:
         since: float | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
-        """Public async interface for FTS search."""
+        """FTS 搜索的公开异步接口。"""
         import functools
         fn = functools.partial(
             self._search_messages_fts_sync,
@@ -627,7 +614,7 @@ class SQLiteSessionStore:
         exclude_ids: set[int] | None = None,
         limit: int = 1000,
     ) -> list[dict[str, Any]]:
-        """Get messages for consolidation, optionally excluding already-seen IDs."""
+        """获取用于整合的消息，可选择排除已见的 ID。"""
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT m.id, m.session_id, m.role, m.content, m.created_at, "
@@ -659,7 +646,7 @@ class SQLiteSessionStore:
         exclude_ids: set[int] | None = None,
         limit: int = 1000,
     ) -> list[dict[str, Any]]:
-        """Get messages for consolidation."""
+        """获取用于整合的消息。"""
         import functools
         fn = functools.partial(
             self._get_all_messages_sync,
@@ -1042,17 +1029,16 @@ class SQLiteSessionStore:
 
             resolved_parent_id: int | None
             if isinstance(parent_message_id, _Unset):
-                # Legacy auto-append path: chain off the latest row in the
-                # session so the linear thread stays connected.
+                    # 旧版自动追加路径：链接到会话中的最新行，
+                # 保持线程的连贯性。
                 last_row = conn.execute(
                     "SELECT id FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT 1",
                     (session_id,),
                 ).fetchone()
                 resolved_parent_id = int(last_row["id"]) if last_row is not None else None
             else:
-                # Caller pinned a parent explicitly — including ``None``,
-                # which means "attach at the session root" (used by edits
-                # of the very first message in a session).
+                # 调用方明确指定了父节点 —— 包括 ``None``，
+                # 表示"挂载到会话根节点"（用于编辑会话中第一条消息的情况）。
                 resolved_parent_id = (
                     int(parent_message_id) if parent_message_id is not None else None
                 )
@@ -1077,11 +1063,10 @@ class SQLiteSessionStore:
                 ),
             )
 
-            # Title is no longer derived from the first user message — the
-            # turn runtime calls an LLM to generate a real summary title
-            # once the first user+assistant pair is complete. Until then
-            # the session keeps the default sentinel ``New conversation``
-            # which the frontend renders as a breathing "New chat" chip.
+            # 标题不再从第一条用户消息推导 —— turn runtime 在首个
+            # 用户+助手消息对完成后调用 LLM 生成真正的摘要标题。
+            # 在此之前会话保持默认哨兵值 ``New conversation``，
+            # 前端将其渲染为呼吸动画的"新对话"标签。
             conn.execute(
                 "UPDATE sessions SET updated_at = ? WHERE id = ?",
                 (now, session_id),
@@ -1308,17 +1293,15 @@ class SQLiteSessionStore:
         return [self._serialize_message(row) for row in rows]
 
     def _get_message_path_sync(self, session_id: str, leaf_message_id: int) -> list[dict[str, Any]]:
-        """Return the chain of messages from the session root down to
-        ``leaf_message_id`` (inclusive), in chronological order.
+        """返回从会话根节点到 ``leaf_message_id``（含）的消息链，按时间顺序排列。
 
-        Used by the turn runtime to build LLM context for a branched
-        re-run: only ancestors of the new user message are included, so
-        sibling branches at any depth are excluded.
+        用于 turn runtime 构建分支重跑的 LLM 上下文：
+        仅包含新用户消息的祖先节点，因此任何深度的兄弟分支都会被排除。
         """
         with self._connect() as conn:
             chain: list[dict[str, Any]] = []
             current: int | None = int(leaf_message_id)
-            # Bound the walk defensively in case of corrupted parent pointers.
+            # 防御性地限制遍历深度，防止父指针损坏导致的无限循环。
             safety = 10_000
             while current is not None and safety > 0:
                 row = conn.execute(
@@ -1368,8 +1351,8 @@ class SQLiteSessionStore:
                     }
                     for row in rows
                 ]
-            # Branch-aware path walk: include only ancestors (+ leaf) so
-            # sibling branches at any depth are excluded from LLM context.
+            # 分支感知路径遍历：仅包含祖先节点（+叶子节点），
+            # 使任何深度的兄弟分支都被排除在 LLM 上下文之外。
             chain: list[dict[str, Any]] = []
             current: int | None = int(leaf_message_id)
             safety = 10_000
@@ -1538,7 +1521,7 @@ class SQLiteSessionStore:
         session["active_turns"] = await self.list_active_turns(session_id)
         return session
 
-    # ── Notebook entries ──────────────────────────────────────────────
+    # ── 笔记本条目 ──────────────────────────────────────────────
 
     def _upsert_notebook_entries_sync(self, session_id: str, items: list[dict[str, Any]]) -> int:
         if not items:
@@ -1557,12 +1540,11 @@ class SQLiteSessionStore:
                 if not question or not question_id:
                     continue
                 turn_id = (item.get("turn_id") or "").strip()
-                # ``user_answer_images`` is an optional list of records
-                # ``[{id, url, filename, mime_type}, …]``. We serialise it
-                # here so callers that only know about text don't need to
-                # know JSON. ``None`` keeps the existing column value on
-                # UPDATE (avoid clobbering stored images on a partial
-                # upsert that only changes ``is_correct``).
+                # ``user_answer_images`` 是可选的记录列表
+                # ``[{id, url, filename, mime_type}, ...]``。在此序列化，
+                # 使只处理文本的调用方无需了解 JSON。``None`` 在 UPDATE 时
+                # 保留现有列值（避免在仅更改 ``is_correct`` 的部分更新中
+                # 覆盖已存储的图片）。
                 images_value = item.get("user_answer_images")
                 images_json = _json_dumps(images_value) if isinstance(images_value, list) else None
                 if images_json is None:
@@ -1783,11 +1765,10 @@ class SQLiteSessionStore:
                     (session_id, turn_id, question_id),
                 ).fetchone()
             else:
-                # Legacy lookup: return the most recent matching entry across
-                # turns. Two quizzes in the same session can share a question_id
-                # (positional IDs like ``q_1``), so we explicitly pick the
-                # newest one to keep behavior deterministic for callers that
-                # don't yet pass a turn_id.
+                # 旧版查找：返回跨轮次的最近匹配条目。
+                # 同一会话中的两个测验可以共享 question_id
+                # （位置 ID 如 ``q_1``），因此明确选择最新的一个，
+                # 以确保尚未传递 turn_id 的调用方行为确定性。
                 row = conn.execute(
                     """
                     SELECT n.*, COALESCE(s.title, '') AS session_title
@@ -1849,7 +1830,7 @@ class SQLiteSessionStore:
     async def delete_notebook_entry(self, entry_id: int) -> bool:
         return await self._run(self._delete_notebook_entry_sync, entry_id)
 
-    # ── Notebook categories ────────────────────────────────────────
+    # ── 笔记本分类 ────────────────────────────────────────
 
     def _create_category_sync(self, name: str) -> dict[str, Any]:
         now = time.time()

@@ -1,22 +1,22 @@
 """
-Authentication service for AidLearning.
+AidLearning 认证服务。
 
-Disabled by default (auth.enabled=false) so localhost users are unaffected.
-When enabled, guards all API routes with JWT bearer tokens.
+默认禁用（auth.enabled=false），本地用户不受影响。
+启用后，所有 API 路由均通过 JWT Bearer Token 进行保护。
 
-Quick setup (single user via data/user/settings/auth.json):
-    1. Set enabled=true
-    2. Set username=<your username>
-    3. Generate a password hash:
+快速配置（单用户，通过 data/user/settings/auth.json）：
+    1. 设置 enabled=true
+    2. 设置 username=<你的用户名>
+    3. 生成密码哈希：
            python -c "from aidlearning.services.auth import hash_password; print(hash_password('yourpassword'))"
-       Paste the output into password_hash=<hash>
+       将输出粘贴到 password_hash=<hash>
 
-Multi-user setup (recommended):
-    Enable auth and leave username/password_hash empty.
-    Navigate to /register in the browser. The first user to register is granted
-    admin privileges and can manage other users from /admin/users.
+多用户配置（推荐）：
+    启用认证并将 username/password_hash 留空。
+    在浏览器中访问 /register，第一个注册的用户将获得管理员权限，
+    并可在 /admin/users 管理其他用户。
 
-    Users are stored in data/user/auth_users.json:
+    用户数据存储在 data/user/auth_users.json 中：
         {
             "alice": {"hash": "$2b$12$...", "role": "admin", "created_at": "2026-..."},
             "bob":   {"hash": "$2b$12$...", "role": "user",  "created_at": "2026-..."}
@@ -33,7 +33,7 @@ from aidlearning.services.config import load_auth_settings, load_integrations_se
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Configuration — read once at import time from runtime JSON settings
+# 配置 — 在模块导入时从运行时 JSON 配置中读取
 # ---------------------------------------------------------------------------
 
 _AUTH_SETTINGS = load_auth_settings()
@@ -45,9 +45,9 @@ AUTH_PASSWORD_HASH: str = str(_AUTH_SETTINGS["password_hash"])
 AUTH_SECRET: str = ""
 TOKEN_EXPIRE_HOURS: int = int(_AUTH_SETTINGS["token_expire_hours"])
 
-# PocketBase auth mode — active when integrations.pocketbase_url is set and auth is enabled.
-# When enabled, login/register proxy to PocketBase and token validation uses
-# PocketBase's auth-refresh endpoint (cached in memory — no static secret needed).
+# PocketBase 认证模式 — 当 integrations.pocketbase_url 已配置且认证已启用时激活。
+# 启用后，登录/注册代理到 PocketBase，Token 验证使用
+# PocketBase 的 auth-refresh 端点（结果缓存在内存中，无需静态密钥）。
 POCKETBASE_BASE_URL: str = str(_INTEGRATIONS_SETTINGS["pocketbase_url"]).rstrip("/")
 POCKETBASE_ENABLED: bool = bool(POCKETBASE_BASE_URL) and AUTH_ENABLED
 
@@ -61,13 +61,13 @@ if AUTH_ENABLED and not POCKETBASE_ENABLED and not AUTH_SECRET:
 
 
 # ---------------------------------------------------------------------------
-# Token payload
+# Token 载荷
 # ---------------------------------------------------------------------------
 
 
 @dataclass
 class TokenPayload:
-    """Decoded JWT payload."""
+    """解码后的 JWT 载荷。"""
 
     username: str
     role: str
@@ -75,19 +75,19 @@ class TokenPayload:
 
 
 # ---------------------------------------------------------------------------
-# Password hashing — uses bcrypt directly (passlib is unmaintained for bcrypt 4+)
+# 密码哈希 — 直接使用 bcrypt（passlib 对 bcrypt 4+ 已停止维护）
 # ---------------------------------------------------------------------------
 
 
 def hash_password(plain: str) -> str:
-    """Hash a plaintext password. Use this to generate password hashes."""
+    """对明文密码进行哈希。使用此函数生成密码哈希。"""
     import bcrypt
 
     return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Verify a plaintext password against a stored bcrypt hash."""
+    """验证明文密码是否与存储的 bcrypt 哈希匹配。"""
     import bcrypt
 
     try:
@@ -97,12 +97,12 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# User store — multi-user JSON store plus optional auth.json bootstrap user
+# 用户存储 — 多用户 JSON 存储，附带可选的 auth.json 引导用户
 # ---------------------------------------------------------------------------
 
 
 def _make_user_record(hashed: str, role: str = "user", created_at: str = "") -> dict[str, Any]:
-    """Build a canonical user record dict for legacy callers/tests."""
+    """为旧版调用方/测试构建标准用户记录字典。"""
     from aidlearning.multi_user.identity import new_user_id
 
     return {
@@ -116,14 +116,14 @@ def _make_user_record(hashed: str, role: str = "user", created_at: str = "") -> 
 
 def _load_users() -> dict[str, dict]:
     """
-    Load the user store, migrating old flat format if needed.
+    加载用户存储，如有需要则迁移旧的扁平格式。
 
-    Priority:
-      1. multi-user identity store
-      2. auth.json username + password_hash — single-user bootstrap user
+    优先级：
+      1. 多用户身份存储
+      2. auth.json 中的 username + password_hash — 单用户引导用户
 
-    Old format: {"alice": "$2b$12$..."}
-    New format: {"alice": {"hash": "...", "role": "admin", "created_at": "..."}}
+    旧格式：{"alice": "$2b$12$..."}
+    新格式：{"alice": {"hash": "...", "role": "admin", "created_at": "..."}}
     """
     from aidlearning.multi_user.identity import load_users
 
@@ -131,19 +131,18 @@ def _load_users() -> dict[str, dict]:
 
 
 def is_first_user() -> bool:
-    """Return True when no users exist yet (first registration will become admin)."""
+    """当尚无用户存在时返回 True（第一个注册的用户将成为管理员）。"""
     return len(_load_users()) == 0
 
 
 def add_user(username: str, plain_password: str, role: str = "user") -> None:
     """
-    Add or update a user in data/user/auth_users.json.
+    在 data/user/auth_users.json 中添加或更新用户。
 
-    The role defaults to 'user'. Pass role='admin' to elevate. When the store
-    is empty the first user is automatically promoted to 'admin' regardless of
-    the role argument.
+    角色默认为 'user'，传入 role='admin' 可提升权限。当存储为空时，
+    第一个用户会自动升级为 'admin'，无论 role 参数如何设置。
 
-    Creates the file (and parent directories) if they don't exist.
+    如果文件（及父目录）不存在，会自动创建。
     """
     from aidlearning.multi_user.identity import save_user
 
@@ -152,7 +151,7 @@ def add_user(username: str, plain_password: str, role: str = "user") -> None:
 
 
 def list_users() -> list[dict]:
-    """Return a list of user info dicts (username, role, created_at) — no hashes."""
+    """返回用户信息字典列表（username, role, created_at），不包含哈希值。"""
     from aidlearning.multi_user.identity import list_user_info
 
     return list_user_info(AUTH_USERNAME, AUTH_PASSWORD_HASH)
@@ -160,7 +159,7 @@ def list_users() -> list[dict]:
 
 def delete_user(username: str) -> bool:
     """
-    Remove a user from the store. Returns True if the user existed.
+    从存储中删除用户。如果用户存在则返回 True。
 
     """
     from aidlearning.multi_user.identity import delete_user as _delete_user
@@ -173,9 +172,9 @@ def delete_user(username: str) -> bool:
 
 def set_role(username: str, role: str) -> bool:
     """
-    Change the role for an existing user. Returns True on success.
+    更改已有用户的角色。成功时返回 True。
 
-    Valid roles: 'admin', 'user'.
+    有效角色：'admin', 'user'。
     """
     if role not in ("admin", "user"):
         raise ValueError(f"Invalid role: {role!r}. Must be 'admin' or 'user'.")
@@ -194,7 +193,7 @@ def set_role(username: str, role: str) -> bool:
 
 
 def create_token(username: str, role: str = "user", user_id: str | None = None) -> str:
-    """Create a signed JWT for the given username and role."""
+    """为指定用户名和角色创建签名 JWT。"""
     from jose import jwt
 
     if not user_id:
@@ -213,13 +212,13 @@ def create_token(username: str, role: str = "user", user_id: str | None = None) 
 
 def decode_token(token: str) -> TokenPayload | None:
     """
-    Validate a token and return a TokenPayload, or None if invalid.
+    验证 Token 并返回 TokenPayload，无效时返回 None。
 
-    - PocketBase mode: calls PocketBase's auth-refresh endpoint (cached in
-      memory for 60 s, so only the first request per token per minute makes
-      a network call). No static JWT secret required.
-    - Standard mode: local in-memory jwt.decode() using AUTH_SECRET — zero
-      network calls, same as before.
+    - PocketBase 模式：调用 PocketBase 的 auth-refresh 端点（结果缓存在
+      内存中 60 秒，因此每个 Token 每分钟仅首次请求会产生网络调用）。
+      无需静态 JWT 密钥。
+    - 标准模式：使用 AUTH_SECRET 进行本地内存 jwt.decode() — 零网络调用，
+      与之前行为一致。
     """
     if not token:
         return None
@@ -236,7 +235,7 @@ def decode_token(token: str) -> TokenPayload | None:
             user_id=str(payload.get("id") or payload.get("uid") or payload.get("user_id") or ""),
         )
 
-    # Standard JWT + bcrypt mode
+    # 标准 JWT + bcrypt 模式
     from jose import JWTError, jwt
 
     if not AUTH_SECRET:
@@ -257,20 +256,20 @@ def decode_token(token: str) -> TokenPayload | None:
 
 
 # ---------------------------------------------------------------------------
-# PocketBase auth helpers
+# PocketBase 认证辅助函数
 # ---------------------------------------------------------------------------
 
 
 def authenticate_pb(username: str, password: str) -> tuple[TokenPayload, str] | None:
     """
-    Authenticate against PocketBase and return (TokenPayload, raw_pb_token).
+    通过 PocketBase 进行认证，返回 (TokenPayload, raw_pb_token)。
 
-    Only called when POCKETBASE_ENABLED=True.
-    Returns None on failure.
-    The raw token is the PocketBase JWT string to be stored in the cookie.
+    仅在 POCKETBASE_ENABLED=True 时调用。
+    失败时返回 None。
+    raw token 是 PocketBase JWT 字符串，用于存储在 Cookie 中。
 
-    PocketBase requires an email address; plain usernames are mapped to
-    <username>@aidlearning.local to match the email used at registration.
+    PocketBase 需要邮箱地址；纯用户名会被映射为
+    <username>@aidlearning.local 以匹配注册时使用的邮箱。
     """
     try:
         from aidlearning.services.pocketbase_client import get_pb_client
@@ -284,8 +283,8 @@ def authenticate_pb(username: str, password: str) -> tuple[TokenPayload, str] | 
             or getattr(record, "name", None)
             or getattr(record, "id", "unknown")
         )
-        # PocketBase has no built-in "role" field by default; treat all as "user".
-        # Admins authenticated via PocketBase admin panel use a separate endpoint.
+        # PocketBase 默认没有内置的 "role" 字段；全部视为 "user"。
+        # 通过 PocketBase 管理面板认证的管理员使用单独的端点。
         role = getattr(record, "role", "user") or "user"
         user_id = str(getattr(record, "id", "") or "")
         return TokenPayload(username=str(username), role=str(role), user_id=user_id), token
@@ -296,9 +295,9 @@ def authenticate_pb(username: str, password: str) -> tuple[TokenPayload, str] | 
 
 def register_pb(username: str, email: str, password: str) -> dict | None:
     """
-    Create a new user in PocketBase.
+    在 PocketBase 中创建新用户。
 
-    Returns the created user record dict or None on failure.
+    返回创建的用户记录字典，失败时返回 None。
     """
     try:
         from aidlearning.services.pocketbase_client import get_pb_client
@@ -319,16 +318,16 @@ def register_pb(username: str, email: str, password: str) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
-# Main auth entry point
+# 认证主入口
 # ---------------------------------------------------------------------------
 
 
 def authenticate(username: str, password: str) -> TokenPayload | None:
     """
-    Validate credentials. Returns a TokenPayload on success, None on failure.
+    验证凭据。成功时返回 TokenPayload，失败时返回 None。
 
-    When auth is disabled, always returns a dummy admin payload so that
-    callers don't need to special-case the disabled state.
+    当认证被禁用时，始终返回一个虚拟的管理员载荷，
+    以便调用方无需特殊处理禁用状态。
     """
     if not AUTH_ENABLED:
         return TokenPayload(username=username or "local", role="admin", user_id="local-admin")
@@ -336,8 +335,8 @@ def authenticate(username: str, password: str) -> TokenPayload | None:
     users = _load_users()
     if not users:
         logger.warning(
-            "No users configured — login will always fail. "
-            "Navigate to /register to create your first account."
+            "未配置用户 — 登录将始终失败。"
+            "请访问 /register 创建第一个账户。"
         )
         return None
 

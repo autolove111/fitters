@@ -1,9 +1,8 @@
-"""L1 raw event trace: append-only JSONL files, one per surface per UTC day.
+"""L1 原始事件追踪：仅追加的 JSONL 文件，每个 surface 每个 UTC 日一个。
 
-Trace capture must never break the producing surface — every append is
-wrapped and failures are logged-and-swallowed. Writes are serialized
-per-surface with an asyncio lock so multiple turns in the same process
-don't interleave JSON lines.
+追踪捕获绝不能破坏产生事件的 surface — 每次追加都被包装，
+失败被记录并吞掉。写入通过 asyncio 锁按 surface 序列化，
+以防止同一进程中的多个轮次交错 JSON 行。
 """
 
 from __future__ import annotations
@@ -64,7 +63,7 @@ class TraceEvent:
 
 
 async def append(event: TraceEvent) -> None:
-    """Append one event to today's surface trace file. Never raises."""
+    """将一个事件追加到今天的 surface 追踪文件。永不抛出异常。"""
     try:
         path = trace_file(event.surface, datetime.now(tz=timezone.utc).date())
         line = json.dumps(asdict(event), ensure_ascii=False, separators=(",", ":"))
@@ -87,8 +86,7 @@ def _append_line(path: Path, line: str) -> None:
 
 
 def iter_since(surface: Surface, since: datetime | None = None) -> Iterator[TraceEvent]:
-    """Yield events for ``surface`` in chronological order, optionally
-    filtering to events with ``ts >= since`` (UTC)."""
+    """按时间顺序产出 ``surface`` 的事件，可选过滤 ``ts >= since`` (UTC) 的事件。"""
     files = sorted(trace_dir(surface).glob("*.jsonl"))
     cutoff_iso = since.isoformat() if since else ""
     cutoff_date_iso = since.date().isoformat() if since else ""
@@ -113,7 +111,7 @@ def iter_since(surface: Surface, since: datetime | None = None) -> Iterator[Trac
 
 
 def iter_by_ids(ids: list[str]) -> Iterator[TraceEvent]:
-    """Resolve trace ids back to their events. Cross-surface walk."""
+    """将追踪 id 解析回其事件。跨 surface 遍历。"""
     wanted_by_surface: dict[str, set[str]] = {}
     for tid in ids:
         if ":" not in tid:
@@ -133,7 +131,7 @@ def count_since(surface: Surface, since: datetime | None = None) -> int:
 
 
 def latest_ts(surface: Surface) -> str | None:
-    """Most recent event timestamp for ``surface``, or None."""
+    """``surface`` 的最近事件时间戳，或 None。"""
     files = sorted(trace_dir(surface).glob("*.jsonl"), reverse=True)
     for path in files:
         try:

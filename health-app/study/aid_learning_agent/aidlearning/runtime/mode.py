@@ -1,9 +1,9 @@
 """
-Run Mode
+运行模式
 ========
 
-Controls whether AidLearning is running as a CLI application or an API server.
-Modules can check the mode to conditionally import server-only dependencies.
+控制 AidLearning 以 CLI 应用还是 API 服务器模式运行。
+模块可以检查模式以有条件地导入仅限服务端的依赖。
 """
 
 from enum import Enum
@@ -33,7 +33,7 @@ def get_mode() -> RunMode:
 
 
 def set_mode(mode: RunMode) -> None:
-    """Explicitly set the run mode (call early in entry points)."""
+    """显式设置运行模式（在入口点早期调用）。"""
     global _current_mode
     _current_mode = mode
     os.environ["AIDLEARNING_MODE"] = mode.value

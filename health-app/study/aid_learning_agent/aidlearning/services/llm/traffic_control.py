@@ -1,4 +1,4 @@
-"""Traffic control primitives for LLM providers."""
+"""LLM Provider 的流量控制原语。"""
 
 from __future__ import annotations
 
@@ -12,10 +12,9 @@ logger = logging.getLogger(__name__)
 
 class TrafficController:
     """
-    Controls concurrency and rate limits for LLM providers.
+    控制 LLM Provider 的并发和速率限制。
 
-    Protects both the local system (resource exhaustion) and
-    remote provider (rate limits).
+    保护本地系统（资源耗尽）和远程 Provider（速率限制）。
     """
 
     def __init__(
@@ -27,10 +26,10 @@ class TrafficController:
     ) -> None:
         """
         Args:
-            provider_name: Label for logging.
-            max_concurrency: Max simultaneous in-flight requests (bulkheads).
-            requests_per_minute: Max RPM allowed before local throttling.
-            acquisition_timeout: Max seconds to wait for a slot before failing.
+            provider_name: 用于日志记录的标签。
+            max_concurrency: 最大并发请求数（隔板）。
+            requests_per_minute: 本地限流前允许的最大 RPM。
+            acquisition_timeout: 等待槽位的最大秒数，超时则失败。
         """
         self.provider_name = provider_name
         self.max_concurrency = max_concurrency
@@ -39,52 +38,52 @@ class TrafficController:
         self.rpm = requests_per_minute
         self.acquisition_timeout = acquisition_timeout
 
-        # Concurrency Gate
+        # 并发门控
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
-        # Rate Limiting (Token Bucket)
+        # 速率限制（令牌桶）
         self._tokens = float(requests_per_minute)
         self._last_refill = time.monotonic()
-        self._fill_rate = requests_per_minute / 60.0  # tokens per second
-        self._lock = asyncio.Lock()  # Protects token state
+        self._fill_rate = requests_per_minute / 60.0  # 每秒令牌数
+        self._lock = asyncio.Lock()  # 保护令牌状态
 
     async def _wait_for_token(self) -> None:
-        """Consumes a rate limit token, waiting if necessary."""
+        """消耗一个速率限制令牌，必要时等待。"""
         async with self._lock:
             now = time.monotonic()
             elapsed = now - self._last_refill
 
-            # Refill tokens
+            # 补充令牌
             new_tokens = elapsed * self._fill_rate
             if new_tokens > 0:
                 self._tokens = min(float(self.rpm), self._tokens + new_tokens)
                 self._last_refill = now
 
-            # Consume token
+            # 消耗令牌
             if self._tokens >= 1:
                 self._tokens -= 1.0
                 return
 
-            # Calculate wait time needed for 1 token
+            # 计算获取 1 个令牌所需的等待时间
             wait_time = (1.0 - self._tokens) / self._fill_rate
 
-        # Wait outside lock to avoid blocking other tasks
+        # 在锁外等待以避免阻塞其他任务
         if wait_time > 0:
             logger.debug("[%s] Rate limit active, waiting %.2fs" % (self.provider_name, wait_time))
             await asyncio.sleep(wait_time)
-            # Recursively try again (simplest way to ensure thread safety after sleep)
+            # 递归重试（确保休眠后线程安全的最简单方式）
             await self._wait_for_token()
 
     async def __aenter__(self) -> TrafficController:
         """
-        Acquire concurrency slot AND rate limit token.
-        Raises asyncio.TimeoutError if system is overloaded.
+        获取并发槽位和速率限制令牌。
+        如果系统过载则抛出 asyncio.TimeoutError。
         """
         start = time.monotonic()
 
-        # 1. Acquire Concurrency Slot
+        # 1. 获取并发槽位
         try:
-            # wait_for adds a timeout to the semaphore acquisition
+            # wait_for 为信号量获取添加超时
             await asyncio.wait_for(self._semaphore.acquire(), timeout=self.acquisition_timeout)
         except TimeoutError:
             logger.error(
@@ -93,15 +92,14 @@ class TrafficController:
             )
             raise
 
-        # 2. Acquire Rate Limit Token (if we passed concurrency check)
-        # Note: We do this AFTER semaphore to ensure we don't wait for tokens
-        # while holding a concurrency slot if we don't have to,
-        # BUT strictly speaking, holding the semaphore while waiting for rate limits
-        # prevents queue jumping.
+        # 2. 获取速率限制令牌（如果通过了并发检查）
+        # 注意：我们在信号量之后执行此操作，以确保在不必要时不会
+        # 在持有并发槽位的同时等待令牌，
+        # 但严格来说，在等待速率限制时持有信号量可以防止队列跳跃。
         try:
             await self._wait_for_token()
         except Exception:
-            # If rate limiter fails/cancels, release semaphore
+            # 如果速率限制器失败/取消，释放信号量
             self._semaphore.release()
             raise
 
@@ -117,7 +115,7 @@ class TrafficController:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        """Release concurrency slot."""
+        """释放并发槽位。"""
         self._semaphore.release()
         return None
 

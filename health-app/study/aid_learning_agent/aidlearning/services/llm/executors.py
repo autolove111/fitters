@@ -1,4 +1,4 @@
-"""Provider-backed LLM executors (openai + anthropic SDKs, no litellm)."""
+"""基于 Provider 的 LLM 执行器（openai + anthropic SDK，无 litellm）。"""
 
 from __future__ import annotations
 
@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 
 def _is_unsupported_response_format_error(exc: BaseException) -> bool:
-    """Detect whether a BadRequestError stems from an unsupported ``response_format``.
+    """检测 BadRequestError 是否源于不支持的 ``response_format``。
 
-    Examples seen in the wild:
-    - LM Studio + Gemma: ``"'response_format.type' must be 'json_schema' or 'text'"``
-    - DashScope + various models: ``"'response_format.type' specified ... not valid: 'json_object' is not supported by this model"``
+    实际案例：
+    - LM Studio + Gemma：``"'response_format.type' must be 'json_schema' or 'text'"``
+    - DashScope + 各种模型：``"'response_format.type' specified ... not valid: 'json_object' is not supported by this model"``
     """
     text = str(exc).lower()
     if "response_format" not in text and "response format" not in text:
@@ -46,12 +46,11 @@ async def _create_with_format_fallback(
     binding: str,
     model: str,
 ) -> Any:
-    """Run ``client.chat.completions.create`` with auto-fallback on response_format errors.
+    """运行 ``client.chat.completions.create``，在 response_format 错误时自动回退。
 
-    Some local servers (LM Studio + Gemma/Qwen) reject ``response_format``
-    with HTTP 400. On a matching :class:`BadRequestError`, drop the offending
-    field and retry once, then cache the (binding, model) pair so future calls
-    skip ``response_format`` upfront.
+    某些本地服务器（LM Studio + Gemma/Qwen）会以 HTTP 400 拒绝 ``response_format``。
+    当匹配到 :class:`BadRequestError` 时，移除问题字段并重试一次，
+    然后缓存 (binding, model) 对以便后续调用直接跳过 ``response_format``。
     """
     try:
         return await client.chat.completions.create(**payload)
@@ -100,9 +99,9 @@ def _resolve_model_and_base(
     api_key: str | None,
     base_url: str | None,
 ) -> tuple[str, str | None, str | None]:
-    """Resolve the actual model name, base_url, and api_key for the provider.
+    """解析 Provider 的实际模型名称、base_url 和 api_key。
 
-    Returns (resolved_model, effective_base_url, effective_api_key).
+    返回 (resolved_model, effective_base_url, effective_api_key)。
     """
     spec = find_by_name(provider_name)
     resolved_model = strip_provider_prefix(model, spec) if spec else model
@@ -139,7 +138,7 @@ async def sdk_complete(
     reasoning_effort: str | None = None,
     **kwargs: Any,
 ) -> str:
-    """Non-streaming completion using the openai SDK."""
+    """使用 openai SDK 的非流式补全。"""
     _setup_provider_env(provider_name, api_key, base_url)
     resolved_model, effective_base, effective_key = _resolve_model_and_base(
         provider_name,
@@ -206,7 +205,7 @@ async def sdk_stream(
     reasoning_effort: str | None = None,
     **kwargs: Any,
 ) -> AsyncGenerator[str, None]:
-    """Streaming completion using the openai SDK."""
+    """使用 openai SDK 的流式补全。"""
     _setup_provider_env(provider_name, api_key, base_url)
     resolved_model, effective_base, effective_key = _resolve_model_and_base(
         provider_name,

@@ -1,9 +1,8 @@
-"""Deep Solve capability — agentic-engine-based multi-step problem solving.
+"""深度解题能力 — 基于智能体引擎的多步问题求解。
 
-Thin shim that delegates to :class:`SolvePipeline`. All orchestration (the
-pre-retrieve sub-DAG, per-step agentic loops with ``THINK`` / ``TOOL`` /
-``FINISH`` / ``REPLAN``, replan back-edge, synthesize) lives in the pipeline
-module; the capability just wires the manifest.
+薄封装层，委托给 :class:`SolvePipeline`。所有编排逻辑（预检索子 DAG、
+带 ``THINK`` / ``TOOL`` / ``FINISH`` / ``REPLAN`` 的逐步智能体循环、
+重规划回边、综合）都在流水线模块中；该能力仅挂载清单。
 """
 
 from __future__ import annotations
@@ -26,14 +25,14 @@ class DeepSolveCapability(BaseCapability):
     )
 
     async def run(self, context: UnifiedContext, stream: StreamBus) -> None:
-        # Knowledge bases are the single source of truth for whether ``rag``
-        # is available. There is no separate "enable rag" toggle.
+        # 知识库是判断 ``rag`` 是否可用的唯一依据。
+        # 没有单独的"启用 rag"开关。
         kb_name = context.knowledge_bases[0] if context.knowledge_bases else None
         requested = list(
             self.manifest.tools_used if context.enabled_tools is None else context.enabled_tools
         )
-        # Drop ``rag`` from the user-visible toggle list — the pipeline mounts
-        # it itself when a KB is attached, and never when none is.
+        # 从用户可见的工具列表中移除 ``rag`` — 流水线在有知识库挂载时
+        # 自行加载 rag，没有知识库时不加载。
         enabled_tools = [tool for tool in requested if tool != "rag"]
 
         pipeline = SolvePipeline(

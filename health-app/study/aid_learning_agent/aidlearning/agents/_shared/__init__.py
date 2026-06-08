@@ -1,7 +1,5 @@
-"""Helpers shared by capability pipelines (chat, solve, quiz, ...).
+"""能力管线（chat、solve、quiz 等）共享的辅助工具。
 
-Cross-pipeline policy that doesn't belong on the generic ``core.agentic``
-engine (which stays capability-agnostic) and doesn't belong on a single
-pipeline either. Each module here documents the contract its consumers
-must hold to.
+跨管线策略，既不属于通用的 ``core.agentic`` 引擎（该引擎保持能力无关），
+也不属于单一管线。每个模块在此记录其消费者必须遵守的契约。
 """

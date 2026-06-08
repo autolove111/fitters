@@ -120,7 +120,7 @@ const goBack = () => {
   box-sizing: border-box;
 }
 
-/* Hero */
+/* 顶部英雄区 */
 .hero-section {
   position: relative;
   padding: 60rpx 30rpx 40rpx;
@@ -169,7 +169,7 @@ const goBack = () => {
   font-weight: 600;
 }
 
-/* Section Card */
+/* 区域卡片 */
 .section-card {
   margin: 0 30rpx 28rpx;
   padding: 30rpx;
@@ -225,7 +225,7 @@ const goBack = () => {
   margin-top: 4rpx;
 }
 
-/* Steps */
+/* 步骤 */
 .steps-list {
   display: flex;
   flex-direction: column;
@@ -260,7 +260,7 @@ const goBack = () => {
   color: var(--text-primary);
 }
 
-/* Tips */
+/* 小贴士 */
 .tips-text {
   font-size: 28rpx;
   line-height: 1.7;
@@ -271,7 +271,7 @@ const goBack = () => {
   border-left: 6rpx solid rgba(251, 191, 36, 0.4);
 }
 
-/* Bottom */
+/* 底部操作 */
 .bottom-actions {
   padding: 16rpx 30rpx 60rpx;
 }

@@ -1,22 +1,20 @@
-r"""Foundational agentic engine primitives.
+r"""基础智能体引擎原语。
 
-These modules implement the chat-style ``\`\`LABEL\`\`+content`` LLM protocol as
-reusable building blocks. Any capability that wants a streaming, label-driven
-LLM loop (chat, solve step, etc.) composes them.
+这些模块将 chat 风格的 ``\`\`LABEL\`\`+content`` LLM 协议实现为可复用的构建块。
+任何需要流式、标签驱动的 LLM 循环（chat、解题步骤等）的能力都可以组合它们。
 
-Layering:
+分层：
 
-* :mod:`labels`         — protocol-label parsing (parametric label set).
-* :mod:`client`         — OpenAI/Azure client factory + completion kwargs.
-* :mod:`usage`          — token-usage accumulator shared across steps.
-* :mod:`labeled_step`   — one streaming LLM call with label routing.
-* :mod:`tool_dispatch`  — parallel tool execution with per-tool sub-traces.
-* :mod:`loop`           — iteration scheduler that ties the above together.
+* :mod:`labels`         — 协议标签解析（参数化标签集）。
+* :mod:`client`         — OpenAI/Azure 客户端工厂 + 补全参数。
+* :mod:`usage`          — 跨步骤共享的 token 使用量累加器。
+* :mod:`labeled_step`   — 带标签路由的单次流式 LLM 调用。
+* :mod:`tool_dispatch`  — 带每工具子追踪的并行工具执行。
+* :mod:`loop`           — 将以上功能串联的迭代调度器。
 
-Capability-specific concerns (system prompt assembly, tool whitelist, KB enums,
-answer-now fast paths, force-finalize strategies, context-window guards) live
-in each capability's own module — the primitives expose hooks but do not bake
-those decisions in.
+能力特定的关注点（系统提示词组装、工具白名单、KB 枚举、即时应答快速通道、
+强制终结策略、上下文窗口保护）位于各能力自己的模块中 — 原语暴露钩子
+但不内联这些决策。
 """
 
 from aidlearning.core.agentic.client import (

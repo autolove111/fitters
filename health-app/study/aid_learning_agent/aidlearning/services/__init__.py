@@ -1,17 +1,17 @@
 """
-Services Layer
-==============
+服务层
+=======
 
-Unified service layer for AidLearning providing:
-- LLM client and configuration
-- Embedding client and configuration
-- RAG pipelines and components
-- Prompt management
-- Web Search providers
-- System setup utilities
-- Configuration loading
+AidLearning 统一服务层，提供：
+- LLM 客户端与配置
+- Embedding 客户端与配置
+- RAG 管道与组件
+- Prompt 管理
+- 网络搜索 Provider
+- 系统初始化工具
+- 配置加载
 
-Usage:
+用法：
     from aidlearning.services.llm import get_llm_client
     from aidlearning.services.embedding import get_embedding_client
     from aidlearning.services.rag import RAGService
@@ -28,7 +28,7 @@ Usage:
     embed = get_embedding_client()
     vectors = await embed.embed(["text1", "text2"])
 
-    # RAG (LlamaIndex backend)
+    # RAG（LlamaIndex 后端）
     rag = RAGService()
     result = await rag.search("query", kb_name="my_kb")
 
@@ -36,12 +36,12 @@ Usage:
     pm = get_prompt_manager()
     prompts = pm.load_prompts("solve", "solve_agent")
 
-    # Search
+    # 搜索
     result = web_search("What is AI?")
 """
 
-# Keep service package import side-effects minimal.
-# Modules are lazy-loaded in __getattr__ to avoid circular imports.
+# 保持服务包导入副作用最小化。
+# 模块在 __getattr__ 中延迟加载以避免循环导入。
 from .path_service import PathService, get_path_service
 
 __all__ = [
@@ -60,7 +60,7 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    """Lazy import for modules that depend on heavy libraries."""
+    """对依赖大型库的模块进行延迟导入。"""
     import importlib
 
     if name == "llm":

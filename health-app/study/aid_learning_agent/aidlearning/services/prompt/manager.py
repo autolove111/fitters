@@ -21,18 +21,18 @@ from aidlearning.services.config import parse_language
 
 
 class PromptManager:
-    """Unified prompt manager with singleton pattern and global caching."""
+    """使用单例模式和全局缓存的统一提示词管理器。"""
 
     _instance: "PromptManager | None" = None
     _cache: dict[str, dict[str, Any]] = {}
 
-    # Language fallback chain: if primary language not found, try alternatives
+    # 语言回退链：如果主语言未找到，尝试替代语言
     LANGUAGE_FALLBACKS = {
         "zh": ["zh", "cn", "en"],
         "en": ["en", "zh", "cn"],
     }
 
-    # Supported modules
+    # 支持的模块
     MODULES = [
         "research",
         "solve",
@@ -43,8 +43,8 @@ class PromptManager:
         "chat",
     ]
 
-    # Modules that are not under aidlearning/agents/ directory
-    # Map module_name → on-disk path component under aidlearning/
+    # 不在 aidlearning/agents/ 目录下的模块
+    # 映射 module_name -> aidlearning/ 下的磁盘路径组件
     NON_AGENT_MODULES: dict[str, str] = {
         "book": "book",
         "co_writer": "co_writer",
@@ -64,16 +64,16 @@ class PromptManager:
         subdirectory: str | None = None,
     ) -> dict[str, Any]:
         """
-        Load prompts for an agent.
+        加载 Agent 的提示词。
 
         Args:
-            module_name: Module name (research, solve, question, co_writer)
-            agent_name: Agent name (filename without .yaml)
-            language: Language code ('zh' or 'en')
-            subdirectory: Optional subdirectory (e.g., 'solve_loop' for solve module)
+            module_name: 模块名称（research、solve、question、co_writer）
+            agent_name: Agent 名称（不含 .yaml 的文件名）
+            language: 语言代码（'zh' 或 'en'）
+            subdirectory: 可选子目录（如 solve 模块的 'solve_loop'）
 
         Returns:
-            Loaded prompt configuration dictionary
+            加载的提示词配置字典
         """
         lang_code = parse_language(language)
         cache_key = self._build_cache_key(module_name, agent_name, lang_code, subdirectory)
@@ -92,7 +92,7 @@ class PromptManager:
         lang_code: str,
         subdirectory: str | None,
     ) -> str:
-        """Build unique cache key."""
+        """构建唯一的缓存键。"""
         subdir_part = f"_{subdirectory}" if subdirectory else ""
         return f"{module_name}_{agent_name}_{lang_code}{subdir_part}"
 
@@ -103,7 +103,7 @@ class PromptManager:
         lang_code: str,
         subdirectory: str | None,
     ) -> dict[str, Any]:
-        """Load prompt file with language fallback."""
+        """加载提示词文件，支持语言回退。"""
         prompt_dirs = self._candidate_prompt_dirs(module_name)
         fallback_chain = self.LANGUAGE_FALLBACKS.get(lang_code, ["en"])
 
@@ -122,7 +122,7 @@ class PromptManager:
         return {}
 
     def _candidate_prompt_dirs(self, module_name: str) -> list[Path]:
-        """Return legacy and current prompt roots for a module."""
+        """返回模块的旧版和当前提示词根目录。"""
         if module_name in self.NON_AGENT_MODULES:
             legacy_dir = PACKAGE_ROOT / "src" / module_name / "prompts"
             current_dir = PACKAGE_ROOT / "aidlearning" / module_name / "prompts"
@@ -139,24 +139,24 @@ class PromptManager:
         agent_name: str,
         subdirectory: str | None,
     ) -> Path | None:
-        """Resolve prompt file path, supporting subdirectory and recursive search."""
+        """解析提示词文件路径，支持子目录和递归搜索。"""
         lang_dir = prompts_dir / lang
 
         if not lang_dir.exists():
             return None
 
-        # If subdirectory specified, look there first
+        # 如果指定了子目录，先在其中查找
         if subdirectory:
             direct_path = lang_dir / subdirectory / f"{agent_name}.yaml"
             if direct_path.exists():
                 return direct_path
 
-        # Try direct path
+        # 尝试直接路径
         direct_path = lang_dir / f"{agent_name}.yaml"
         if direct_path.exists():
             return direct_path
 
-        # Recursive search in subdirectories
+        # 在子目录中递归搜索
         found = list(lang_dir.rglob(f"{agent_name}.yaml"))
         if found:
             return found[0]
@@ -171,16 +171,16 @@ class PromptManager:
         fallback: str = "",
     ) -> str:
         """
-        Safely get prompt from loaded configuration.
+        从已加载配置中安全获取提示词。
 
         Args:
-            prompts: Loaded prompt dictionary
-            section: Top-level section name
-            field: Optional nested field name
-            fallback: Default value if not found
+            prompts: 已加载的提示词字典
+            section: 顶层节名称
+            field: 可选的嵌套字段名称
+            fallback: 未找到时的默认值
 
         Returns:
-            Prompt string or fallback
+            提示词字符串或回退值
         """
         if section not in prompts:
             return fallback
@@ -198,10 +198,10 @@ class PromptManager:
 
     def clear_cache(self, module_name: str | None = None) -> None:
         """
-        Clear cached prompts.
+        清除缓存的提示词。
 
         Args:
-            module_name: If provided, only clear cache for this module
+            module_name: 如果提供，仅清除该模块的缓存
         """
         if module_name:
             keys_to_remove = [k for k in self._cache if k.startswith(f"{module_name}_")]
@@ -217,7 +217,7 @@ class PromptManager:
         language: str = "zh",
         subdirectory: str | None = None,
     ) -> dict[str, Any]:
-        """Force reload prompts, bypassing cache."""
+        """强制重新加载提示词，绕过缓存。"""
         lang_code = parse_language(language)
         cache_key = self._build_cache_key(module_name, agent_name, lang_code, subdirectory)
 
@@ -227,12 +227,12 @@ class PromptManager:
         return self.load_prompts(module_name, agent_name, language, subdirectory)
 
 
-# Global singleton instance
+# 全局单例实例
 _prompt_manager: PromptManager | None = None
 
 
 def get_prompt_manager() -> PromptManager:
-    """Get the global PromptManager instance."""
+    """获取全局 PromptManager 实例。"""
     global _prompt_manager
     if _prompt_manager is None:
         _prompt_manager = PromptManager()

@@ -1,4 +1,4 @@
-"""Core contracts shared across runtime, tools, and capabilities."""
+"""运行时、工具和能力之间共享的核心契约。"""
 
 from .capability_protocol import BaseCapability, CapabilityManifest
 from .context import Attachment, UnifiedContext

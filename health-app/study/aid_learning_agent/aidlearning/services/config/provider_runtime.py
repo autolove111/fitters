@@ -1,4 +1,4 @@
-"""Nanobot-style normalized runtime configuration for AidLearning."""
+"""AidLearning 的 Nanobot 风格标准化运行时配置。"""
 
 from __future__ import annotations
 
@@ -45,11 +45,11 @@ LLM_LOCALHOST_PROVIDERS = ("ollama", "vllm")
 
 @dataclass(frozen=True)
 class EmbeddingProviderSpec:
-    """Single embedding-provider metadata entry.
+    """单个 Embedding Provider 元数据条目。
 
-    Note on `default_api_base`: as of v1.3.0 this is the **fully-qualified
-    embedding endpoint URL** (e.g. ``https://api.openai.com/v1/embeddings``),
-    not a base. Adapters use the configured URL verbatim — no path appending.
+    关于 `default_api_base` 的说明：从 v1.3.0 起，这是**完整的
+    Embedding 端点 URL**（如 ``https://api.openai.com/v1/embeddings``），
+    而非基础 URL。适配器直接使用配置的 URL — 不会追加路径。
     """
 
     label: str
@@ -60,11 +60,10 @@ class EmbeddingProviderSpec:
     mode: str = "standard"
     default_model: str = ""
     default_dim: int = 0
-    # Per-provider cap on items per embedding request batch. Adapters/clients
-    # clamp `batch_size` against this. SiliconFlow Qwen3 family caps at 32;
-    # DashScope caps at 20; most others have generous limits.
+    # 每个 Provider 的单次 Embedding 请求批量上限。适配器/客户端会根据此值
+    # 约束 `batch_size`。SiliconFlow Qwen3 系列上限为 32；DashScope 为 20；大多数其他的限制较宽松。
     max_batch_items: int = 256
-    # Whether the active default model supports multimodal `contents` input.
+    # 当前默认模型是否支持多模态 `contents` 输入。
     multimodal: bool = False
 
 
@@ -163,8 +162,8 @@ EMBEDDING_PROVIDERS: dict[str, EmbeddingProviderSpec] = {
         keywords=(),
         is_local=False,
     ),
-    # Retained for legacy configs only. Public Settings providers use exact
-    # endpoint URLs and raw HTTP adapters so no request path is hidden.
+    # 仅保留用于旧版配置。公开设置 Provider 使用精确的端点 URL
+    # 和原始 HTTP 适配器，因此不会隐藏任何请求路径。
     "custom_openai_sdk": EmbeddingProviderSpec(
         label="Custom (OpenAI SDK)",
         adapter="openai_sdk",
@@ -185,7 +184,7 @@ EMBEDDING_PROVIDERS: dict[str, EmbeddingProviderSpec] = {
 
 @dataclass(slots=True)
 class NormalizedProviderConfig:
-    """Normalized provider configuration input."""
+    """标准化的 Provider 配置输入。"""
 
     name: str
     api_key: str = ""
@@ -196,7 +195,7 @@ class NormalizedProviderConfig:
 
 @dataclass(slots=True)
 class ResolvedLLMConfig:
-    """Resolved runtime LLM config used by get_llm_config/factory."""
+    """get_llm_config/factory 使用的已解析运行时 LLM 配置。"""
 
     model: str
     provider_name: str
@@ -214,7 +213,7 @@ class ResolvedLLMConfig:
 
 @dataclass(slots=True)
 class ResolvedEmbeddingConfig:
-    """Resolved runtime embedding config."""
+    """已解析的运行时 Embedding 配置。"""
 
     model: str
     provider_name: str
@@ -235,7 +234,7 @@ class ResolvedEmbeddingConfig:
 
 @dataclass(slots=True)
 class ResolvedSearchConfig:
-    """Resolved runtime web-search config."""
+    """已解析的运行时网络搜索配置。"""
 
     provider: str
     requested_provider: str
@@ -336,8 +335,8 @@ def _choose_resolved_provider(
         api_key=api_key or None,
         api_base=api_base or None,
     )
-    # Keep backward compatibility: old `binding=openai` should not block
-    # gateway detection when key/base clearly indicates a gateway provider.
+    # 保持向后兼容：当 key/base 明确指向网关 Provider 时，
+    # 旧的 `binding=openai` 不应阻止网关检测。
     if explicit_spec and detected_gateway and explicit_spec.name == "openai":
         return detected_gateway
     if explicit_spec:
@@ -378,7 +377,7 @@ def resolve_llm_runtime_config(
     service: ModelCatalogService | None = None,
     llm_selection: dict[str, Any] | LLMSelection | None = None,
 ) -> ResolvedLLMConfig:
-    """Resolve active LLM config with TutorBot-style provider matching."""
+    """使用 TutorBot 风格的 Provider 匹配解析活跃 LLM 配置。"""
     catalog_service = service or get_model_catalog_service()
     loaded = _load_catalog(catalog)
     loaded = apply_llm_selection_to_catalog(loaded, llm_selection)
@@ -469,11 +468,10 @@ def _collect_embedding_provider_pool(
 
 
 def _resolve_embedding_dimension(value: Any, default: int = 0) -> int:
-    """Parse the dimension value. Returns 0 when unknown/unparseable.
+    """解析维度值。未知/无法解析时返回 0。
 
-    A value of 0 means "use the provider's native default" downstream;
-    test_runner auto-fills the catalog with the actual response dim on
-    first successful connection test.
+    下游中值为 0 表示"使用 Provider 的原生默认值"；
+    test_runner 在首次成功连接测试时会用实际响应维度自动填充目录。
     """
     try:
         parsed = int(str(value).strip())
@@ -485,10 +483,10 @@ def _resolve_embedding_dimension(value: Any, default: int = 0) -> int:
 
 
 def _coerce_optional_bool(value: Any) -> bool | None:
-    """Parse a tri-state bool from catalog values.
+    """从目录值中解析三态布尔值。
 
-    Returns ``True``/``False`` for explicit values and ``None`` for missing,
-    empty, or unrecognised inputs (which means "use the default behaviour").
+    对显式值返回 ``True``/``False``，对缺失、空或无法识别的输入
+    返回 ``None``（表示"使用默认行为"）。
     """
     if value is None:
         return None
@@ -505,7 +503,7 @@ def _coerce_optional_bool(value: Any) -> bool | None:
 
 
 def _coerce_optional_int(value: Any) -> int | None:
-    """Parse a positive int from catalog values, returning ``None`` when unset."""
+    """从目录值中解析正整数，未设置时返回 ``None``。"""
     if value is None:
         return None
     try:
@@ -556,7 +554,7 @@ def resolve_embedding_runtime_config(
     *,
     service: ModelCatalogService | None = None,
 ) -> ResolvedEmbeddingConfig:
-    """Resolve active embedding config using provider-runtime normalization."""
+    """使用 Provider 运行时标准化解析活跃 Embedding 配置。"""
     catalog_service = service or get_model_catalog_service()
     loaded = _load_catalog(catalog)
     profile, model = _active_profile_and_model(loaded, catalog_service, "embedding")
@@ -573,12 +571,11 @@ def resolve_embedding_runtime_config(
     active_api_base = _as_str((profile or {}).get("base_url"))
     active_api_version = _as_str((profile or {}).get("api_version"))
     active_extra_headers = _to_headers((profile or {}).get("extra_headers"))
-    # Default 0 means "not yet known" — the test_runner auto-fills on first
-    # successful connection. Adapters/clients should treat 0 as "let the
-    # provider use its native default". 3072 used to be hard-coded here, which
-    # forced every non-OpenAI provider to fail dim validation on first use.
+    # 默认 0 表示"尚未知" — test_runner 在首次成功连接时自动填充。
+    # 适配器/客户端应将 0 视为"让 Provider 使用其原生默认值"。
+    # 之前此处硬编码为 3072，导致每个非 OpenAI Provider 在首次使用时维度验证失败。
     dimension = _resolve_embedding_dimension((model or {}).get("dimension") or 0, default=0)
-    # ``None`` means "fall back to adapter heuristic".
+    # ``None`` 表示"回退到适配器启发式"。
     send_dimensions = _coerce_optional_bool((model or {}).get("send_dimensions"))
 
     provider_pool = _collect_embedding_provider_pool(loaded)
@@ -657,7 +654,7 @@ def resolve_search_runtime_config(
     *,
     service: ModelCatalogService | None = None,
 ) -> ResolvedSearchConfig:
-    """Resolve active web-search config with TutorBot-style fallback behavior."""
+    """使用 TutorBot 风格的回退行为解析活跃网络搜索配置。"""
     catalog_service = service or get_model_catalog_service()
     loaded = _load_catalog(catalog)
     profile = catalog_service.get_active_profile(loaded, "search") or {}
@@ -722,7 +719,7 @@ def resolve_search_runtime_config(
 
 
 def search_provider_state(provider: str | None) -> str:
-    """Return provider status class for UI/CLI/system output."""
+    """返回 Provider 状态类别，用于 UI/CLI/系统输出。"""
     value = (provider or "").strip().lower()
     if not value:
         return "not_configured"

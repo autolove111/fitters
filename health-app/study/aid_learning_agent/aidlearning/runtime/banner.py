@@ -1,8 +1,7 @@
-"""Branded banner + localized labels for ``aidlearning start`` / ``aidlearning init``.
+"""``aidlearning start`` / ``aidlearning init`` 的品牌横幅和本地化标签。
 
-Both commands read the user's language preference from
-``data/user/settings/interface.json`` (default ``en``) so their startup
-output matches the UI language the user has chosen.
+两个命令都从 ``data/user/settings/interface.json`` 读取用户的语言偏好（默认 ``en``），
+使启动输出与用户选择的 UI 语言一致。
 """
 
 from __future__ import annotations
@@ -26,7 +25,7 @@ LABELS: dict[str, dict[str, str]] = {
     "en": {
         "tagline": "Agent-Native Personalized Tutoring",
         "lab": "Data Intelligence Lab @ HKU",
-        # init
+        # 初始化
         "init.mode": "Workspace initializer",
         "init.workspace": "Workspace",
         "init.note_settings_dir": "Settings will be written under data/user/settings.",
@@ -88,7 +87,7 @@ LABELS: dict[str, dict[str, str]] = {
         "init.next_step": "Run `aidlearning start` to launch AidLearning.",
         "init.choice": "Choice",
         "init.choice_invalid": "Invalid choice. Try again.",
-        # start (launcher)
+        # 启动（启动器）
         "start.mode": "Launching backend + frontend",
         "start.backend": "Backend",
         "start.browser_api": "Browser API",
@@ -121,7 +120,7 @@ LABELS: dict[str, dict[str, str]] = {
     "zh": {
         "tagline": "智能体原生的个性化辅导",
         "lab": "香港大学数据智能实验室",
-        # init
+        # 初始化
         "init.mode": "工作目录初始化",
         "init.workspace": "工作目录",
         "init.note_settings_dir": "配置文件将写入 data/user/settings 目录。",
@@ -183,7 +182,7 @@ LABELS: dict[str, dict[str, str]] = {
         "init.next_step": "运行 `aidlearning start` 启动 AidLearning。",
         "init.choice": "请选择",
         "init.choice_invalid": "无效选项,请重新输入。",
-        # start (launcher)
+        # 启动（启动器）
         "start.mode": "启动后端 + 前端",
         "start.backend": "后端",
         "start.browser_api": "前端 API",
@@ -224,10 +223,9 @@ def _pick_language(language: str | None) -> str:
 
 
 def resolve_language(default: str = "en") -> str:
-    """Read the saved UI language, falling back to ``default``.
+    """读取已保存的 UI 语言，失败时回退到 ``default``。
 
-    Safe to call before the runtime is fully initialized; any failure
-    silently falls back to the default.
+    可在运行时完全初始化之前安全调用；任何失败都会静默回退到默认值。
     """
     try:
         from aidlearning.services.settings.interface_settings import get_ui_language
@@ -242,15 +240,15 @@ def labels_for(language: str | None) -> dict[str, str]:
 
 
 def render_banner(language: str | None, *, mode_key: str | None = None) -> Panel:
-    """Build the branded banner panel.
+    """构建品牌横幅面板。
 
-    Parameters
+    参数
     ----------
     language:
-        Language code (``"en"``/``"zh"``). Unknown values fall back to English.
+        语言代码（``"en"``/``"zh"``）。未知值回退到英文。
     mode_key:
-        Optional key into ``LABELS[lang]`` to display under the tagline
-        (e.g. ``"start.mode"``, ``"init.mode"``).
+        ``LABELS[lang]`` 中的可选键，显示在标语下方
+        （例如 ``"start.mode"``、``"init.mode"``）。
     """
 
     lang = _pick_language(language)
@@ -283,7 +281,7 @@ def print_banner(
     language: str | None = None,
     mode_key: str | None = None,
 ) -> None:
-    """Print the branded banner to ``console`` (creates one if omitted)."""
+    """将品牌横幅打印到 ``console``（省略时自动创建）。"""
 
     target = console or Console()
     target.print(render_banner(language, mode_key=mode_key))

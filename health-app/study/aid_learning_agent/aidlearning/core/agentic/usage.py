@@ -1,4 +1,4 @@
-"""Token-usage accumulator shared across LLM calls within a single turn."""
+"""单轮次内跨 LLM 调用共享的 token 使用量累加器。"""
 
 from __future__ import annotations
 
@@ -6,17 +6,17 @@ from typing import Any
 
 
 class UsageTracker:
-    """Accumulate prompt/completion tokens across many streaming LLM calls.
+    """跨多次流式 LLM 调用累加提示/补全 token。
 
-    Two ingestion paths:
+    两种输入路径：
 
-    * :meth:`add_from_response` — read OpenAI ``CompletionUsage`` (or the
-      streaming ``usage`` chunk) when the provider returns it.
-    * :meth:`add_estimated` — fall back to a coarse ``chars / 3.5`` estimate
-      for providers that don't emit ``usage`` (used by chat's answer-now path).
+    * :meth:`add_from_response` — 当提供商返回时读取 OpenAI
+      ``CompletionUsage``（或流式 ``usage`` 块）。
+    * :meth:`add_estimated` — 对不返回 ``usage`` 的提供商回退为
+      粗略的 ``chars / 3.5`` 估算（chat 的即时应答路径使用）。
 
-    Construct with ``model=<name>`` so :meth:`summary` can resolve a
-    ``total_cost_usd`` via the pricing table in ``aidlearning.logging.stats``.
+    构造时传入 ``model=<name>``，以便 :meth:`summary`` 可通过
+    ``aidlearning.logging.stats`` 中的定价表解析 ``total_cost_usd``。
     """
 
     def __init__(self, *, model: str | None = None) -> None:
@@ -55,17 +55,14 @@ class UsageTracker:
         user_prompt: str = "",
         response_text: str = "",
     ) -> None:
-        """Adapter for :class:`~aidlearning.agents.base_agent.BaseAgent`.
+        """适配 :class:`~aidlearning.agents.base_agent.BaseAgent`。
 
-        ``BaseAgent._track_tokens`` looks for an external tracker exposing
-        ``add_usage(...)``; this method lets a :class:`UsageTracker` be
-        passed as the ``token_tracker`` constructor argument so a
-        capability pipeline can aggregate cost across all of its
-        BaseAgent-derived sub-agents in one place.
+        ``BaseAgent._track_tokens`` 查找暴露 ``add_usage(...)`` 的外部追踪器；
+        此方法使 :class:`UsageTracker`` 可作为 ``token_tracker`` 构造参数传递，
+        使能力流水线可以在一个位置聚合其所有 BaseAgent 派生子智能体的费用。
 
-        We fall back to a character-based estimate because BaseAgent
-        only hands us the prompt/response text (the raw provider usage
-        object is not available at that layer).
+        我们回退到基于字符的估算，因为 BaseAgent 只给我们提示/响应文本
+        （原始提供商使用量对象在该层不可用）。
         """
         if model and not self.model:
             self.model = model
@@ -79,7 +76,7 @@ class UsageTracker:
             return None
         cost_usd = 0.0
         if self.model:
-            # Local import keeps ``core.agentic`` import-light at module load.
+            # 本地导入使 ``core.agentic`` 在模块加载时保持轻量。
             from aidlearning.logging.stats.llm_stats import get_pricing
 
             pricing = get_pricing(self.model)

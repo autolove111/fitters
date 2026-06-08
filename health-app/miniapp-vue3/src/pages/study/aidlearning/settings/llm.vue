@@ -8,7 +8,7 @@
     </view>
 
     <template v-else>
-      <!-- LLM Panel -->
+      <!-- LLM 面板 -->
       <view class="panel">
         <text class="section-title">Active LLM</text>
 
@@ -77,7 +77,7 @@
         </view>
       </view>
 
-      <!-- Embedding Panel -->
+      <!-- Embedding 面板 -->
       <view class="panel">
         <text class="section-title">Active Embedding</text>
         <text class="section-desc">Used for knowledge base vectorization. Required for reindex.</text>
@@ -376,7 +376,7 @@ export default {
           modelName: embModel.name || '',
         }
       } else {
-        // Default to first embedding provider option
+        // 默认使用第一个 Embedding 提供商选项
         this.embeddingProviderIndex = 0
         const defaultEmb = this.embeddingProviderOptions[0] || {}
         this.embForm = {

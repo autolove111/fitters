@@ -1,10 +1,8 @@
-"""Validated request config and intent-to-policy mapping for deep research.
+"""深度研究的验证请求配置和意图到策略的映射。
 
-Tool composition lives in :mod:`aidlearning.tools.composition`
-— the same shim chat uses. Research has no separate ``sources`` knob:
-whatever tools the user enables in the composer become available to the
-per-block research loop, with ``rag`` auto-mounted when a KB is attached
-(again, identical to chat).
+工具组合位于 :mod:`aidlearning.tools.composition` —— 与 chat 使用的相同。
+研究没有单独的 ``sources`` 旋钮：用户在 composer 中启用的任何工具都可用于
+每块研究循环，当附加 KB 时 ``rag`` 自动挂载（同样与 chat 相同）。
 """
 
 from __future__ import annotations

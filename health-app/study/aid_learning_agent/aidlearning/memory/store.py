@@ -1,9 +1,8 @@
-"""High-level facade for the four-layer memory subsystem.
+"""四层记忆子系统的高层门面。
 
-All callers — API routers, LLM tools, surface event hooks — go through
-:class:`MemoryStore`. The store is stateless; per-user isolation is
-inherited from :func:`paths.memory_root` which resolves :class:`PathService`
-lazily via context variables.
+所有调用方 — API 路由、LLM 工具、表面事件钩子 — 都通过 :class:`MemoryStore` 访问。
+该存储是无状态的；用户隔离通过 :func:`paths.memory_root` 继承，
+该函数通过上下文变量延迟解析 :class:`PathService`。
 """
 
 from __future__ import annotations
@@ -38,25 +37,25 @@ _NO_MEMORY = (
 @dataclass
 class DocOverview:
     layer: Layer
-    key: str  # surface name (L2) or slot name (L3)
+    key: str  # surface 名称 (L2) 或 slot 名称 (L3)
     exists: bool
     updated_at: str | None
     entry_count: int
-    backlog: int  # L1 events since last update (L2 only; 0 for L3)
+    backlog: int  # 上次更新以来的 L1 事件数（仅 L2；L3 为 0）
 
 
 class MemoryStore:
-    """Stateless facade. Safe to call as a process-wide singleton."""
+    """无状态门面。可安全用作进程级单例。"""
 
     def __init__(self) -> None:
         self._write_locks: dict[str, asyncio.Lock] = {}
 
-    # ── L1 ────────────────────────────────────────────────────────────────
+    # ── L1 层 ────────────────────────────────────────────────────────────────
 
     async def emit(self, event: TraceEvent) -> None:
         await trace.append(event)
 
-    # ── L2 / L3 read ──────────────────────────────────────────────────────
+    # ── L2 / L3 读取 ──────────────────────────────────────────────────────
 
     def read_doc(self, layer: Layer, key: str) -> Document:
         path = self._path(layer, key)
@@ -71,7 +70,7 @@ class MemoryStore:
         return path.read_text(encoding="utf-8")
 
     def read_l3_concat(self) -> str:
-        """Concatenate all four L3 docs for the ``read_memory`` tool."""
+        """拼接全部四个 L3 文档，供 ``read_memory`` 工具使用。"""
         parts: list[str] = []
         for slot in paths.L3_SLOTS:
             body = self.read_raw("L3", slot).strip()
@@ -81,10 +80,10 @@ class MemoryStore:
             return _NO_MEMORY
         return "\n\n---\n\n".join(parts) + "\n"
 
-    # ── L2 / L3 write (manual paths) ──────────────────────────────────────
+    # ── L2 / L3 写入（手动路径）──────────────────────────────────────────────
 
     async def overwrite_doc(self, layer: Layer, key: str, md: str) -> None:
-        """Direct user-driven save from the workbench editor."""
+        """从工作台编辑器直接由用户驱动的保存。"""
         path = self._path(layer, key)
         async with self._lock_for(path):
             await asyncio.to_thread(_atomic_write, path, md)
@@ -100,7 +99,7 @@ class MemoryStore:
             await asyncio.to_thread(_atomic_write, path, serialize(doc))
             return True
 
-    # ── L2 / L3 write (consolidator paths) ────────────────────────────────
+    # ── L2 / L3 写入（整合器路径）───────────────────────────────────────
 
     async def update_l2(
         self,
@@ -145,11 +144,10 @@ class MemoryStore:
     async def apply_ops_payload(
         self, layer: Layer, key: str, ops_payload: list[dict]
     ) -> ApplyReport:
-        """Apply a list of ops-as-JSON to a layer doc atomically.
+        """将 JSON 格式的操作列表原子性地应用到层文档。
 
-        Used by the workbench's preview → apply two-step flow. The
-        payload typically comes from a previous ``apply_ops=False``
-        consolidate call surfaced to the user for review.
+        用于工作台的预览→应用两步流程。该 payload 通常来自
+        之前的 ``apply_ops=False`` 整合调用，呈现给用户进行审查。
         """
         from aidlearning.memory.consolidator import _parse_ops_response
 
@@ -180,9 +178,8 @@ class MemoryStore:
         reason: str | None = None,
         trace_id: str,
     ) -> ApplyReport:
-        """Write the chat-mode preference signal. The ``write_memory`` tool
-        is the only caller; ``trace_id`` is the current chat turn's L1 id
-        injected by runtime."""
+        """写入聊天模式的偏好信号。``write_memory`` 工具是唯一调用方；
+        ``trace_id`` 是运行时注入的当前聊天轮次的 L1 id。"""
         path = paths.l3_file("preferences")
         async with self._lock_for(path):
             doc = (
@@ -212,11 +209,11 @@ class MemoryStore:
             if report.accepted:
                 await asyncio.to_thread(_atomic_write, path, serialize(doc))
             if reason:
-                # Surface the reason in logs for workbench observability.
+                # 在日志中记录原因，便于工作台可观测性。
                 logger.info("write_memory %s id=%s reason=%s", op, target_id or "new", reason)
             return report
 
-    # ── Smart retrieval (mid-term + long-term) ─────────────────────────
+    # ── 智能检索（中期+长期记忆）─────────────────────────────────────
 
     async def retrieve_memory(
         self,
@@ -225,10 +222,10 @@ class MemoryStore:
         top_k: int = 10,
         token_budget: int = 2000,
     ) -> str:
-        """Smart retrieval combining mid-term and long-term memory.
+        """结合中期和长期记忆的智能检索。
 
-        Replaces ``read_l3_concat()`` as the primary context injection
-        method.  Falls back to full L3 concat on failure.
+        替代 ``read_l3_concat()`` 作为主要的上下文注入方法。
+        失败时回退到完整的 L3 拼接。
         """
         from aidlearning.memory.mid_term.search import get_memory_retriever
         from aidlearning.services.session.sqlite_store import get_sqlite_session_store
@@ -241,7 +238,7 @@ class MemoryStore:
             return self.read_l3_concat()
         return await retriever.retrieve(query, top_k=top_k, token_budget=token_budget)
 
-    # ── Workbench overview ────────────────────────────────────────────────
+    # ── 工作台概览 ─────────────────────────────────────────────────────────
 
     def overview(self) -> list[DocOverview]:
         rows: list[DocOverview] = []
@@ -289,7 +286,7 @@ class MemoryStore:
             backlog=backlog,
         )
 
-    # ── Internals ─────────────────────────────────────────────────────────
+    # ── 内部方法 ─────────────────────────────────────────────────────────
 
     def _path(self, layer: Layer, key: str) -> Path:
         if layer == "L2":
@@ -309,16 +306,16 @@ class MemoryStore:
         return lock
 
 
-# ── v1 → v2 startup migration ─────────────────────────────────────────────
+# ── v1 → v2 启动迁移 ─────────────────────────────────────────────────────
 
 
 def migrate_v1_if_needed() -> Path | None:
-    """If any v1 memory files are present under the memory root, move the
-    whole memory directory's loose files into ``memory/backup/<ts>/``.
+    """如果记忆根目录下存在 v1 格式的记忆文件，
+    将整个记忆目录的散文件移动到 ``memory/backup/<ts>/``。
 
-    Idempotent: if there's nothing v1-shaped at the root, this is a no-op.
+    幂等操作：如果根目录下没有 v1 格式的文件，则不执行任何操作。
 
-    Returns the backup directory path on migration, or ``None`` otherwise.
+    迁移时返回备份目录路径，否则返回 ``None``。
     """
     root = paths.memory_root()
     if not root.exists():
@@ -341,7 +338,7 @@ def migrate_v1_if_needed() -> Path | None:
     return backup_dir
 
 
-# ── Singleton accessor ────────────────────────────────────────────────────
+# ── 单例访问器 ────────────────────────────────────────────────────────────
 
 
 _singleton: MemoryStore | None = None
@@ -354,7 +351,7 @@ def get_memory_store() -> MemoryStore:
     return _singleton
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────
+# ── 辅助函数 ───────────────────────────────────────────────────────────────
 
 
 def _default_title(layer: Layer, key: str) -> str:

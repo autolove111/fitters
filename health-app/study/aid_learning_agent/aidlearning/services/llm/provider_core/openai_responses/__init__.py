@@ -1,4 +1,4 @@
-"""Shared helpers for Responses API providers."""
+"""Responses API 提供商的共享辅助函数。"""
 
 from .converters import (
     adapt_chat_kwargs_to_responses,

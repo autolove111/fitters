@@ -1,4 +1,4 @@
-"""Knowledge-base visibility and write guards for the multi-user layer."""
+"""多用户层的知识库可见性和写入守卫。"""
 
 from __future__ import annotations
 

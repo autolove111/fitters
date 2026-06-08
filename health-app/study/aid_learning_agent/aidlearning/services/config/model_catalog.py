@@ -10,9 +10,8 @@ from aidlearning.services.path_service import get_path_service
 
 from .embedding_endpoint import normalize_embedding_endpoint_for_display
 
-# Fallback only — frozen at admin scope at import time. Production code should
-# enter through ``get_model_catalog_service()`` so the path is resolved from the
-# current user's PathService on every call.
+# 仅作回退 — 在导入时冻结于管理员作用域。生产代码应通过
+# ``get_model_catalog_service()`` 进入，以便每次调用时从当前用户的 PathService 解析路径。
 CATALOG_PATH = get_path_service().get_settings_file("model_catalog")
 
 
@@ -132,13 +131,11 @@ class ModelCatalogService:
                         model.setdefault("name", model.get("model") or "Untitled Model")
                         model.setdefault("model", "")
                         if service_name == "embedding":
-                            # Empty default → test_runner auto-fills from the
-                            # actual API response on first connection test.
+                            # 空默认值 → test_runner 在首次连接测试时从实际 API 响应自动填充。
                             model.setdefault("dimension", "")
-                            # CSV of supported dims discovered during the last
-                            # successful "Test connection" — drives the UI
-                            # dropdown. Empty when the model is not in any
-                            # adapter's MODELS_INFO map.
+                            # 上次成功"测试连接"时发现的支持维度 CSV —
+                            # 驱动 UI 下拉菜单。当模型不在任何适配器的
+                            # MODELS_INFO 映射中时为空。
                             model.setdefault("supported_dimensions", "")
             profile_ids = {profile.get("id") for profile in profiles}
             if profiles and service.get("active_profile_id") not in profile_ids:

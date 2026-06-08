@@ -1,8 +1,8 @@
 """
-Knowledge Base API Router
+知识库 API 路由
 =========================
 
-Handles knowledge base CRUD operations, file uploads, and initialization.
+处理知识库的 CRUD 操作、文件上传和初始化。
 """
 
 import asyncio
@@ -53,20 +53,20 @@ from aidlearning.services.rag.file_routing import FileTypeRouter
 from aidlearning.utils.document_validator import DocumentValidator
 from aidlearning.utils.error_utils import format_exception_message
 
-# Initialize logger with config
+# 使用配置初始化日志器
 config = load_config_with_main("main.yaml", PROJECT_ROOT)
 log_dir = config.get("paths", {}).get("user_log_dir") or config.get("logging", {}).get("log_dir")
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Constants for byte conversions
+# 字节转换常量
 BYTES_PER_GB = 1024**3
 BYTES_PER_MB = 1024**2
 
 
 def format_bytes_human_readable(size_bytes: int) -> str:
-    """Format bytes into human-readable string (GB, MB, or bytes)."""
+    """将字节数格式化为人类可读的字符串（GB、MB 或 bytes）。"""
     if size_bytes >= BYTES_PER_GB:
         return f"{size_bytes / BYTES_PER_GB:.1f} GB"
     elif size_bytes >= BYTES_PER_MB:
@@ -78,24 +78,23 @@ def format_bytes_human_readable(size_bytes: int) -> str:
 _kb_base_dir = PROJECT_ROOT / "data" / "knowledge_bases"
 DEFAULT_KB_ALIASES = {"", "default", "current", "selected", "默认", "默认知识库", "当前知识库"}
 
-# Lazy initialization
+# 延迟初始化
 kb_manager = None
 
 
 def get_kb_manager():
-    """Get KnowledgeBaseManager instance (lazy init)"""
+    """获取 KnowledgeBaseManager 实例（延迟初始化）"""
     if kb_manager is not None:
         return kb_manager
     return current_kb_manager()
 
 
 def _overridden_kb_manager() -> KnowledgeBaseManager | None:
-    """Return the legacy/test manager when the route-level getter is patched.
+    """当路由级别的 getter 被 patch 时返回旧版/测试用的管理器。
 
-    Production multi-user access control goes through ``assert_writable`` and
-    ``resolve_kb``. Older tests and single-module integrations patch
-    ``get_kb_manager`` directly, so we keep that seam without weakening the
-    normal write guard.
+    生产环境的多用户访问控制通过 assert_writable 和 resolve_kb 实现。
+    旧版测试和单模块集成直接 patch get_kb_manager，因此保留该接口
+    同时不削弱正常的写入保护。
     """
     manager = get_kb_manager()
     if kb_manager is not None or manager is not current_kb_manager():
@@ -136,13 +135,13 @@ class KnowledgeBaseInfo(BaseModel):
 
 
 class LinkFolderRequest(BaseModel):
-    """Request model for linking a local folder to a KB."""
+    """将本地文件夹链接到知识库的请求模型。"""
 
     folder_path: str
 
 
 class LinkedFolderInfo(BaseModel):
-    """Response model for linked folder information."""
+    """已链接文件夹信息的响应模型。"""
 
     id: str
     path: str
@@ -151,7 +150,7 @@ class LinkedFolderInfo(BaseModel):
 
 
 class SupportedFileTypesInfo(BaseModel):
-    """Upload constraints exposed to the web client."""
+    """向 Web 客户端暴露的上传约束信息。"""
 
     extensions: list[str]
     accept: str
@@ -184,11 +183,10 @@ def _save_uploaded_files(
     kb_name: str | None = None,
 ) -> tuple[list[str], list[str]]:
     """
-    Save uploaded files to the local raw/ directory.
+    将上传的文件保存到本地 raw/ 目录。
 
-    When PocketBase is enabled and ``kb_name`` is supplied, each file is also
-    uploaded to the PocketBase knowledge_bases record as a file attachment
-    (best-effort — local write is always the primary path).
+    当 PocketBase 启用且提供了 kb_name 时，每个文件也会作为附件上传到
+    PocketBase 的 knowledge_bases 记录中（尽力而为——本地写入始终是主路径）。
     """
     uploaded_files: list[str] = []
     uploaded_file_paths: list[str] = []
@@ -236,7 +234,7 @@ def _save_uploaded_files(
                 uploaded_files.append(sanitized_filename)
                 uploaded_file_paths.append(str(file_path))
 
-                # Mirror file to PocketBase when enabled (best-effort, non-blocking).
+                # 启用 PocketBase 时同步文件（尽力而为，非阻塞）。
                 if _pb_sync and kb_name:
                     try:
                         _upload_file_to_pb(kb_name, sanitized_filename, file_path)
@@ -269,7 +267,7 @@ def _save_uploaded_files(
 
 
 def _get_upload_file_size(file: UploadFile) -> int | None:
-    """Best-effort byte size detection without consuming the uploaded stream."""
+    """在不消耗上传流的前提下，尽力检测文件的字节大小。"""
     try:
         current_position = file.file.tell()
         file.file.seek(0, os.SEEK_END)
@@ -284,7 +282,7 @@ def _validate_upload_batch(
     files: list[UploadFile],
     allowed_extensions: set[str] | None = None,
 ) -> list[dict[str, int | str | None]]:
-    """Validate upload metadata before mutating KB state or writing any files."""
+    """在修改知识库状态或写入文件之前，校验上传元数据。"""
     validated: list[dict[str, int | str | None]] = []
     seen_names: set[str] = set()
 
@@ -325,7 +323,7 @@ def _validate_upload_batch(
 
 
 def _upload_file_to_pb(kb_name: str, filename: str, file_path: Path) -> None:
-    """Upload a single file to the PocketBase knowledge_bases record."""
+    """将单个文件上传到 PocketBase 的 knowledge_bases 记录。"""
     try:
         from aidlearning.services.pocketbase_client import get_pb_client
 
@@ -360,12 +358,12 @@ def _task_log(task_id: str, message: str, level: str = "info") -> None:
 
 
 def _validate_registered_provider(raw_provider: str | None) -> str:
-    """Always return the canonical provider; field is kept as a stub."""
+    """始终返回规范的 provider；该字段仅作为存根保留。"""
     return DEFAULT_PROVIDER
 
 
 def _resolve_registered_kb_name(manager: KnowledgeBaseManager, kb_name: str | None) -> str:
-    """Resolve route-level default aliases to the configured default KB."""
+    """将路由级别的默认别名解析为已配置的默认知识库。"""
     requested = str(kb_name or "").strip()
     kb_names = manager.list_knowledge_bases()
     if requested and requested in kb_names:
@@ -400,7 +398,7 @@ def _assert_kb_writable_or_409(kb_name: str, kb_entry: dict) -> None:
 
 
 def _matching_index_is_valid(kb_name: str, matching_version: dict | None) -> bool:
-    """Return whether a matching active index can safely satisfy retrieval."""
+    """返回匹配的活跃索引是否可以安全地满足检索需求。"""
     if not matching_version:
         return False
     try:
@@ -420,7 +418,7 @@ def _matching_index_is_valid(kb_name: str, matching_version: dict | None) -> boo
 
 
 async def run_initialization_task(initializer: KnowledgeBaseInitializer, task_id: str):
-    """Background task for knowledge base initialization"""
+    """知识库初始化的后台任务"""
     task_manager = TaskIDManager.get_instance()
     task_stream_manager = get_task_stream_manager()
     task_stream_manager.ensure_task(task_id)
@@ -516,14 +514,14 @@ async def run_upload_processing_task(
     rag_provider: str = None,
     folder_id: str = None,
 ):
-    """Background task for processing uploaded files.
+    """处理上传文件的后台任务。
 
     Args:
-        kb_name: Knowledge base name
-        base_dir: Base directory for knowledge bases
-        uploaded_file_paths: List of file paths to process
-        rag_provider: RAG provider (ignored - we use the one from KB metadata)
-        folder_id: Optional folder ID for sync state update
+        kb_name: 知识库名称
+        base_dir: 知识库的基础目录
+        uploaded_file_paths: 待处理的文件路径列表
+        rag_provider: RAG 提供商（已忽略——使用知识库元数据中的配置）
+        folder_id: 可选的文件夹 ID，用于更新同步状态
     """
     task_manager = TaskIDManager.get_instance()
     task_stream_manager = get_task_stream_manager()
@@ -619,7 +617,7 @@ async def run_upload_processing_task(
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """健康检查端点"""
     try:
         manager = get_kb_manager()
         config_exists = manager.config_file.exists()
@@ -638,7 +636,7 @@ async def health_check():
 
 @router.get("/rag-providers")
 async def get_rag_providers():
-    """Get list of available RAG providers."""
+    """获取可用的 RAG 提供商列表。"""
     try:
         from aidlearning.services.rag.service import RAGService
 
@@ -651,7 +649,7 @@ async def get_rag_providers():
 
 @router.get("/supported-file-types", response_model=SupportedFileTypesInfo)
 async def get_supported_file_types():
-    """Return the current upload policy so the web client stays in sync."""
+    """返回当前上传策略，以便 Web 客户端保持同步。"""
     extensions = sorted(FileTypeRouter.get_supported_extensions())
     accept_items = extensions + [
         mime
@@ -668,7 +666,7 @@ async def get_supported_file_types():
 
 @router.get("/configs")
 async def get_all_kb_configs():
-    """Get all knowledge base configurations from centralized config file."""
+    """从集中配置文件获取所有知识库配置。"""
     try:
         from aidlearning.services.config import get_kb_config_service
 
@@ -681,7 +679,7 @@ async def get_all_kb_configs():
 
 @router.get("/{kb_name}/config")
 async def get_kb_config(kb_name: str):
-    """Get configuration for a specific knowledge base."""
+    """获取指定知识库的配置。"""
     try:
         from aidlearning.services.config import get_kb_config_service
 
@@ -695,7 +693,7 @@ async def get_kb_config(kb_name: str):
 
 @router.put("/{kb_name}/config")
 async def update_kb_config(kb_name: str, config: dict):
-    """Update configuration for a specific knowledge base."""
+    """更新指定知识库的配置。"""
     try:
         from aidlearning.services.config import get_kb_config_service
 
@@ -714,7 +712,7 @@ async def update_kb_config(kb_name: str, config: dict):
 
 @router.post("/configs/sync")
 async def sync_configs_from_metadata():
-    """Sync all KB configurations from their metadata.json files to centralized config."""
+    """将所有知识库配置从其 metadata.json 文件同步到集中配置。"""
     try:
         from aidlearning.services.config import get_kb_config_service
 
@@ -728,7 +726,7 @@ async def sync_configs_from_metadata():
 
 @router.get("/default")
 async def get_default_kb():
-    """Get the default knowledge base."""
+    """获取默认知识库。"""
     try:
         manager = get_kb_manager()
         default_kb = manager.get_default()
@@ -740,11 +738,11 @@ async def get_default_kb():
 
 @router.put("/default/{kb_name}")
 async def set_default_kb(kb_name: str):
-    """Set the default knowledge base."""
+    """设置默认知识库。"""
     try:
         manager, kb_name, _ = _writable_kb(kb_name)
 
-        # Verify KB exists
+        # 验证知识库是否存在
         if kb_name not in manager.list_knowledge_bases():
             raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
 
@@ -759,7 +757,7 @@ async def set_default_kb(kb_name: str):
 
 @router.get("/list", response_model=list[KnowledgeBaseInfo])
 async def list_knowledge_bases():
-    """List all available knowledge bases with their details."""
+    """列出所有可用知识库及其详细信息。"""
     try:
         manager = get_kb_manager()
         kb_names = manager.list_knowledge_bases()
@@ -904,7 +902,7 @@ async def list_knowledge_bases():
 
 @router.get("/{kb_name}")
 async def get_knowledge_base_details(kb_name: str):
-    """Get detailed info for a specific KB."""
+    """获取指定知识库的详细信息。"""
     try:
         resource = resolve_kb(kb_name)
         manager = manager_for_resource(resource)
@@ -931,7 +929,7 @@ async def get_knowledge_base_details(kb_name: str):
 
 
 def _resolve_kb_raw_dir(kb_name: str) -> Path:
-    """Resolve the raw/ directory for a KB, validating that it exists."""
+    """解析知识库的 raw/ 目录，并验证其存在。"""
     manager = _overridden_kb_manager()
     if manager is not None:
         resolved_name = _resolve_registered_kb_name(manager, kb_name)
@@ -944,7 +942,7 @@ def _resolve_kb_raw_dir(kb_name: str) -> Path:
 
 @router.get("/{kb_name}/files")
 async def list_kb_raw_files(kb_name: str):
-    """List raw documents stored under data/knowledge_bases/<kb>/raw/."""
+    """列出存储在 data/knowledge_bases/<kb>/raw/ 下的原始文档。"""
     raw_dir = _resolve_kb_raw_dir(kb_name)
     if not raw_dir.exists() or not raw_dir.is_dir():
         return {"files": []}
@@ -971,10 +969,9 @@ async def list_kb_raw_files(kb_name: str):
 
 @router.get("/{kb_name}/files/{filename:path}")
 async def serve_kb_raw_file(kb_name: str, filename: str):
-    """Serve a single raw document for inline preview / download.
+    """提供单个原始文档用于内联预览/下载。
 
-    Resolution is sandboxed to the KB's raw/ directory; any path that
-    escapes via traversal yields 403.
+    解析范围限定在知识库的 raw/ 目录内；任何通过路径遍历逃逸的请求将返回 403。
     """
     raw_dir = _resolve_kb_raw_dir(kb_name)
     if not raw_dir.exists():
@@ -1001,7 +998,7 @@ async def serve_kb_raw_file(kb_name: str, filename: str):
 
 @router.delete("/{kb_name}")
 async def delete_knowledge_base(kb_name: str):
-    """Delete a knowledge base."""
+    """删除知识库。"""
     try:
         manager, resolved_name, _ = _writable_kb(kb_name)
         success = manager.delete_knowledge_base(resolved_name, confirm=True)
@@ -1017,7 +1014,7 @@ async def delete_knowledge_base(kb_name: str):
 
 @router.get("/tasks/{task_id}/stream")
 async def stream_task_logs(task_id: str):
-    """Stream task-specific logs for knowledge-base operations."""
+    """流式传输知识库操作的任务日志。"""
     manager = get_task_stream_manager()
     manager.ensure_task(task_id)
     return StreamingResponse(
@@ -1035,12 +1032,12 @@ async def upload_files(
     file: UploadFile | None = File(None),
     rag_provider: str = Form(None),
 ):
-    # Support both 'files' (multi) and 'file' (single) field names
+    # 同时支持 'files'（多文件）和 'file'（单文件）字段名
     if not files and file:
         files = [file]
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
-    """Upload files to a knowledge base and process them in background."""
+    """上传文件到知识库并在后台处理。"""
     try:
         manager, kb_name, kb_base_dir = _writable_kb(kb_name)
         kb_path = manager.get_knowledge_base_path(kb_name)
@@ -1093,7 +1090,7 @@ async def upload_files(
     except ValueError:
         raise HTTPException(status_code=404, detail=f"Knowledge base '{kb_name}' not found")
     except Exception as e:
-        # Unexpected failure (Server error)
+        # 意外失败（服务器错误）
         formatted_error = format_exception_message(e)
         raise HTTPException(status_code=500, detail=formatted_error) from e
 
@@ -1106,12 +1103,12 @@ async def create_knowledge_base(
     file: UploadFile | None = File(None),
     rag_provider: str = Form(DEFAULT_PROVIDER),
 ):
-    # Support both 'files' (multi) and 'file' (single) field names
+    # 同时支持 'files'（多文件）和 'file'（单文件）字段名
     if not files and file:
         files = [file]
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
-    """Create a new knowledge base and initialize it with files."""
+    """创建新知识库并使用文件进行初始化。"""
     try:
         try:
             name = validate_knowledge_base_name(name)
@@ -1131,8 +1128,8 @@ async def create_knowledge_base(
         task_id = _build_unique_task_id("kb_init", name)
         get_task_stream_manager().ensure_task(task_id)
 
-        # Register KB to kb_config.json immediately with "initializing" status
-        # This ensures the KB appears in the list right away
+        # 立即将知识库注册到 kb_config.json，状态为 "initializing"
+        # 确保知识库立即出现在列表中
         manager.update_kb_status(
             name=name,
             status="initializing",
@@ -1145,7 +1142,7 @@ async def create_knowledge_base(
                 "task_id": task_id,
             },
         )
-        # Also store rag_provider in config (reload and update)
+        # 同时将 rag_provider 存入配置（重新加载并更新）
         manager.config = manager._load_config()
         if name in manager.config.get("knowledge_bases", {}):
             manager.config["knowledge_bases"][name]["rag_provider"] = rag_provider
@@ -1200,12 +1197,11 @@ async def create_knowledge_base(
 
 
 async def run_reindex_task(kb_name: str, base_dir: str, task_id: str, signature_hash: str) -> None:
-    """Re-index a KB's raw documents against the currently-active embedding config.
+    """针对当前活跃的 Embedding 配置，重新索引知识库的原始文档。
 
-    Each ``(profile, model, dimension, base_url)`` combination gets its own
-    flat ``<kb>/version-N/`` storage directory. Prior versions are preserved
-    untouched so switching the active embedding model back to a
-    previously-indexed one reuses the existing version with no extra work.
+    每个 (profile, model, dimension, base_url) 组合都有独立的
+    扁平 <kb>/version-N/ 存储目录。先前版本保持不变，
+    因此切换回已索引过的 Embedding 模型时可直接复用现有版本。
     """
     task_manager = TaskIDManager.get_instance()
     task_stream_manager = get_task_stream_manager()
@@ -1248,11 +1244,9 @@ async def run_reindex_task(kb_name: str, base_dir: str, task_id: str, signature_
                     total=total_batches,
                 )
 
-            # The pipeline now raises the underlying error (embedding API
-            # failure, parse error, etc.) so it surfaces in the task log
-            # rather than being swallowed into a generic wrapper. A False
-            # return is reserved for "no documents to index" — surface that
-            # specifically too.
+            # 管道现在会抛出底层错误（Embedding API 失败、解析错误等），
+            # 使其在任务日志中显示，而不是被吞入通用包装器。
+            # False 返回值保留给"没有可索引的文档"的情况——也专门进行展示。
             success = await rag_service.initialize(
                 kb_name=kb_name,
                 file_paths=file_paths,
@@ -1300,8 +1294,8 @@ async def run_reindex_task(kb_name: str, base_dir: str, task_id: str, signature_
                     "index_action": "reindex",
                 },
             )
-            # Clear the legacy mismatch / needs_reindex flags now that an
-            # index version matching the active config exists on disk.
+            # 现在磁盘上已存在匹配活跃配置的索引版本，清除旧版的
+            # mismatch / needs_reindex 标志。
             kb_entry = manager.config.get("knowledge_bases", {}).get(kb_name) or {}
             mutated = False
             if kb_entry.get("needs_reindex"):
@@ -1340,11 +1334,10 @@ async def reindex_knowledge_base(
     kb_name: str,
     background_tasks: BackgroundTasks,
 ):
-    """Re-index ``kb_name`` against the currently-active embedding model.
+    """针对当前活跃的 Embedding 模型重新索引 kb_name。
 
-    The new index lands in a flat ``<kb>/version-N/`` directory so prior
-    versions stay intact. Legacy nested versions remain readable, but a
-    manual re-index will converge them onto the flat layout.
+    新索引落在扁平的 <kb>/version-N/ 目录中，先前版本保持完整。
+    旧版嵌套版本仍然可读，手动重新索引会将其收敛到扁平布局。
     """
     try:
         manager, kb_name, kb_base_dir = _writable_kb(kb_name)
@@ -1423,7 +1416,7 @@ async def reindex_knowledge_base(
 
 @router.get("/{kb_name}/progress")
 async def get_progress(kb_name: str):
-    """Get initialization progress for a knowledge base"""
+    """获取知识库的初始化进度"""
     try:
         resource = resolve_kb(kb_name)
         progress_tracker = ProgressTracker(resource.name, resource.base_dir)
@@ -1441,7 +1434,7 @@ async def get_progress(kb_name: str):
 
 @router.post("/{kb_name}/progress/clear")
 async def clear_progress(kb_name: str):
-    """Clear progress file for a knowledge base (useful for stuck states)"""
+    """清除知识库的进度文件（适用于卡住的状态）"""
     try:
         _, resolved_name, base_dir = _writable_kb(kb_name)
         progress_tracker = ProgressTracker(resolved_name, base_dir)
@@ -1455,7 +1448,7 @@ async def clear_progress(kb_name: str):
 
 @router.websocket("/{kb_name}/progress/ws")
 async def websocket_progress(websocket: WebSocket, kb_name: str):
-    """WebSocket endpoint for real-time progress updates"""
+    """实时进度更新的 WebSocket 端点"""
     from aidlearning.api.routers.auth import ws_auth_failed, ws_require_auth
     from aidlearning.multi_user.context import reset_current_user
 
@@ -1480,8 +1473,8 @@ async def websocket_progress(websocket: WebSocket, kb_name: str):
 
         kb_is_ready = any(bool(version.get("ready")) for version in list_kb_versions(kb_dir))
 
-        # Fast path: no active task — send current state and close immediately
-        # This prevents infinite polling loops for ready or legacy KBs.
+        # 快速路径：无活跃任务——发送当前状态后立即关闭
+        # 防止对已就绪或旧版知识库产生无限轮询循环。
         has_active_task = False
         if initial_progress:
             stage = initial_progress.get("stage")
@@ -1601,15 +1594,14 @@ async def websocket_progress(websocket: WebSocket, kb_name: str):
 @router.post("/{kb_name}/link-folder", response_model=LinkedFolderInfo)
 async def link_folder(kb_name: str, request: LinkFolderRequest):
     """
-    Link a local folder to a knowledge base.
+    将本地文件夹链接到知识库。
 
-    This allows syncing documents from a local folder (which can be
-    synced with SharePoint, Google Drive, OneLake, etc.) to the KB.
+    允许将本地文件夹（可与 SharePoint、Google Drive、OneLake 等同步）中的文档同步到知识库。
 
-    The folder path supports:
-    - Absolute paths: /Users/name/Documents or C:\\Users\\name\\Documents
-    - Home directory: ~/Documents
-    - Relative paths (resolved from server working directory)
+    文件夹路径支持：
+    - 绝对路径：/Users/name/Documents 或 C:\\Users\\name\\Documents
+    - 主目录：~/Documents
+    - 相对路径（从服务器工作目录解析）
     """
     try:
         manager, resolved_name, _ = _writable_kb(kb_name)
@@ -1629,7 +1621,7 @@ async def link_folder(kb_name: str, request: LinkFolderRequest):
 
 @router.get("/{kb_name}/linked-folders", response_model=list[LinkedFolderInfo])
 async def get_linked_folders(kb_name: str):
-    """Get list of linked folders for a knowledge base."""
+    """获取知识库的已链接文件夹列表。"""
     try:
         resource = resolve_kb(kb_name)
         manager = manager_for_resource(resource)
@@ -1645,7 +1637,7 @@ async def get_linked_folders(kb_name: str):
 
 @router.delete("/{kb_name}/linked-folders/{folder_id}")
 async def unlink_folder(kb_name: str, folder_id: str):
-    """Unlink a folder from a knowledge base."""
+    """取消文件夹与知识库的链接。"""
     try:
         manager, resolved_name, _ = _writable_kb(kb_name)
         success = manager.unlink_folder(resolved_name, folder_id)
@@ -1664,10 +1656,9 @@ async def unlink_folder(kb_name: str, folder_id: str):
 @router.post("/{kb_name}/sync-folder/{folder_id}")
 async def sync_folder(kb_name: str, folder_id: str, background_tasks: BackgroundTasks):
     """
-    Sync files from a linked folder to the knowledge base.
+    将已链接文件夹中的文件同步到知识库。
 
-    This scans the linked folder for supported documents and processes
-    any new files that haven't been added yet.
+    扫描已链接文件夹中的支持文档，处理尚未添加的新文件。
     """
     try:
         manager, kb_name, kb_base_dir = _writable_kb(kb_name)
@@ -1677,7 +1668,7 @@ async def sync_folder(kb_name: str, folder_id: str, background_tasks: Background
             kb_entry.get("rag_provider") or DEFAULT_PROVIDER
         )
 
-        # Get linked folders and find the one with matching ID
+        # 获取已链接文件夹并找到匹配 ID 的那个
         folders = manager.get_linked_folders(kb_name)
         folder_info = next((f for f in folders if f["id"] == folder_id), None)
 
@@ -1686,7 +1677,7 @@ async def sync_folder(kb_name: str, folder_id: str, background_tasks: Background
 
         folder_path = folder_info["path"]
 
-        # Check for changes (new or modified files)
+        # 检查变更（新增或修改的文件）
         changes = manager.detect_folder_changes(kb_name, folder_id)
         files_to_process = changes["new_files"] + changes["modified_files"]
 
@@ -1699,11 +1690,11 @@ async def sync_folder(kb_name: str, folder_id: str, background_tasks: Background
         task_id = _build_unique_task_id("kb_upload", f"{kb_name}_folder_{folder_id}")
         get_task_stream_manager().ensure_task(task_id)
 
-        # NOTE: We DO NOT update sync state here anymore.
-        # It is updated in run_upload_processing_task only after successful processing.
-        # This prevents marking files as synced if processing fails (race condition fix).
+        # 注意：此处不再更新同步状态。
+        # 同步状态仅在 run_upload_processing_task 中处理成功后才更新。
+        # 这样可以防止处理失败时将文件标记为已同步（竞态条件修复）。
 
-        # Add background task to process files
+        # 添加后台任务处理文件
         background_tasks.add_task(
             run_upload_processing_task,
             kb_name=kb_name,
@@ -1711,7 +1702,7 @@ async def sync_folder(kb_name: str, folder_id: str, background_tasks: Background
             uploaded_file_paths=files_to_process,
             task_id=task_id,
             rag_provider=kb_provider,
-            folder_id=folder_id,  # Pass folder_id to update state on success
+            folder_id=folder_id,  # 传递 folder_id 以便成功时更新状态
         )
 
         return {

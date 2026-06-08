@@ -1,16 +1,14 @@
-"""Tolerant JSON parsers shared across the consolidator.
+"""整合器共享的容错 JSON 解析器。
 
-Two shapes are supported:
+支持两种格式：
 
-* :func:`parse_action` — one-action-per-turn envelope used by the
-  agentic loop driver. Returns ``None`` on failure so the loop can
-  surface a retry hint instead of crashing.
-* :func:`_parse_ops_response` — legacy ``{"ops": [...]}`` shape, kept
-  because the workbench's preview → apply flow round-trips ops
-  through this parser (see :mod:`aidlearning.memory.store`).
+* :func:`parse_action` — 代理循环驱动器使用的每轮一个操作的信封格式。
+  失败时返回 ``None``，以便循环可以显示重试提示而非崩溃。
+* :func:`_parse_ops_response` — 旧版 ``{"ops": [...]}`` 格式，
+  因为工作台的预览→应用流程通过此解析器往返操作而保留
+  （参见 :mod:`aidlearning.memory.store`）。
 
-Both strip code fences and tolerate prose framing so the model can
-think out loud without invalidating the run.
+两者都去除代码围栏并容忍散文框架，以便模型可以出声思考而不使运行失效。
 """
 
 from __future__ import annotations
@@ -26,7 +24,7 @@ from aidlearning.memory.long_term.ops import AddOp, DeleteOp, EditOp, Op
 logger = logging.getLogger(__name__)
 
 
-# ── Loop-mode action envelope ────────────────────────────────────────────
+# ── 循环模式操作信封 ────────────────────────────────────────────────────
 
 
 @dataclass(frozen=True)
@@ -40,10 +38,10 @@ class ParsedAction:
 
 
 def parse_action(raw: str) -> ParsedAction | None:
-    """Parse one ``{"thought","action","args"}`` envelope from LLM text.
+    """从 LLM 文本中解析一个 ``{"thought","action","args"}`` 信封。
 
-    Returns ``None`` on any malformed input; the loop driver renders a
-    correction hint to the next turn so the model can self-recover.
+    对任何格式错误的输入返回 ``None``；循环驱动器向下一回合渲染纠正提示，
+    以便模型可以自我恢复。
     """
     snippet = _extract_json_object(raw)
     if snippet is None:
@@ -65,11 +63,11 @@ def parse_action(raw: str) -> ParsedAction | None:
     return ParsedAction(name=name_raw.strip(), args=args, thought=thought)
 
 
-# ── Legacy ops-array shape (kept for apply_ops_payload) ──────────────────
+# ── 旧版操作数组格式（为 apply_ops_payload 保留）──────────────────────────
 
 
 def _parse_ops_response(raw: str) -> list[Op]:
-    """Tolerant parse of a legacy ``{"ops":[...]}`` envelope into ``Op``."""
+    """将旧版 ``{"ops":[...]}`` 信封容错解析为 ``Op``。"""
     snippet = _extract_json_object(raw)
     if snippet is None:
         logger.warning("memory consolidate: no JSON object in payload")
@@ -115,16 +113,16 @@ def _parse_one_op(raw_op: Any) -> Op | None:
                 target_id=str(raw_op.get("target_id", "")).strip(),
                 reason=str(raw_op.get("reason", "stale")).strip(),
             )
-    except Exception:  # noqa: BLE001 — be permissive at the parse layer
+    except Exception:  # noqa: BLE001 — 在解析层保持宽容
         return None
     return None
 
 
-# ── Shared text extraction ───────────────────────────────────────────────
+# ── 共享文本提取 ───────────────────────────────────────────────────────
 
 
 def _extract_json_object(raw: str) -> str | None:
-    """Strip code fences and pull out the first top-level JSON object."""
+    """去除代码围栏并提取第一个顶层 JSON 对象。"""
     text = raw.strip()
     text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
     text = re.sub(r"\s*```$", "", text)

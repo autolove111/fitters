@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-Agent Configuration API - Provides agent metadata for data-driven UI.
+Agent 配置 API - 为数据驱动的 UI 提供 Agent 元数据。
 """
 
 from fastapi import APIRouter
 
 router = APIRouter()
 
-# Agent registry - single source of truth for agent UI metadata
+# Agent 注册表 - Agent UI 元数据的唯一数据源
 AGENT_REGISTRY = {
     "solve": {
         "icon": "HelpCircle",
@@ -30,10 +30,10 @@ AGENT_REGISTRY = {
 @router.get("/agents")
 async def get_agent_config():
     """
-    Get agent UI configuration.
+    获取 Agent UI 配置。
 
     Returns:
-        Dict mapping agent type to UI metadata (icon, color, label_key)
+        Agent 类型到 UI 元数据（图标、颜色、标签键）的映射字典
     """
     return AGENT_REGISTRY
 
@@ -41,13 +41,13 @@ async def get_agent_config():
 @router.get("/agents/{agent_type}")
 async def get_single_agent_config(agent_type: str):
     """
-    Get UI configuration for a specific agent.
+    获取指定 Agent 的 UI 配置。
 
     Args:
-        agent_type: Agent type (solve, question, research, etc.)
+        agent_type: Agent 类型（solve、question、research 等）
 
     Returns:
-        Agent UI metadata or 404 if not found
+        Agent UI 元数据，未找到时返回 404
     """
     if agent_type in AGENT_REGISTRY:
         return AGENT_REGISTRY[agent_type]

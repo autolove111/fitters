@@ -1,9 +1,9 @@
 """
-Chat Orchestrator
+聊天编排器
 =================
 
-Unified entry point that routes user messages to the appropriate capability.
-All consumers (CLI, WebSocket, SDK) call the orchestrator.
+统一入口点，将用户消息路由到相应的能力。
+所有消费者（CLI、WebSocket、SDK）都调用编排器。
 """
 
 from __future__ import annotations
@@ -24,10 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChatOrchestrator:
-    """
-    Routes a ``UnifiedContext`` to the correct capability, manages
-    the ``StreamBus`` lifecycle, and publishes completion events.
-    """
+    """将 ``UnifiedContext`` 路由到正确的能力，管理 ``StreamBus`` 生命周期，并发布完成事件。"""
 
     def __init__(self) -> None:
         self._cap_registry = get_capability_registry()
@@ -35,22 +32,20 @@ class ChatOrchestrator:
 
     async def handle(self, context: UnifiedContext) -> AsyncIterator[StreamEvent]:
         """
-        Execute a single user turn and yield streaming events.
+        执行单次用户回合并生成流式事件。
 
-        If ``context.active_capability`` is set, the corresponding capability
-        handles the turn. Otherwise, the default ``chat`` capability is used.
+        如果设置了 ``context.active_capability``，则由对应的能力处理该回合。
+        否则使用默认的 ``chat`` 能力。
         """
         if not context.session_id:
             context.session_id = str(uuid.uuid4())
 
-        # "Answer now" is a universal escape hatch but the actual fast-path
-        # is *capability-specific*: chat inspects ``answer_now_context`` at
-        # the top of its own ``run()``.
-        # Solve / quiz / research deliberately do NOT expose Answer Now
-        # (the UI hides the button). The orchestrator only adds a defensive
-        # fallback here: if the requested capability has been removed from
-        # the registry but the user is mid-``answer_now``, route to ``chat``
-        # so they still get *some* response instead of a hard error.
+        # "立即回答"是通用的快速通道，但实际的快速路径是*能力特定的*：
+        # chat 在其自身的 ``run()`` 顶部检查 ``answer_now_context``。
+        # 解题 / 测验 / 研究刻意不暴露"立即回答"（UI 隐藏了该按钮）。
+        # 编排器在此仅添加防御性回退：如果请求的能力已从注册表中移除，
+        # 但用户正在使用 ``answer_now``，则路由到 ``chat``，
+        # 使其仍能获得某种响应，而不是硬错误。
         cap_name = context.active_capability or "chat"
         capability = self._cap_registry.get(cap_name)
 
@@ -111,7 +106,7 @@ class ChatOrchestrator:
         await self._publish_completion(context, cap_name)
 
     async def _publish_completion(self, context: UnifiedContext, cap_name: str) -> None:
-        """Publish CAPABILITY_COMPLETE to the global EventBus."""
+        """向全局 EventBus 发布 CAPABILITY_COMPLETE 事件。"""
         try:
             bus = get_event_bus()
             await bus.publish(

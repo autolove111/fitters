@@ -1,1 +1,1 @@
-"""User interface (UI) settings helpers."""
+"""用户界面（UI）设置辅助工具。"""

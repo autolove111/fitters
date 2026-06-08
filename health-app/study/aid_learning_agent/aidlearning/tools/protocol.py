@@ -1,9 +1,9 @@
 """
-Tool Protocol
-=============
+工具协议
+========
 
-Base classes for the Tool layer (Level 1).
-Every tool — built-in or contributed via plugin — implements ``BaseTool``.
+工具层（Level 1）的基类。
+每个工具 —— 无论是内置的还是通过插件贡献的 —— 都实现 ``BaseTool``。
 """
 
 from __future__ import annotations
@@ -15,15 +15,13 @@ from typing import Any, Protocol
 
 @dataclass
 class ToolParameter:
-    """One parameter in a tool's function-calling schema.
+    """工具函数调用 schema 中的一个参数。
 
     Attributes:
-        items: Inner JSON Schema for ``type="array"`` parameters. **Required
-            by strict providers (Gemini, Anthropic)** even though OpenAI
-            silently tolerates its absence — leaving it out causes a 400
-            on Gemini. When ``type="array"`` and ``items`` is None we fall
-            back to ``{"type": "string"}`` so callers that just declare
-            ``ToolParameter(type="array")`` still emit a valid schema.
+        items: ``type="array"`` 参数的内部 JSON Schema。**严格提供商（Gemini、Anthropic）
+            要求此项**，即使 OpenAI 默默容忍其缺失 —— 省略它会导致 Gemini 返回 400 错误。
+            当 ``type="array"`` 且 ``items`` 为 None 时，回退为 ``{"type": "string"}``，
+            使仅声明 ``ToolParameter(type="array")`` 的调用方仍能发出有效的 schema。
     """
 
     name: str
@@ -35,7 +33,7 @@ class ToolParameter:
     items: dict[str, Any] | None = None
 
     def to_schema(self) -> dict[str, Any]:
-        """Convert to JSON Schema property dict."""
+        """转换为 JSON Schema 属性字典。"""
         schema: dict[str, Any] = {"type": self.type, "description": self.description}
         if self.enum:
             schema["enum"] = self.enum
@@ -47,7 +45,7 @@ class ToolParameter:
 @dataclass
 class ToolDefinition:
     """
-    Metadata that describes a tool to the LLM (OpenAI function-calling format).
+    向 LLM 描述工具的元数据（OpenAI 函数调用格式）。
     """
 
     name: str
@@ -55,7 +53,7 @@ class ToolDefinition:
     parameters: list[ToolParameter] = field(default_factory=list)
 
     def to_openai_schema(self) -> dict[str, Any]:
-        """Build an OpenAI-compatible function tool schema."""
+        """构建 OpenAI 兼容的函数工具 schema。"""
         properties = {}
         required = []
         for p in self.parameters:
@@ -78,7 +76,7 @@ class ToolDefinition:
 
 @dataclass
 class ToolAlias:
-    """Alternative tool name or sub-mode exposed in prompts."""
+    """在提示中暴露的替代工具名称或子模式。"""
 
     name: str
     description: str = ""
@@ -89,7 +87,7 @@ class ToolAlias:
 
 @dataclass
 class ToolPromptHints:
-    """Prompt-level guidance describing when and how to use a tool."""
+    """描述何时以及如何使用工具的提示级指导。"""
 
     short_description: str = ""
     when_to_use: str = ""
@@ -102,29 +100,23 @@ class ToolPromptHints:
 
 @dataclass
 class ToolResult:
-    """Standardised return value from a tool execution.
+    """工具执行的标准化返回值。
 
     Attributes:
-        content: Text returned to the LLM as the ``role=tool`` message body.
-        sources: Citation rows surfaced through ``stream.sources``.
-        metadata: Free-form payload — also used by the chat pipeline as a
-            channel for structured UI hints (e.g. ``ask_user.options``
-            for chip rendering).
-        success: ``False`` marks an explicit failure path; the LLM is
-            still allowed to read ``content`` (often an error message).
-        terminate_turn: When ``True`` the agentic chat loop must stop
-            iterating after dispatching this tool, treating the tool's
-            output as the assistant's final turn artefact. Reserved for
-            tools that genuinely end the turn (no future planned use —
-            ``ask_user`` now uses ``pause_for_user`` instead).
-        pause_for_user: When set, the chat loop **pauses** after this
-            tool call, emits a ``pending_user_input`` event with this
-            payload, awaits the user's reply via the runtime's reply
-            queue, then resumes the same loop iteration with the
-            reply substituted into the tool message body. Used by
-            ``ask_user`` to keep the turn alive across the user's
-            answer instead of ending and starting a new turn.
-            Shape mirrors ``AskUserPayload.to_dict()``.
+        content: 作为 ``role=tool`` 消息体返回给 LLM 的文本。
+        sources: 通过 ``stream.sources`` 呈现的引用行。
+        metadata: 自由格式载荷 —— 也被聊天管道用作结构化 UI 提示的通道
+            （如用于芯片渲染的 ``ask_user.options``）。
+        success: ``False`` 标记显式失败路径；LLM 仍可读取 ``content``
+            （通常是错误消息）。
+        terminate_turn: 当为 ``True`` 时，智能体聊天循环必须在调度此工具后
+            停止迭代，将工具的输出视为助手的最终轮次工件。保留给真正结束轮次的工具
+            （目前无未来计划使用 —— ``ask_user`` 现在使用 ``pause_for_user`` 代替）。
+        pause_for_user: 设置后，聊天循环在此工具调用后**暂停**，
+            发出带有此载荷的 ``pending_user_input`` 事件，通过运行时的回复队列
+            等待用户回复，然后在同一循环迭代中恢复，将回复替换到工具消息体中。
+            由 ``ask_user`` 使用，在用户回答期间保持轮次活跃，
+            而非结束并开始新轮次。形状与 ``AskUserPayload.to_dict()`` 一致。
     """
 
     content: str = ""
@@ -139,7 +131,7 @@ class ToolResult:
 
 
 class ToolEventSink(Protocol):
-    """Async callback used by tools to stream internal progress."""
+    """工具用于流式传输内部进度的异步回调。"""
 
     async def __call__(
         self,

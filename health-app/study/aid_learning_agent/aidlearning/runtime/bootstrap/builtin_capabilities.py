@@ -1,4 +1,4 @@
-"""Built-in capability class paths."""
+"""内置能力类路径。"""
 
 BUILTIN_CAPABILITY_CLASSES: dict[str, str] = {
     "chat": "aidlearning.capabilities.chat:ChatCapability",

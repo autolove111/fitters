@@ -324,7 +324,7 @@ def get_path_service() -> PathService:
         import logging as _logging
 
         _logging.getLogger(__name__).warning(
-            "get_path_service() fell back to default instance; multi-user path resolution failed",
+            "get_path_service() 回退到默认实例；多用户路径解析失败",
             exc_info=True,
         )
         return PathService.get_instance()

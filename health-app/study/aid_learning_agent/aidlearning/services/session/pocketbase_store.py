@@ -1,19 +1,18 @@
 """
-PocketBase-backed session store.
+基于 PocketBase 的会话存储。
 
-Implements SessionStoreProtocol using PocketBase collections for all durable
-storage.  The key performance design:
+使用 PocketBase 集合实现 SessionStoreProtocol，提供所有持久化存储。
+关键性能设计：
 
-- All methods except ``append_turn_event`` make direct PocketBase HTTP calls.
-  These are called at most a handful of times per turn (create, get, update
-  status, add message) and the ~5–10 ms overhead is acceptable.
+- 除 ``append_turn_event`` 外，所有方法都直接发起 PocketBase HTTP 调用。
+  这些方法每轮最多调用数次（创建、获取、更新状态、添加消息），
+  约 5-10 毫秒的开销可以接受。
 
-- ``append_turn_event`` returns immediately without writing to PocketBase.
-  The existing ``_mirror_event_to_workspace`` in turn_runtime.py already
-  appends every event to a local ``events.jsonl`` file.  When
-  ``update_turn_status`` finalises a turn it reads that file and batch-posts
-  all events to PocketBase ``turn_events`` in a single request, trading
-  real-time durability for ~40× lower per-event latency during streaming.
+- ``append_turn_event`` 立即返回，不写入 PocketBase。
+  turn_runtime.py 中已有的 ``_mirror_event_to_workspace`` 会将每个事件
+  追加到本地 ``events.jsonl`` 文件。当 ``update_turn_status`` 结束一轮时，
+  读取该文件并将所有事件批量发送到 PocketBase ``turn_events``，
+  以牺牲实时持久性换取流式传输期间约 40 倍的单事件延迟降低。
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ def _json_loads(value: Any, default: Any) -> Any:
 
 
 def _pb():
-    """Return the shared PocketBase client."""
+    """返回共享的 PocketBase 客户端。"""
     from aidlearning.services.pocketbase_client import get_pb_client
 
     return get_pb_client()
@@ -57,10 +56,10 @@ def _to_float(value: Any, default: float = 0.0) -> float:
 
 
 class PocketBaseSessionStore:
-    """PocketBase-backed implementation of SessionStoreProtocol."""
+    """基于 PocketBase 的 SessionStoreProtocol 实现。"""
 
     # ------------------------------------------------------------------
-    # Sessions
+    # 会话
     # ------------------------------------------------------------------
 
     async def create_session(
@@ -262,7 +261,7 @@ class PocketBaseSessionStore:
         return session
 
     # ------------------------------------------------------------------
-    # Messages
+    # 消息
     # ------------------------------------------------------------------
 
     async def add_message(
@@ -276,9 +275,8 @@ class PocketBaseSessionStore:
         metadata: dict[str, Any] | None = None,
         parent_message_id: int | None = None,
     ) -> int:
-        # ``parent_message_id`` is accepted to match the protocol shape but is
-        # not yet wired through PocketBase storage — branching only works on
-        # the SQLite backend today.
+        # ``parent_message_id`` 被接受以匹配协议接口，但尚未接入 PocketBase 存储
+        # —— 分支功能目前仅在 SQLite 后端可用。
         _ = parent_message_id
         now = time.time()
 
@@ -294,14 +292,13 @@ class PocketBaseSessionStore:
                 "msg_created_at": now,
             }
             record = _pb().collection("messages").create(payload)
-            # Title generation is owned by the turn runtime (LLM-driven
-            # after the first user+assistant pair). Until that runs the
-            # session keeps the ``New conversation`` sentinel.
+            # 标题生成由 turn runtime 负责（在首个用户+助手消息对之后由 LLM 驱动生成）。
+            # 在此之前会话保持 ``New conversation`` 哨兵值。
             return record
 
         try:
             record = await asyncio.to_thread(_add)
-            # Return a synthetic integer id using epoch ms
+            # 使用毫秒时间戳返回合成的整数 ID
             return int(now * 1000)
         except Exception as exc:
             logger.warning(f"add_message failed: {exc}")
@@ -369,8 +366,8 @@ class PocketBaseSessionStore:
     async def get_messages_for_context(
         self, session_id: str, leaf_message_id: int | None = None
     ) -> list[dict[str, Any]]:
-        # leaf_message_id (branch-aware context) is not supported on PocketBase
-        # yet; fall back to the linear, append-only view.
+        # PocketBase 尚不支持 leaf_message_id（分支感知上下文）；
+        # 回退到线性的追加视图。
         _ = leaf_message_id
         messages = await self.get_messages(session_id)
         return [
@@ -393,7 +390,7 @@ class PocketBaseSessionStore:
         }
 
     # ------------------------------------------------------------------
-    # Turns
+    # 轮次
     # ------------------------------------------------------------------
 
     async def create_turn(self, session_id: str, capability: str = "") -> dict[str, Any]:
@@ -401,7 +398,7 @@ class PocketBaseSessionStore:
         turn_id = f"turn_{int(now * 1000)}_{uuid.uuid4().hex[:10]}"
 
         def _create():
-            # Guard: ensure session exists
+            # 检查：确保会话存在
             sessions = (
                 _pb()
                 .collection("sessions")
@@ -409,7 +406,7 @@ class PocketBaseSessionStore:
             )
             if not sessions:
                 raise ValueError(f"Session not found: {session_id}")
-            # Guard: no duplicate active turns
+            # 检查：不允许重复的活跃轮次
             active = (
                 _pb()
                 .collection("turns")
@@ -527,7 +524,7 @@ class PocketBaseSessionStore:
             logger.warning(f"update_turn_status failed: {exc}")
             return False
 
-        # Batch-flush turn events from local JSONL buffer to PocketBase on finalisation
+        # 轮次结束时将本地 JSONL 缓冲区中的轮次事件批量刷入 PocketBase
         if updated and finished_at is not None:
             await self._flush_turn_events(turn_id)
 
@@ -535,13 +532,13 @@ class PocketBaseSessionStore:
 
     async def _flush_turn_events(self, turn_id: str) -> None:
         """
-        Read the local events.jsonl write-ahead buffer and batch-POST all
-        events to PocketBase turn_events collection in a single background call.
+        读取本地 events.jsonl 预写缓冲区，将所有事件批量发送到
+        PocketBase turn_events 集合（单次后台调用）。
         """
         try:
             path_service = get_path_service()
-            # The JSONL file is written by _mirror_event_to_workspace; we look
-            # across all capability workspaces since we only have the turn_id.
+            # JSONL 文件由 _mirror_event_to_workspace 写入；由于只有 turn_id，
+            # 需要在所有能力工作空间中查找。
             workspace_root = path_service.get_user_root()
             jsonl_files: list[Path] = list(workspace_root.rglob(f"{turn_id}/events.jsonl"))
 
@@ -603,26 +600,25 @@ class PocketBaseSessionStore:
         }
 
     # ------------------------------------------------------------------
-    # Turn events — write-ahead only; batch flush handled in update_turn_status
+    # 轮次事件 —— 仅预写；批量刷入在 update_turn_status 中处理
     # ------------------------------------------------------------------
 
     async def append_turn_event(self, turn_id: str, event: dict[str, Any]) -> dict[str, Any]:
         """
-        Assign a monotonic seq number and return the annotated payload.
+        分配单调递增的序列号并返回标注后的载荷。
 
-        Does NOT write to PocketBase immediately — the caller's
-        _mirror_event_to_workspace already appends to events.jsonl, which
-        is flushed to PocketBase in bulk when the turn is finalised.
+        不会立即写入 PocketBase —— 调用方的 _mirror_event_to_workspace
+        已经将事件追加到 events.jsonl，轮次结束时会批量刷入 PocketBase。
         """
         payload = dict(event)
         payload.setdefault("turn_id", turn_id)
-        # Assign seq if not provided; use timestamp-based counter as fallback.
+        # 如果未提供 seq，则分配；使用基于时间戳的计数器作为后备。
         if not payload.get("seq"):
             payload["seq"] = int(time.time() * 1000) % 1_000_000
         return payload
 
     async def get_turn_events(self, turn_id: str, after_seq: int = 0) -> list[dict[str, Any]]:
-        """Retrieve persisted turn events from PocketBase (post-turn replay)."""
+        """从 PocketBase 检索已持久化的轮次事件（轮次结束后的回放）。"""
 
         def _get():
             filter_str = f'turn_id="{turn_id}"'

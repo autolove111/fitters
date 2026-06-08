@@ -1,4 +1,4 @@
-"""Process-log event capture for user-visible operational logs."""
+"""用于用户可见操作日志的进程日志事件捕获。"""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class ProcessLogEvent:
 
 
 class ProcessLogHandler(logging.Handler):
-    """Emit structured process-log events from matching records."""
+    """从匹配的记录中发出结构化进程日志事件。"""
 
     def __init__(
         self,
@@ -92,7 +92,7 @@ def capture_process_logs(
     turn_id: str | None = None,
     min_level: int = logging.INFO,
 ) -> Iterator[ProcessLogHandler]:
-    """Capture matching stdlib log records and emit ``ProcessLogEvent`` objects."""
+    """捕获匹配的标准库日志记录并发出 ``ProcessLogEvent`` 对象。"""
     handler = ProcessLogHandler(
         emit,
         task_id=task_id,

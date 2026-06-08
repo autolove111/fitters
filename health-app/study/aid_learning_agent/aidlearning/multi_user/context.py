@@ -1,4 +1,4 @@
-"""Request-local current user context."""
+"""请求级别的当前用户上下文。"""
 
 from __future__ import annotations
 

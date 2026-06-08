@@ -1,8 +1,8 @@
-"""Legacy embedding adapter using AsyncOpenAI.
+"""使用 AsyncOpenAI 的旧版 Embedding 适配器。
 
-Public Settings providers use exact endpoint URLs and raw HTTP adapters so the
-URL shown in Settings is the URL sent on the wire. This SDK adapter is retained
-for old configs/tests that intentionally depend on AsyncOpenAI semantics.
+公开设置 Provider 使用精确的端点 URL 和原始 HTTP 适配器，
+以便设置中显示的 URL 就是实际发送请求的 URL。此 SDK 适配器
+保留用于有意依赖 AsyncOpenAI 语义的旧配置/测试。
 """
 
 from __future__ import annotations
@@ -25,13 +25,13 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAISDKEmbeddingAdapter(BaseEmbeddingAdapter):
-    """Embedding adapter using the official ``AsyncOpenAI`` client."""
+    """使用官方 ``AsyncOpenAI`` 客户端的 Embedding 适配器。"""
 
     def _should_send_dimensions(self, model_name: str | None) -> bool:
-        """Mirror of the heuristic in :mod:`openai_compatible`.
+        """:mod:`openai_compatible` 中启发式的镜像。
 
-        Tri-state ``self.send_dimensions``: ``True`` always send, ``False``
-        never send, ``None`` auto by model family.
+        三态 ``self.send_dimensions``：``True`` 始终发送，``False``
+        从不发送，``None`` 按模型系列自动决定。
         """
         if self.send_dimensions is True:
             return True
@@ -47,8 +47,8 @@ class OpenAISDKEmbeddingAdapter(BaseEmbeddingAdapter):
         return False
 
     def _build_client(self) -> AsyncOpenAI:
-        # OpenRouter / custom gateways often don't validate the key, but the
-        # SDK refuses to construct without one. Use a placeholder when empty.
+        # OpenRouter / 自定义网关通常不验证密钥，但 SDK 在没有密钥时拒绝构造。
+        # 为空时使用占位符。
         return AsyncOpenAI(
             api_key=self.api_key or "sk-no-key-required",
             base_url=self.base_url,

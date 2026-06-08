@@ -1,24 +1,20 @@
-"""Persistent, cancellable consolidator runs.
+"""持久化、可取消的整合器运行。
 
-A "run" is one invocation of :func:`run_update` / :func:`run_audit` /
-:func:`run_dedup`. The run is owned by an asyncio task; events flow
-through a buffered ring so a disconnecting client can re-attach by
-posting ``since=<cursor>`` to the events endpoint and replay everything
-it missed.
+一次"运行"是 :func:`run_update` / :func:`run_audit` / :func:`run_dedup` 的一次调用。
+运行由 asyncio 任务拥有；事件通过缓冲环流传输，断开连接的客户端可以通过
+向事件端点发送 ``since=<cursor>`` 来重新连接并重放错过的所有内容。
 
-Why an in-memory manager instead of a DB:
-- Memory consolidator runs are minutes-long at most.
-- Crash / restart wipes them — that's acceptable; the docs themselves
-  are atomically written per step and the meta-id-diff still gives us
-  "what's new since last refresh" correctness on restart.
+为什么使用内存管理器而非数据库：
+- 记忆整合器运行最多持续几分钟。
+- 崩溃/重启会清除它们 — 这是可以接受的；文档本身每步都原子写入，
+  元数据 id 差异仍然保证重启时"上次刷新以来的新内容"的正确性。
 
-Concurrency rules
+并发规则
 -----------------
-At most one **active** run per ``(layer, key)``. Starting a second run
-while the first is active returns ``RunBusyError``. Once a run reaches
-a terminal status (``done`` / ``cancelled`` / ``error``) it stays in
-the registry indefinitely so the UI can re-attach to see the final
-trace; older runs evict on FIFO when ``_MAX_HISTORY`` is exceeded.
+每个 ``(layer, key)`` 最多一个**活跃**运行。在第一个运行活跃时启动第二个运行
+会返回 ``RunBusyError``。一旦运行达到终止状态（``done`` / ``cancelled`` / ``error``），
+它将无限期留在注册表中，以便 UI 可以重新连接查看最终追踪；
+当 ``_MAX_HISTORY`` 超出时，旧运行按 FIFO 逐出。
 """
 
 from __future__ import annotations
@@ -45,7 +41,7 @@ _MAX_HISTORY = 200
 
 @dataclass
 class RunEvent:
-    seq: int  # 0-based, monotonic per run
+    seq: int  # 从 0 开始，每次运行内单调递增
     ts: str  # ISO-8601 UTC
     payload: dict[str, Any]
 
@@ -105,28 +101,28 @@ class Run:
 
 
 class RunBusyError(RuntimeError):
-    """Raised when a (layer, key) already has an active run."""
+    """当 (layer, key) 已有活跃运行时抛出。"""
 
 
-# ContextVar holds the current Run for handlers running inside the task.
-# Mode code uses :func:`emit` indirectly via ``modes._runtime.emit``;
-# we install our own on_event that pushes into the active run too.
+# ContextVar 持有当前运行中的 Run，供任务内运行的处理器使用。
+# 模式代码通过 ``modes._runtime.emit`` 间接使用 :func:`emit`；
+# 我们安装自己的 on_event 来同时推送到活跃运行。
 _current_run: ContextVar[Run | None] = ContextVar("memory_run", default=None)
 
 
 class RunManager:
-    """Process-wide singleton — one manager owns every consolidator run.
+    """进程级单例 — 一个管理器拥有所有整合器运行。
 
-    The instance is created on first call to :func:`get_run_manager`.
+    实例在首次调用 :func:`get_run_manager` 时创建。
     """
 
     def __init__(self) -> None:
         self._runs: dict[str, Run] = {}
-        self._order: list[str] = []  # FIFO for eviction
+        self._order: list[str] = []  # FIFO 逐出队列
         self._active: dict[tuple[str, str], str] = {}
         self._lock = asyncio.Lock()
 
-    # ── Lookup ─────────────────────────────────────────────────────────
+    # ── 查找 ─────────────────────────────────────────────────────────
 
     def get(self, run_id: str) -> Run | None:
         return self._runs.get(run_id)
@@ -151,7 +147,7 @@ class RunManager:
             out.append(run)
         return out
 
-    # ── Start ──────────────────────────────────────────────────────────
+    # ── 启动 ──────────────────────────────────────────────────────────
 
     async def start(
         self,
@@ -164,11 +160,10 @@ class RunManager:
         language: str = "en",
         user_label: str = "anonymous",
     ) -> Run:
-        """Register and kick off a new run.
+        """注册并启动一个新运行。
 
-        ``runner`` is an awaitable factory: takes a ``on_event`` callback
-        and runs the consolidator mode. The manager wires the callback to
-        the event buffer + waiter machinery.
+        ``runner`` 是一个可等待工厂：接收 ``on_event`` 回调并运行整合器模式。
+        管理器将回调连接到事件缓冲区 + 等待器机制。
         """
         async with self._lock:
             if self.active_for(layer, key) is not None:
@@ -202,7 +197,7 @@ class RunManager:
         return True
 
     async def undo_last(self, run_id: str) -> RunEvent | None:
-        """Restore the document snapshot before the latest run write."""
+        """恢复最新运行写入之前的文档快照。"""
         run = self._runs.get(run_id)
         if run is None:
             raise KeyError(run_id)
@@ -233,13 +228,13 @@ class RunManager:
             },
         )
 
-    # ── Event subscription ─────────────────────────────────────────────
+    # ── 事件订阅 ─────────────────────────────────────────────────────
 
     async def wait_for_events(self, run: Run, *, since: int) -> list[RunEvent]:
-        """Return events since cursor; block until new ones arrive or done."""
+        """返回游标之后的事件；阻塞直到新事件到达或运行完成。"""
         if since < 0:
             since = 0
-        # Fast path: events already buffered past cursor.
+        # 快速路径：事件已缓冲到游标之后。
         if since < len(run.events):
             return run.events[since:]
         if not run.active:
@@ -257,7 +252,7 @@ class RunManager:
             return run.events[since:]
         return []
 
-    # ── Drive ──────────────────────────────────────────────────────────
+    # ── 驱动 ──────────────────────────────────────────────────────────
 
     async def _drive(
         self,
@@ -295,7 +290,7 @@ class RunManager:
             run.ended_at = _now_iso()
             await self._emit(run, {"stage": "run_ended", "status": run.status})
             self._active.pop((run.layer, run.key), None)
-            # Wake any remaining waiters so they observe the terminal state.
+            # 唤醒所有剩余的等待器，以便它们观察到终止状态。
             for w in list(run._waiters):
                 w.set()
             _current_run.reset(token)
@@ -304,8 +299,8 @@ class RunManager:
         event = RunEvent(seq=len(run.events), ts=_now_iso(), payload=payload)
         run.events.append(event)
         if len(run.events) > _MAX_EVENTS_PER_RUN:
-            # Drop the oldest non-meta event but renumber tail to keep
-            # monotonic seq stable — clients use seq to resume.
+            # 丢弃最旧的非元数据事件，但重新编号尾部以保持
+            # 单调 seq 稳定 — 客户端使用 seq 来恢复。
             run.events.pop(0)
             for i, ev in enumerate(run.events):
                 run.events[i] = RunEvent(seq=i, ts=ev.ts, payload=ev.payload)
@@ -318,7 +313,7 @@ class RunManager:
             old = self._order.pop(0)
             run = self._runs.pop(old, None)
             if run is not None and run.active:
-                # Active runs are protected from eviction.
+                # 活跃运行受保护，不会被逐出。
                 self._runs[old] = run
                 self._order.insert(0, old)
                 return
@@ -340,10 +335,9 @@ def reset_run_manager_for_tests() -> None:
 
 
 def current_run() -> Run | None:
-    """Return the run currently driving the active task, if any.
+    """返回当前驱动活跃任务的运行（如果有）。
 
-    Used by the LLM-IO event emitter so it can attach per-turn payloads
-    to whichever run is calling out to the model.
+    LLM-IO 事件发射器使用它，以便将每轮 payload 附加到正在调用模型的运行。
     """
     return _current_run.get()
 
@@ -359,7 +353,7 @@ def push_undo_checkpoint(
     turn: int | None = None,
     label: str | None = None,
 ) -> int:
-    """Register a per-write rollback snapshot on the active run."""
+    """在活跃运行上注册每次写入的回滚快照。"""
     run = _current_run.get()
     if run is None:
         return 0

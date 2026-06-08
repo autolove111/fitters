@@ -1,4 +1,4 @@
-"""Convert Chat Completions messages/tools to Responses API format."""
+"""将 Chat Completions 消息/工具转换为 Responses API 格式。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ _CHAT_TOKEN_LIMIT_ALIASES = ("max_completion_tokens", "max_tokens")
 
 
 def convert_messages(messages: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
-    """Convert Chat Completions messages to Responses API input items."""
+    """将 Chat Completions 消息转换为 Responses API 输入项。"""
     system_prompt = ""
     input_items: list[dict[str, Any]] = []
 
@@ -64,7 +64,7 @@ def convert_messages(messages: list[dict[str, Any]]) -> tuple[str, list[dict[str
 
 
 def convert_user_message(content: Any) -> dict[str, Any]:
-    """Convert user message content to Responses API blocks."""
+    """将用户消息内容转换为 Responses API 块。"""
     if isinstance(content, str):
         return {"role": "user", "content": [{"type": "input_text", "text": content}]}
     if isinstance(content, list):
@@ -84,7 +84,7 @@ def convert_user_message(content: Any) -> dict[str, Any]:
 
 
 def convert_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Convert OpenAI function calling schemas to Responses API tools."""
+    """将 OpenAI 函数调用模式转换为 Responses API 工具。"""
     converted: list[dict[str, Any]] = []
     for tool in tools:
         fn = (tool.get("function") or {}) if tool.get("type") == "function" else tool
@@ -104,7 +104,7 @@ def convert_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def split_tool_call_id(tool_call_id: Any) -> tuple[str, str | None]:
-    """Split a compound call_id|item_id tool id."""
+    """拆分复合的 call_id|item_id 工具 ID。"""
     if isinstance(tool_call_id, str) and tool_call_id:
         if "|" in tool_call_id:
             call_id, item_id = tool_call_id.split("|", 1)
@@ -114,18 +114,16 @@ def split_tool_call_id(tool_call_id: Any) -> tuple[str, str | None]:
 
 
 def adapt_chat_kwargs_to_responses(extra_kwargs: Mapping[str, Any]) -> dict[str, Any]:
-    """Translate Chat Completions kwargs to Responses API equivalents.
+    """将 Chat Completions 参数转换为 Responses API 等效参数。
 
-    Callers building requests for the Chat Completions endpoint may pass
-    ``max_completion_tokens`` for newer OpenAI models (o1/o3/gpt-4o/gpt-5.x)
-    or ``max_tokens`` for older chat models. The Responses API does not accept
-    either name and uses ``max_output_tokens`` instead, so the OpenAI SDK raises
-    ``TypeError`` from ``responses.create`` before any HTTP request leaves the
-    client. See AidLearning#437.
+    为 Chat Completions 端点构建请求的调用方可能会为较新的 OpenAI 模型
+    （o1/o3/gpt-4o/gpt-5.x）传递 ``max_completion_tokens``，或为较旧的
+    聊天模型传递 ``max_tokens``。Responses API 不接受这两个名称，而是使用
+    ``max_output_tokens``，因此 OpenAI SDK 会在任何 HTTP 请求发出之前从
+    ``responses.create`` 抛出 ``TypeError``。参见 AidLearning#437。
 
-    Drops keys with ``None`` values to match the existing merge filter, and
-    only applies the alias when the caller did not already set the Responses
-    name explicitly.
+    丢弃值为 ``None`` 的键以匹配现有的合并过滤器，并且仅在调用方未显式
+    设置 Responses 名称时应用别名。
     """
     result = {
         key: value

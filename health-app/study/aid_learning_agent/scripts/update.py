@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-"""Safely update a local AidLearning git checkout.
+"""安全更新本地 AidLearning git 仓库。
 
-The updater is intentionally conservative:
-1. Fetch the remote for the current branch.
-2. Show the local-vs-remote gap and ask for confirmation.
-3. Fast-forward pull only when the branch can be updated safely.
+更新器采用保守策略：
+1. 获取当前分支的远程更新。
+2. 显示本地与远程的差异并请求确认。
+3. 仅在分支可以安全更新时执行快进拉取。
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 class UpdateError(Exception):
-    """Raised for user-actionable update failures."""
+    """用户可操作的更新失败异常。"""
 
 
 @dataclass(frozen=True)
@@ -399,19 +399,19 @@ def run_update(repo_root: Path, *, assume_yes: bool) -> int:
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Fetch, review, and fast-forward update a local AidLearning checkout."
+        description="获取、审查并快进更新本地 AidLearning 仓库。"
     )
     parser.add_argument(
         "--yes",
         "-y",
         action="store_true",
-        help="Skip the interactive confirmation after printing the branch comparison.",
+        help="打印分支比较信息后跳过交互式确认。",
     )
     parser.add_argument(
         "--repo",
         type=Path,
         default=PROJECT_ROOT,
-        help="Path to the git checkout to update. Defaults to this AidLearning repository.",
+        help="要更新的 git 仓库路径。默认为此 AidLearning 仓库。",
     )
     return parser.parse_args(argv)
 

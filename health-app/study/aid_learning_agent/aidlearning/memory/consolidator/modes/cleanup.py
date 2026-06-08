@@ -1,10 +1,9 @@
-"""Cleanup mode — remove stale memory entries based on decay scores.
+"""清理模式 — 根据衰减分数移除过时的记忆条目。
 
-This mode identifies entries whose decay score has fallen below a
-configurable threshold and either archives+deletes them or marks them
-as superseded by newer entries in the same section.
+此模式识别衰减分数已降至可配置阈值以下的条目，
+将其归档+删除或标记为被同节中更新的条目取代。
 
-No LLM calls are needed — the algorithm is purely rule-based.
+无需 LLM 调用 — 算法纯粹基于规则。
 """
 
 from __future__ import annotations
@@ -46,29 +45,29 @@ async def run_cleanup(
     archive: bool = True,
     on_event: OnEvent | None = None,
 ) -> CleanupResult:
-    """Identify and remove stale memory entries based on decay scores.
+    """根据衰减分数识别并移除过时的记忆条目。
 
-    Parameters
+    参数
     ----------
     layer : str
-        "L2" or "L3".
+        "L2" 或 "L3"。
     key : str
-        Surface name (L2) or slot name (L3).
+        Surface 名称 (L2) 或 slot 名称 (L3)。
     language : str
-        Prompt language (unused here, kept for API consistency).
+        提示语言（此处未使用，为 API 一致性保留）。
     threshold : float | None
-        Decay score threshold below which entries are candidates for
-        cleanup.  Defaults to ``settings.decay.cleanup_threshold``.
+        衰减分数阈值，低于此值的条目为清理候选。
+        默认为 ``settings.decay.cleanup_threshold``。
     archive : bool
-        If True, archive deleted entries before removing them.
+        如果为 True，在删除前归档被删除的条目。
     on_event : OnEvent | None
-        SSE event callback.
+        SSE 事件回调。
     """
     settings = load_memory_settings()
     decay_settings = settings.decay
     threshold = threshold if threshold is not None else decay_settings.cleanup_threshold
 
-    # Load the document
+    # 加载文档
     if layer == "L2":
         doc_path = paths.l2_file(key)  # type: ignore[arg-type]
         default_title = f"{key} memory"
@@ -101,11 +100,11 @@ async def run_cleanup(
         ),
     })
 
-    # ── Phase 1: Identify stale entries ──────────────────────────────
+    # ── 阶段 1：识别过时条目 ──────────────────────────────────────
     stale_ids: list[str] = []
     for entry in entries:
         if entry.created_at is None:
-            # No decay metadata — skip entries that haven't been indexed yet
+            # 无衰减元数据 — 跳过尚未索引的条目
             continue
 
         score = compute_decay_score(
@@ -134,9 +133,8 @@ async def run_cleanup(
         "message": f"Found {len(stale_ids)} stale entries (decay < {threshold:.3f}).",
     })
 
-    # ── Phase 2: Check for superseded entries ────────────────────────
-    # An entry is superseded if there's a newer entry in the same section
-    # with similar or higher importance.
+    # ── 阶段 2：检查被取代的条目 ─────────────────────────────────
+    # 如果同节中有更新的条目且重要性相似或更高，则该条目被取代。
     entries_by_section: dict[str, list[Entry]] = {}
     for entry in entries:
         entries_by_section.setdefault(entry.section, []).append(entry)
@@ -153,13 +151,13 @@ async def run_cleanup(
                 continue
             if other.created_at is None:
                 continue
-            # A newer entry in the same section supersedes the stale one
+            # 同节中更新的条目取代过时的条目
             if (other.created_at > stale_entry.created_at
                     and other.importance >= stale_entry.importance * 0.8):
                 superseded_ids.add(stale_id)
                 break
 
-    # ── Phase 3: Archive and delete ──────────────────────────────────
+    # ── 阶段 3：归档并删除 ──────────────────────────────────
     archive_path: Path | None = None
     if archive and decay_settings.archive_before_delete:
         ts = datetime.now(tz=timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -172,7 +170,7 @@ async def run_cleanup(
         if not entry:
             continue
 
-        # Archive before removing
+        # 删除前归档
         if archive_path is not None:
             _archive_entry(archive_path, entry, layer, key, "superseded" if entry_id in superseded_ids else "stale")
 
@@ -184,7 +182,7 @@ async def run_cleanup(
         doc.remove(entry_id)
         result.entries_deleted += 1
 
-    # ── Phase 4: Write back ──────────────────────────────────────────
+    # ── 阶段 4：回写 ──────────────────────────────────────────
     if result.entries_deleted > 0:
         await write_doc_checkpoint(
             doc_path, doc,
@@ -212,7 +210,7 @@ def _archive_entry(
     key: str,
     reason: str,
 ) -> None:
-    """Append one entry to the decay archive JSONL file."""
+    """将一个条目追加到衰减归档 JSONL 文件。"""
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     record = {
         "id": entry.id,

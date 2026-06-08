@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-Configuration Loader
-====================
+配置加载器
+==========
 
-Unified configuration loading for all AidLearning modules.
-Provides YAML configuration loading, path resolution, and language parsing.
+AidLearning 所有模块的统一配置加载。
+提供 YAML 配置加载、路径解析和语言解析。
 """
 
 import asyncio
@@ -16,48 +16,48 @@ import yaml
 from aidlearning.runtime.home import get_runtime_home
 from aidlearning.services.path_service import get_path_service
 
-# Runtime workspace root. Application settings live under PROJECT_ROOT/data/user/settings.
+# 运行时工作区根目录。应用设置位于 PROJECT_ROOT/data/user/settings 下。
 PROJECT_ROOT = get_runtime_home()
 
 
 def get_runtime_settings_dir(project_root: Path | None = None) -> Path:
-    """Return the canonical runtime settings directory under ``data/user/settings``."""
+    """返回 ``data/user/settings`` 下的标准运行时设置目录。"""
     root = project_root or PROJECT_ROOT
     return root / "data" / "user" / "settings"
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """
-    Deep merge two dictionaries, values in override will override values in base
+    深度合并两个字典，override 中的值会覆盖 base 中的值
 
     Args:
-        base: Base configuration
-        override: Override configuration
+        base: 基础配置
+        override: 覆盖配置
 
     Returns:
-        Merged configuration
+        合并后的配置
     """
     result = base.copy()
 
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            # Recursively merge dictionaries
+            # 递归合并字典
             result[key] = _deep_merge(result[key], value)
         else:
-            # Direct override
+            # 直接覆盖
             result[key] = value
 
     return result
 
 
 def _load_yaml_file(file_path: Path) -> dict[str, Any]:
-    """Load a YAML file and return its contents as a dict."""
+    """加载 YAML 文件并以字典形式返回其内容。"""
     with open(file_path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 def _inject_runtime_paths(config: dict[str, Any]) -> dict[str, Any]:
-    """Expose canonical runtime paths without treating YAML paths as user-editable state."""
+    """暴露标准运行时路径，同时不将 YAML 路径视为用户可编辑的状态。"""
     path_service = get_path_service()
     normalized = dict(config or {})
     tools = dict(normalized.get("tools", {}) or {})
@@ -79,7 +79,7 @@ def _inject_runtime_paths(config: dict[str, Any]) -> dict[str, Any]:
 
 
 async def _load_yaml_file_async(file_path: Path) -> dict[str, Any]:
-    """Async version of _load_yaml_file."""
+    """_load_yaml_file 的异步版本。"""
     return await asyncio.to_thread(_load_yaml_file, file_path)
 
 
@@ -88,13 +88,13 @@ def resolve_config_path(
     project_root: Path | None = None,
 ) -> tuple[Path, bool]:
     """
-    Resolve *config_file* inside ``data/user/settings/``.
+    在 ``data/user/settings/`` 中解析 *config_file*。
 
     Returns:
         ``(path, False)``
 
     Raises:
-        FileNotFoundError: If the requested config does not exist.
+        FileNotFoundError: 如果请求的配置不存在。
     """
     if project_root is None:
         project_root = PROJECT_ROOT
@@ -110,14 +110,14 @@ def resolve_config_path(
 
 def load_config_with_main(config_file: str, project_root: Path | None = None) -> dict[str, Any]:
     """
-    Load configuration file, automatically merge with main.yaml common configuration
+    加载配置文件，自动与 main.yaml 通用配置合并
 
     Args:
-        config_file: Configuration file name (e.g., "main.yaml")
-        project_root: Project root directory (if None, will try to auto-detect)
+        config_file: 配置文件名（如 "main.yaml"）
+        project_root: 项目根目录（如果为 None，将尝试自动检测）
 
     Returns:
-        Merged configuration dictionary
+        合并后的配置字典
     """
     if project_root is None:
         project_root = PROJECT_ROOT
@@ -130,16 +130,16 @@ async def load_config_with_main_async(
     config_file: str, project_root: Path | None = None
 ) -> dict[str, Any]:
     """
-    Async version of load_config_with_main for non-blocking file operations.
+    load_config_with_main 的异步版本，用于非阻塞文件操作。
 
-    Load configuration file, automatically merge with main.yaml common configuration
+    加载配置文件，自动与 main.yaml 通用配置合并
 
     Args:
-        config_file: Configuration file name (e.g., "main.yaml")
-        project_root: Project root directory (if None, will try to auto-detect)
+        config_file: 配置文件名（如 "main.yaml"）
+        project_root: 项目根目录（如果为 None，将尝试自动检测）
 
     Returns:
-        Merged configuration dictionary
+        合并后的配置字典
     """
     if project_root is None:
         project_root = PROJECT_ROOT
@@ -150,15 +150,15 @@ async def load_config_with_main_async(
 
 def get_path_from_config(config: dict[str, Any], path_key: str, default: str = None) -> str:
     """
-    Get path from configuration.
+    从配置中获取路径。
 
     Args:
-        config: Configuration dictionary
-        path_key: Path key name (e.g., "log_dir", "workspace")
-        default: Default value
+        config: 配置字典
+        path_key: 路径键名（如 "log_dir", "workspace"）
+        default: 默认值
 
     Returns:
-        Path string
+        路径字符串
     """
     injected = _inject_runtime_paths(config)
     if "paths" in injected and path_key in injected["paths"]:
@@ -170,17 +170,17 @@ def get_path_from_config(config: dict[str, Any], path_key: str, default: str = N
 
 def parse_language(language: Any) -> str:
     """
-    Unified language configuration parser, supports multiple input formats
+    统一的语言配置解析器，支持多种输入格式
 
-    Supported language representations:
-    - English: "en", "english", "English"
-    - Chinese: "zh", "chinese", "Chinese"
+    支持的语言表示：
+    - 英文: "en", "english", "English"
+    - 中文: "zh", "chinese", "Chinese"
 
     Args:
-        language: Language configuration value (can be "zh"/"en"/"Chinese"/"English" etc.)
+        language: 语言配置值（可以是 "zh"/"en"/"Chinese"/"English" 等）
 
     Returns:
-        Standardized language code: 'zh' or 'en', defaults to 'zh'
+        标准化语言代码：'zh' 或 'en'，默认为 'zh'
     """
     if not language:
         return "zh"
@@ -192,30 +192,30 @@ def parse_language(language: Any) -> str:
         if lang_lower in ["zh", "chinese", "cn"]:
             return "zh"
 
-    return "zh"  # Default Chinese
+    return "zh"  # 默认中文
 
 
 def get_agent_params(module_name: str) -> dict:
     """
-    Get agent parameters (temperature, max_tokens) for a specific module.
+    获取特定模块的 Agent 参数（temperature, max_tokens）。
 
-    This function loads parameters from config/agents.yaml which serves as the
-    SINGLE source of truth for all agent temperature and max_tokens settings.
+    此函数从 config/agents.yaml 加载参数，该文件是所有 Agent
+    temperature 和 max_tokens 设置的唯一数据源。
 
     Args:
-        module_name: Module name, one of:
-            - "solve": Solve module agents
-            - "research": Research module agents
-            - "question": Question module agents
-            - "brainstorm": Brainstorm tool settings
-            - "co_writer": CoWriter module agents
-            - "narrator": Narrator agent (independent, for TTS)
-            - "llm_probe": Settings → LLM diagnostic probe
+        module_name: 模块名称，可选值：
+            - "solve": 解题模块 Agent
+            - "research": 研究模块 Agent
+            - "question": 出题模块 Agent
+            - "brainstorm": 头脑风暴工具设置
+            - "co_writer": 协同写作模块 Agent
+            - "narrator": 叙述 Agent（独立，用于 TTS）
+            - "llm_probe": 设置 → LLM 诊断探测
 
     Returns:
-        dict: Dictionary containing:
-            - temperature: float, default 0.5
-            - max_tokens: int, default 4096
+        dict: 包含以下字段的字典：
+            - temperature: float, 默认 0.5
+            - max_tokens: int, 默认 4096
 
     Example:
         >>> params = get_agent_params("solve")
@@ -261,16 +261,16 @@ DEFAULT_CHAT_PARAMS: dict[str, Any] = {
 
 def get_chat_params() -> dict[str, Any]:
     """
-    Read ``capabilities.chat`` from agents.yaml with deep-merged defaults.
+    从 agents.yaml 读取 ``capabilities.chat`` 并与默认值深度合并。
 
-    Unlike :func:`get_agent_params`, the chat capability has per-stage
-    sub-sections (``responding``, ``answer_now``), each with its own
-    ``max_tokens``. A single ``temperature`` and ``max_iterations`` value
-    are shared across the chat loop.
+    与 :func:`get_agent_params` 不同，chat 能力有按阶段划分的
+    子节（``responding``、``answer_now``），每个子节有独立的
+    ``max_tokens``。单个 ``temperature`` 和 ``max_iterations`` 值
+    在整个聊天循环中共享。
 
     Returns:
-        dict: Deep-merged chat configuration. Always contains every stage key
-        from :data:`DEFAULT_CHAT_PARAMS` so callers can index without checks.
+        dict: 深度合并后的 chat 配置。始终包含 :data:`DEFAULT_CHAT_PARAMS`
+        中的每个阶段键，以便调用方无需检查即可索引。
     """
     path = get_runtime_settings_dir(PROJECT_ROOT) / "agents.yaml"
     cfg: dict[str, Any] = {}

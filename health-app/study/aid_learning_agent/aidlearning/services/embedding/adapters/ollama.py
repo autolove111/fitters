@@ -1,4 +1,4 @@
-"""Ollama Embedding Adapter for local embeddings."""
+"""Ollama Embedding 适配器，用于本地嵌入。"""
 
 import logging
 from typing import Any, Dict
@@ -23,13 +23,12 @@ class OllamaEmbeddingAdapter(BaseEmbeddingAdapter):
     }
 
     def _should_send_dimensions(self) -> bool:
-        # Ollama models historically ignore the param, so default to NOT
-        # sending unless the user explicitly opts in.
+        # Ollama 模型历史上忽略此参数，因此默认不发送，除非用户显式选择启用。
         return self.send_dimensions is True
 
     def _tags_url(self) -> str:
-        # Probe `/api/tags` on the same host as the configured embed URL,
-        # regardless of which embed path the user chose.
+        # 在与配置的 embed URL 相同的主机上探测 `/api/tags`，
+        # 无论用户选择了哪个 embed 路径。
         parsed = urlparse(self.base_url)
         if parsed.scheme and parsed.netloc:
             return urljoin(f"{parsed.scheme}://{parsed.netloc}", "/api/tags")

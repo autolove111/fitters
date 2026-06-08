@@ -1,21 +1,17 @@
-"""Per-turn tool composition policy shared by chat / quiz pipelines.
+"""聊天/测验管道共享的每轮工具组合策略。
 
-Owns the rule "given the user's composer toggles + the turn's context
-flags, what tools should be enabled?". Lives outside any single pipeline
-so chat and quiz can't disagree about which tools the user controls vs.
-which the pipeline auto-mounts.
+拥有规则"给定用户的编辑器开关 + 轮次的上下文标志，应启用哪些工具？"。
+位于任何单一管道之外，使聊天和测验在用户控制的工具与管道自动挂载的工具上保持一致。
 
-Two pieces:
+两部分：
 
-* :data:`AUTO_MOUNTED_TOOLS` — tools whose mounting is owned by the
-  pipeline (auto-on under specific conditions), not by user toggles.
-  Membership here hides the tool from the user's composer / settings UI.
-* :func:`compose_enabled_tools` — pure function that takes the user's
-  toggled list + a :class:`ToolMountFlags` and returns the final, ordered
-  enabled-tool list for one turn.
+* :data:`AUTO_MOUNTED_TOOLS` —— 由管道控制挂载的工具（在特定条件下自动开启），
+  而非由用户开关控制。此处的成员资格会将工具从用户的编辑器/设置 UI 中隐藏。
+* :func:`compose_enabled_tools` —— 纯函数，接收用户的开关列表 + :class:`ToolMountFlags`，
+  返回单轮的最终有序启用工具列表。
 
-Callers resolve their own flags (chat checks selected KBs / source index
-/ memory / notebooks; quiz reuses chat's policy verbatim).
+调用方自行解析标志（聊天检查选定的知识库/源索引/记忆/笔记本；
+测验原样复用聊天的策略）。
 """
 
 from __future__ import annotations
@@ -26,10 +22,9 @@ from typing import Any
 
 from aidlearning.tools.builtin import BUILTIN_TOOL_NAMES, USER_TOGGLEABLE_TOOL_NAMES
 
-# Tools whose mounting is owned by the pipeline (auto-on under specific
-# context conditions), not by the user's composer toggles. Adding a tool
-# here hides it from ``{tool_list}`` until its corresponding condition
-# fires in :func:`compose_enabled_tools`.
+# 由管道控制挂载的工具（在特定上下文条件下自动开启），
+# 而非由用户的编辑器开关控制。将工具添加到此处会将其从 ``{tool_list}`` 中隐藏，
+# 直到其对应条件在 :func:`compose_enabled_tools` 中触发。
 AUTO_MOUNTED_TOOLS: frozenset[str] = frozenset(
     {
         "rag",
@@ -45,11 +40,10 @@ AUTO_MOUNTED_TOOLS: frozenset[str] = frozenset(
 
 
 def default_optional_tools(excluded: Iterable[str] = ()) -> list[str]:
-    """Return the user-toggleable tool list (chat's default set).
+    """返回用户可切换的工具列表（聊天的默认集合）。
 
-    Sourced from :mod:`aidlearning.tools.builtin` so the /settings/tools UI
-    and the pipelines can never disagree about which tools the user
-    actually controls.
+    来源于 :mod:`aidlearning.tools.builtin`，使 /settings/tools UI
+    和管道在用户实际控制哪些工具上始终保持一致。
     """
     excluded_set = frozenset(excluded)
     return [
@@ -63,11 +57,10 @@ def default_optional_tools(excluded: Iterable[str] = ()) -> list[str]:
 
 @dataclass(frozen=True)
 class ToolMountFlags:
-    """Per-turn flags that drive the auto-mount policy.
+    """驱动自动挂载策略的每轮标志。
 
-    Each capability resolves these from its own context (chat inspects
-    ``UnifiedContext.knowledge_bases``, the source index, the memory
-    service; quiz reuses the same checks).
+    每个能力从自身的上下文解析这些标志（聊天检查 ``UnifiedContext.knowledge_bases``、
+    源索引、记忆服务；测验复用相同的检查）。
     """
 
     has_kb: bool = False
@@ -82,21 +75,18 @@ def compose_enabled_tools(
     optional_whitelist: list[str],
     mount_flags: ToolMountFlags,
 ) -> list[str]:
-    """Compose the per-turn enabled-tool list.
+    """组合每轮启用的工具列表。
 
-    Order:
+    顺序：
 
-    1. User-toggled tools (filtered through the registry's ``get_enabled``
-       so disabled tools never sneak in, and intersected with
-       ``optional_whitelist`` so only legitimate composer toggles are
-       respected).
-    2. Conditional auto-mounts (``rag`` if a KB is attached, ``read_source``
-       if a source index exists, ``read_memory`` if memory has content).
-    3. Always-on auto-mounts (``write_memory``, ``web_fetch``, ``github``, ``ask_user``).
+    1. 用户切换的工具（通过注册表的 ``get_enabled`` 过滤以排除禁用的工具，
+       并与 ``optional_whitelist`` 取交集以仅接受合法的编辑器开关）。
+    2. 条件自动挂载（附加了知识库时启用 ``rag``，存在源索引时启用 ``read_source``，
+       记忆有内容时启用 ``read_memory``）。
+    3. 始终开启的自动挂载（``write_memory``、``web_fetch``、``github``、``ask_user``）。
 
-    The result is ordered (no dedup is applied — caller's prerequisite is
-    that ``optional_whitelist`` excludes ``AUTO_MOUNTED_TOOLS``, which
-    :func:`default_optional_tools` guarantees).
+    结果是有序的（不应用去重 —— 调用方的前提是 ``optional_whitelist``
+    排除了 ``AUTO_MOUNTED_TOOLS``，由 :func:`default_optional_tools` 保证）。
     """
     composed: list[str] = [
         tool.name
@@ -118,12 +108,11 @@ def compose_enabled_tools(
 
 
 def user_has_memory() -> bool:
-    """Whether the active user has any L3 memory content.
+    """当前用户是否有任何 L3 记忆内容。
 
-    Drives the auto-mount of ``read_memory``. Per-user paths resolve via
-    the multi-user ContextVars the runtime sets up. Fails closed (returns
-    ``False``) on any error so a broken memory directory doesn't surface
-    a tool with no payload to read.
+    驱动 ``read_memory`` 的自动挂载。每用户路径通过运行时设置的
+    多用户 ContextVars 解析。任何错误时安全关闭（返回 ``False``），
+    使损坏的记忆目录不会暴露一个没有载荷可读的工具。
     """
     try:
         from aidlearning.memory import get_memory_store

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Prepare ``aidlearning_web`` package data from a Next.js standalone build."""
+"""从 Next.js standalone 构建中准备 ``aidlearning_web`` 包数据。"""
 
 from __future__ import annotations
 

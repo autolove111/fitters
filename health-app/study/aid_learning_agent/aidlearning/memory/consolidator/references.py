@@ -1,18 +1,14 @@
-"""Reference validation + raw-trace lookup used by update / audit.
+"""引用验证 + 原始追踪查找，用于更新/审计。
 
-Two distinct concerns share this module because they both center on
-"the set of refs the LLM is allowed to cite":
+两个不同的关注点共享此模块，因为它们都围绕"LLM 被允许引用的引用集合"：
 
-* **Update mode** — refs must point at entities that appear in the
-  current chunk's source range. :func:`refs_in_chunk` returns the
-  allowed pool; :func:`validate_fact_refs` filters extracted facts.
-* **Audit mode** — every entry on a md chunk gets its raw-trace
-  content spliced in as evidence. :func:`annotate_line_with_evidence`
-  formats one entry + sources into a block fed to the LLM.
+* **更新模式** — 引用必须指向当前块源范围内出现的实体。
+  :func:`refs_in_chunk` 返回允许的池；:func:`validate_fact_refs` 过滤提取的事实。
+* **审计模式** — markdown 块上的每个条目都会拼接其原始追踪内容作为证据。
+  :func:`annotate_line_with_evidence` 将一个条目 + 来源格式化为一个喂给 LLM 的块。
 
-No I/O happens beyond reading from the same in-memory entity / L2 doc
-maps the caller has already loaded — the modes are responsible for
-hydrating those once per run.
+除了读取调用方已加载的相同内存中实体/L2 文档映射外，不会发生 I/O —
+各模式负责在每次运行时加载这些数据。
 """
 
 from __future__ import annotations
@@ -29,12 +25,12 @@ from aidlearning.memory.snapshot.entity import Entity
 logger = logging.getLogger(__name__)
 
 
-# ── Update-mode helpers ─────────────────────────────────────────────────
+# ── 更新模式辅助函数 ─────────────────────────────────────────────────
 
 
 @dataclass(frozen=True)
 class ExtractedFact:
-    """One fact pulled by the LLM during update mode."""
+    """LLM 在更新模式中提取的一个事实。"""
 
     text: str
     refs: list[str]
@@ -47,11 +43,10 @@ def refs_in_chunk_l2(
     surface: str,
     chunk_text: str,
 ) -> set[str]:
-    """Set of allowed refs (``surface:entity_id``) for this chunk.
+    """此块允许的引用集合（``surface:entity_id``）。
 
-    An entity is considered "in this chunk" if its rendered marker
-    appears in ``chunk_text``. The marker is the same one written by
-    :func:`render_traces_for_concat`.
+    如果实体的渲染标记出现在 ``chunk_text`` 中，则认为该实体"在此块中"。
+    该标记与 :func:`render_traces_for_concat` 写入的标记相同。
     """
     allowed: set[str] = set()
     for ent in entities:
@@ -69,7 +64,7 @@ def refs_in_span_l2(
     start: int,
     end: int,
 ) -> set[str]:
-    """Allowed L2 refs for a chunk span, including long split entities."""
+    """块跨度允许的 L2 引用，包括跨块的长实体。"""
     markers: list[tuple[int, str]] = []
     for ent in entities:
         marker = _entity_marker(surface, ent.id)
@@ -87,11 +82,11 @@ def refs_in_chunk_l3(
     *,
     entries_by_surface: dict[str, list[Entry]],
 ) -> set[str]:
-    """L3 refs are *surface names* — pointers to the L2 md the synthesis
-    drew from. The render emits one ``### surface: <name>`` header per
-    surface block; we collect every header visible in the chunk text.
+    """L3 引用是*surface 名称* — 指向综合所来源的 L2 markdown。
+    渲染为每个 surface 块发出一个 ``### surface: <name>`` 标题；
+    我们收集块文本中可见的每个标题。
     """
-    del entries_by_surface  # surface list is derived from the rendered text
+    del entries_by_surface  # surface 列表从渲染文本中派生
     return {m.group(1) for m in _L3_SURFACE_HEADER_RE.finditer(chunk_text)}
 
 
@@ -102,12 +97,11 @@ def refs_in_span_l3(
     start: int,
     end: int,
 ) -> set[str]:
-    """Surface refs whose render block intersects ``[start, end)``.
+    """渲染块与 ``[start, end)`` 相交的 surface 引用。
 
-    A surface block runs from its ``### surface:`` header to the next
-    one (or the end of the doc). A chunk may legitimately start
-    mid-block thanks to the overlap window, so we keep any surface
-    whose block extends into the chunk window.
+    一个 surface 块从其 ``### surface:`` 标题到下一个标题（或文档末尾）。
+    由于重叠窗口，一个块可能合法地从块中间开始，
+    因此我们保留所有块延伸到块窗口中的 surface。
     """
     del entries_by_surface
     headers = list(_L3_SURFACE_HEADER_RE.finditer(full_text))
@@ -129,15 +123,15 @@ def validate_fact_refs(
     enforce_required: bool,
     drop_invalid: bool,
 ) -> tuple[list[str], str | None]:
-    """Filter / reject a fact's refs.
+    """过滤/拒绝事实的引用。
 
-    Returns ``(kept_refs, reject_reason)``. ``reject_reason`` is ``None``
-    when the fact survives. Behavior:
+    返回 ``(kept_refs, reject_reason)``。当事实存活时 ``reject_reason`` 为 ``None``。
+    行为：
 
-    * ``enforce_required=True`` + no refs → reject.
-    * ``drop_invalid=True``: refs outside ``allowed`` are removed;
-      if the result is empty under ``enforce_required`` → reject.
-    * ``drop_invalid=False``: any out-of-pool ref → reject the fact.
+    * ``enforce_required=True`` + 无引用 → 拒绝。
+    * ``drop_invalid=True``：``allowed`` 之外的引用被移除；
+      如果在 ``enforce_required`` 下结果为空 → 拒绝。
+    * ``drop_invalid=False``：任何池外引用 → 拒绝该事实。
     """
     if not fact.refs:
         if enforce_required:
@@ -163,7 +157,7 @@ def validate_fact_refs(
     return _dedupe([_normalize_allowed_ref(ref, allowed) or ref for ref in fact.refs]), None
 
 
-# ── Rendering: traces → concatenated text ───────────────────────────────
+# ── 渲染：追踪 → 拼接文本 ───────────────────────────────────────────────
 
 
 _ENTITY_HEADER_FMT = "=== {marker} ==="
@@ -174,10 +168,10 @@ def render_messages_for_concat(
     *,
     surface: str,
 ) -> str:
-    """Concatenate SQLite messages into a timeline string for the LLM.
+    """将 SQLite 消息拼接为供 LLM 使用的时间线字符串。
 
-    Each message gets a marker header that the chunk-pool detector
-    uses for ref validation.  Messages are formatted as::
+    每条消息获得一个标记头，块池检测器用于引用验证。
+    消息格式化为::
 
         === msg:<id> ===
         [session:<session_id>] <role>: <content>
@@ -194,16 +188,15 @@ def render_messages_for_concat(
         body = f"[session:{session_id}] {role}: {content}"
         blocks.append(f"{header}\n{body}")
     return "\n\n".join(blocks)
-# ``_L2_ENTRY_HEADER_FMT`` and ``_l2_entry_marker`` are no longer used:
-# the L3 input is text-only, so no L2-entry markers are emitted. They
-# would have been ``"=== @l2 m_xxx ==="``.
+# ``_L2_ENTRY_HEADER_FMT`` 和 ``_l2_entry_marker`` 不再使用：
+# L3 输入是纯文本，因此不发出 L2 条目标记。它们本应是 ``"=== @l2 m_xxx ==="``。
 
 
 def render_traces_for_concat(entities: list[Entity], *, surface: str) -> str:
-    """Concatenate a list of L2 raw-trace entities into one timeline string.
+    """将 L2 原始追踪实体列表拼接为一个时间线字符串。
 
-    The chunk-pool detector relies on the marker line being unique per
-    entity, so it doubles as both a human delimiter and a machine anchor.
+    块池检测器依赖于每个实体唯一的标记行，
+    因此它既是人类分隔符也是机器锚点。
     """
     blocks: list[str] = []
     for ent in entities:
@@ -230,14 +223,12 @@ def render_traces_for_concat(entities: list[Entity], *, surface: str) -> str:
 def render_l2_entries_for_concat(
     entries_by_surface: dict[str, list[Entry]],
 ) -> str:
-    """Concatenate L2 entries (per surface) into one text for L3 chunking.
+    """将 L2 条目（按 surface）拼接为一个文本供 L3 分块使用。
 
-    L3 is a *text-only* synthesis layer: the user has explicitly said the
-    LLM should not see — or copy — L2 footnote provenance. So this render
-    emits **only** the surface header + each entry's prose. No entry-id
-    markers, no ``ref:`` / ``refs:`` lines. As a result the chunk-pool
-    detector for L3 always returns an empty set (see
-    :func:`refs_in_span_l3`); L3 facts have no refs.
+    L3 是*纯文本*综合层：用户已明确表示 LLM 不应看到 — 或复制 — L2 脚注来源。
+    因此此渲染**仅**发出 surface 标题 + 每个条目的散文。无条目 id 标记，
+    无 ``ref:`` / ``refs:`` 行。因此 L3 的块池检测器始终返回空集
+    （参见 :func:`refs_in_span_l3`）；L3 事实没有引用。
     """
     blocks: list[str] = []
     for surface, entries in entries_by_surface.items():
@@ -245,15 +236,14 @@ def render_l2_entries_for_concat(
             continue
         blocks.append(f"### surface: {surface}")
         for entry in entries:
-            # Section is kept (it shapes synthesis) but emitted as a
-            # parenthetical tag rather than a structured field, so the
-            # model treats it as context, not a citation hook.
+            # 保留节名称（它塑造综合），但以括号标签而非结构化字段发出，
+            # 这样模型将其视为上下文而非引用钩子。
             tag = f"[{entry.section}] " if entry.section else ""
             blocks.append(f"- {tag}{entry.text}")
     return "\n\n".join(blocks)
 
 
-# ── Audit-mode helpers ──────────────────────────────────────────────────
+# ── 审计模式辅助函数 ──────────────────────────────────────────────────
 
 
 def annotate_l2_line_with_evidence(
@@ -263,11 +253,10 @@ def annotate_l2_line_with_evidence(
     surface: str,
     entity_lookup: dict[str, Entity],
 ) -> str:
-    """Render one L2 bullet + every raw trace it cites, full content.
+    """渲染一个 L2 要点 + 它引用的每个原始追踪的完整内容。
 
-    Output is intentionally human-readable so the model can reason
-    about correspondence (md statement ↔ original wording). No
-    truncation, ever — that is the point of audit mode.
+    输出有意设计为人类可读，以便模型可以推理对应关系
+    （markdown 陈述 ↔ 原始措辞）。绝不截断 — 这正是审计模式的意义。
     """
     lines: list[str] = [
         f"line {line_number}: {entry.text} [^{entry.id}]",
@@ -299,7 +288,7 @@ def annotate_l3_line_with_evidence(
     *,
     l2_entry_lookup: dict[str, Entry],
 ) -> str:
-    """Render one L3 bullet + every L2 entry it cites, full text + refs."""
+    """渲染一个 L3 要点 + 它引用的每个 L2 条目的完整文本 + 引用。"""
     lines: list[str] = [
         f"line {line_number}: {entry.text} [^{entry.id}]",
         f"  section: {entry.section}",
@@ -323,7 +312,7 @@ def annotate_l3_line_with_evidence(
     return "\n".join(lines)
 
 
-# ── Internals ───────────────────────────────────────────────────────────
+# ── 内部函数 ───────────────────────────────────────────────────────────
 
 
 def _entity_marker(surface: str, entity_id: str) -> str:
@@ -338,11 +327,10 @@ def _format_meta(ent: Entity) -> str:
 
 
 def _normalize_allowed_ref(ref: str, allowed: set[str]) -> str | None:
-    """Return the canonical allowed ref when the model added label text.
+    """当模型添加了标签文本时返回规范化的允许引用。
 
-    LLMs often copy a rendered source as ``<label>:chat:<id>`` even though
-    the prompt asks for ``chat:<id>``. Treat that as a recoverable citation
-    as long as it unambiguously ends with an allowed chunk-local ref.
+    LLM 经常将渲染的来源复制为 ``<label>:chat:<id>``，即使提示词要求 ``chat:<id>``。
+    只要它明确以允许的块本地引用结尾，就将其视为可恢复的引用。
     """
     candidate = _strip_ref_wrappers(str(ref).strip())
     if candidate in allowed and is_valid_ref(candidate):
@@ -367,8 +355,8 @@ def _has_ref_suffix(candidate: str, allowed_ref: str) -> bool:
     prefix = candidate[: -len(allowed_ref)]
     if not prefix:
         return True
-    # Common hallucinated forms: "Title:chat:id", "Title?chat:id",
-    # "[^m_id]". Do not accept alnum/underscore adjacency.
+    # 常见幻觉形式："Title:chat:id", "Title?chat:id", "[^m_id]"。
+    # 不接受字母数字/下划线相邻。
     return prefix[-1] in {":", "：", "?", "？", "#", "/", "|", " ", "\t", "\n", "^"}
 
 
@@ -396,7 +384,7 @@ def _refs_overlapping_span(
 
 
 def collect_l2_entries(docs: dict[str, Document]) -> dict[str, list[Entry]]:
-    """Helper for L3 — pull all entries from a {surface: Document} map."""
+    """L3 辅助函数 — 从 {surface: Document} 映射中提取所有条目。"""
     return {surface: doc.all_entries() for surface, doc in docs.items()}
 
 

@@ -1,23 +1,21 @@
-"""Read/write the per-capability tunables surfaced by the Settings UI.
+"""读写设置界面中各能力的可调参数。
 
-This is the source of truth for the ``/api/v1/capabilities/settings``
-endpoint. It bridges two on-disk files:
+这是 ``/api/v1/capabilities/settings`` 端点的数据源。
+它桥接两个磁盘文件：
 
-* ``data/user/settings/agents.yaml`` — per-capability LLM params
-  (``temperature``, stage ``max_tokens``). Owned by
-  :func:`get_chat_params` / :func:`get_agent_params` in
-  :mod:`aidlearning.services.config.loader`.
-* ``data/user/settings/main.yaml`` — per-capability runtime knobs that
-  aren't LLM params (research's ``researching.*`` and question's
-  ``exploring.*`` subtrees).
+* ``data/user/settings/agents.yaml`` — 各能力的 LLM 参数
+  （``temperature``、各阶段 ``max_tokens``）。由
+  :mod:`aidlearning.services.config.loader` 中的
+  :func:`get_chat_params` / :func:`get_agent_params` 管理。
+* ``data/user/settings/main.yaml`` — 各能力的非 LLM 运行时开关
+  （research 的 ``researching.*`` 和 question 的 ``exploring.*`` 子树）。
 
-The schema we expose to the UI is a single dict so the frontend can
-render one form. Saving splits the payload back into the right files.
+我们向 UI 暴露的 Schema 是单个字典，以便前端渲染统一表单。
+保存时会将载荷拆分回对应的文件。
 
-We deliberately do not include capabilities whose pipelines do not
-actually read the corresponding YAML keys today — surfacing knobs that
-don't do anything would be misleading. As we lift more hardcoded
-constants into settings, capabilities can be added here.
+我们有意不包含当前管道实际上并未读取对应 YAML 键的能力 —
+展示无实际效果的开关会造成误导。随着更多硬编码常量
+被提升到配置中，可以在此处添加更多能力。
 """
 
 from __future__ import annotations
@@ -34,12 +32,11 @@ from aidlearning.services.config.loader import (
 )
 from aidlearning.utils.config_manager import ConfigManager
 
-# ── Schema definition ────────────────────────────────────────────────────
+# ── Schema 定义 ─────────────────────────────────────────────────────────
 
 
-# The keys here drive both the GET response shape and the PUT validation.
-# Each capability lists its (file, sub-path) reads so we know how to
-# round-trip values without disturbing unrelated YAML keys.
+# 此处的键同时驱动 GET 响应结构和 PUT 验证。
+# 每个能力列出其（文件, 子路径）读取方式，以便我们在不干扰无关 YAML 键的情况下进行值的往返转换。
 _AGENTS_YAML_CAPABILITY_SECTIONS: dict[str, tuple[str, ...]] = {
     "solve": ("capabilities", "solve"),
     "research": ("capabilities", "research"),
@@ -52,7 +49,7 @@ _SIMPLE_LLM_DEFAULTS: dict[str, dict[str, Any]] = {
     "question": {"temperature": 0.7, "max_tokens": 4096},
 }
 
-# main.yaml subtrees that capabilities read at runtime (besides LLM params).
+# 各能力在运行时读取的 main.yaml 子树（除 LLM 参数外）。
 _MAIN_YAML_RUNTIME_DEFAULTS: dict[str, dict[str, Any]] = {
     "solve": {
         "max_iterations_per_step": 7,
@@ -78,7 +75,7 @@ _MAIN_YAML_RUNTIME_DEFAULTS: dict[str, dict[str, Any]] = {
 }
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────
+# ── 辅助函数 ────────────────────────────────────────────────────────────
 
 
 def _agents_yaml_path() -> Path:
@@ -101,7 +98,7 @@ def _write_agents_yaml(data: dict[str, Any]) -> None:
 
 
 def _get_at(d: dict[str, Any], path: tuple[str, ...]) -> dict[str, Any]:
-    """Walk a nested dict by path, returning {} if any segment is missing."""
+    """按路径遍历嵌套字典，如果任何路径段缺失则返回 {}。"""
     node: Any = d
     for key in path:
         if not isinstance(node, dict):
@@ -111,7 +108,7 @@ def _get_at(d: dict[str, Any], path: tuple[str, ...]) -> dict[str, Any]:
 
 
 def _set_at(d: dict[str, Any], path: tuple[str, ...], value: dict[str, Any]) -> None:
-    """Insert ``value`` at ``path`` in ``d``, creating intermediate dicts."""
+    """在 ``d`` 的 ``path`` 处插入 ``value``，自动创建中间字典。"""
     node = d
     for key in path[:-1]:
         nxt = node.get(key)
@@ -123,7 +120,7 @@ def _set_at(d: dict[str, Any], path: tuple[str, ...], value: dict[str, Any]) -> 
 
 
 def _deep_merge(into: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
-    """Merge ``src`` into ``into`` recursively (keys in src win)."""
+    """递归地将 ``src`` 合并到 ``into`` 中（src 中的键优先）。"""
     for key, value in src.items():
         if isinstance(value, dict) and isinstance(into.get(key), dict):
             _deep_merge(into[key], value)
@@ -159,16 +156,16 @@ def _coerce_bool(raw: Any, default: bool) -> bool:
     return default
 
 
-# ── Schema build / read ──────────────────────────────────────────────────
+# ── Schema 构建 / 读取 ─────────────────────────────────────────────────
 
 
-# Only the chat sub-sections actually read by ``AgenticChatPipeline.__init__``.
-# Add a stage here once a real LLM call site starts consuming its max_tokens.
+# 仅 chat 子节被 ``AgenticChatPipeline.__init__`` 实际读取。
+# 当某个阶段的 LLM 调用开始消费其 max_tokens 时，将其添加到此处。
 _CHAT_STAGES_IN_USE: tuple[str, ...] = ("responding", "answer_now")
 
 
 def _build_chat_block(agents_cfg: dict[str, Any]) -> dict[str, Any]:
-    """Read agents.yaml.capabilities.chat into the UI schema with defaults."""
+    """将 agents.yaml.capabilities.chat 读取到带默认值的 UI Schema 中。"""
     chat_cfg: dict[str, Any] = _get_at(agents_cfg, ("capabilities", "chat"))
     merged: dict[str, Any] = {}
     _deep_merge(merged, DEFAULT_CHAT_PARAMS)
@@ -268,7 +265,7 @@ def _build_main_runtime_block(main_cfg: dict[str, Any], capability: str) -> dict
 
 
 def capabilities_settings_dict() -> dict[str, Any]:
-    """Return the full schema as a JSON-safe dict (defaults merged in)."""
+    """返回完整的 Schema 作为 JSON 安全字典（已合并默认值）。"""
     agents_cfg = _read_agents_yaml()
     main_cfg = ConfigManager().load_config()
 
@@ -280,7 +277,7 @@ def capabilities_settings_dict() -> dict[str, Any]:
     return result
 
 
-# ── Write path ───────────────────────────────────────────────────────────
+# ── 写入路径 ───────────────────────────────────────────────────────────
 
 
 def _apply_chat_into_agents_yaml(agents_cfg: dict[str, Any], block: dict[str, Any]) -> None:
@@ -378,10 +375,10 @@ def _apply_main_runtime(
 
 
 def save_capabilities_settings(payload: dict[str, Any]) -> dict[str, Any]:
-    """Merge ``payload`` into both YAML files and return the new state.
+    """将 ``payload`` 合并到两个 YAML 文件中并返回新状态。
 
-    Unknown keys are dropped; values are coerced + clamped via the helpers
-    above so the YAML cannot pick up junk.
+    未知键会被丢弃；值通过上述辅助函数进行强制转换和约束，
+    以确保 YAML 不会写入无效数据。
     """
     agents_cfg = _read_agents_yaml()
     main_payload: dict[str, Any] = {}

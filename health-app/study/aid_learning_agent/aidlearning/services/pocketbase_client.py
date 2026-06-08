@@ -1,18 +1,16 @@
 """
-PocketBase client singleton.
+PocketBase 客户端单例。
 
-Only initialised when integrations.pocketbase_url is configured.
-All other code checks ``is_pocketbase_enabled()`` before calling
-``get_pb_client()`` to avoid import-time failures when PocketBase is
-not configured.
+仅在 integrations.pocketbase_url 已配置时才会初始化。
+其他代码在调用 ``get_pb_client()`` 前应先检查 ``is_pocketbase_enabled()``，
+以避免在 PocketBase 未配置时出现导入时错误。
 
-Token validation uses PocketBase's auth-refresh endpoint rather than
-local JWT decoding (PocketBase does not expose a static JWT secret).
-Results are cached in memory for 60 seconds so only the first request
-per token per minute incurs a network call (~5–10 ms); all subsequent
-requests within the TTL are resolved in < 1 ms from the local cache.
+Token 验证使用 PocketBase 的 auth-refresh 端点而非本地 JWT 解码
+（PocketBase 不暴露静态 JWT 密钥）。结果缓存在内存中 60 秒，
+因此每个 Token 每分钟仅首次请求会产生网络调用（约 5-10 毫秒）；
+TTL 内的所有后续请求均在 1 毫秒内从本地缓存解析。
 
-Usage:
+用法：
     from aidlearning.services.pocketbase_client import get_pb_client, is_pocketbase_enabled
 
     if is_pocketbase_enabled():
@@ -34,13 +32,13 @@ _client = None
 _client_initialised = False
 _client_key = ""
 
-# Token validation cache: token -> (payload_dict, expires_at)
+# Token 验证缓存：token -> (payload_dict, expires_at)
 _TOKEN_CACHE: dict[str, tuple[dict[str, Any], float]] = {}
-_TOKEN_CACHE_TTL: float = 60.0  # seconds
+_TOKEN_CACHE_TTL: float = 60.0  # 秒
 
 
 def is_pocketbase_enabled() -> bool:
-    """Return True when integrations.pocketbase_url is configured."""
+    """当 integrations.pocketbase_url 已配置时返回 True。"""
     return bool(_pocketbase_settings()["url"])
 
 
@@ -55,10 +53,10 @@ def _pocketbase_settings() -> dict[str, str]:
 
 def get_pb_client():
     """
-    Return an admin-authenticated PocketBase SDK client (cached singleton).
+    返回经过管理员认证的 PocketBase SDK 客户端（缓存单例）。
 
-    Raises RuntimeError if integrations.pocketbase_url is not set.
-    Raises on authentication failure.
+    如果 integrations.pocketbase_url 未设置则抛出 RuntimeError。
+    认证失败时抛出异常。
     """
     global _client, _client_initialised, _client_key
 
@@ -69,7 +67,7 @@ def get_pb_client():
 
     if not pocketbase_url:
         raise RuntimeError(
-            "PocketBase is not configured. Set integrations.pocketbase_url to enable it."
+            "PocketBase 未配置。请设置 integrations.pocketbase_url 以启用。"
         )
 
     cache_key = f"{pocketbase_url}|{admin_email}"
@@ -80,7 +78,7 @@ def get_pb_client():
         from pocketbase import PocketBase  # type: ignore[import]
     except ImportError as exc:
         raise RuntimeError(
-            "The 'pocketbase' package is not installed. Run: pip install pocketbase"
+            "'pocketbase' 包未安装。请运行：pip install pocketbase"
         ) from exc
 
     pb = PocketBase(pocketbase_url)
@@ -91,15 +89,15 @@ def get_pb_client():
             logger.info(f"PocketBase admin authenticated at {pocketbase_url}")
         except Exception as exc:
             logger.error(
-                f"PocketBase admin authentication failed: {exc}. "
-                "Check integrations.pocketbase_admin_email and integrations.pocketbase_admin_password."
+                f"PocketBase 管理员认证失败：{exc}。"
+                "请检查 integrations.pocketbase_admin_email 和 integrations.pocketbase_admin_password。"
             )
             raise
     else:
         logger.warning(
-            "PocketBase admin email/password not set in integrations.json. "
-            "The backend will connect to PocketBase without admin privileges. "
-            "Collection management (scripts/pb_setup.py) will not work."
+            "integrations.json 中未设置 PocketBase 管理员邮箱/密码。"
+            "后端将以无管理员权限连接 PocketBase。"
+            "集合管理（scripts/pb_setup.py）将无法工作。"
         )
 
     _client = pb
@@ -110,14 +108,14 @@ def get_pb_client():
 
 def validate_pb_token(token: str) -> dict[str, Any] | None:
     """
-    Validate a PocketBase user token and return the user payload dict.
+    验证 PocketBase 用户 Token 并返回用户载荷字典。
 
-    Uses PocketBase's /api/collections/users/auth-refresh endpoint.
-    Results are cached for ``_TOKEN_CACHE_TTL`` seconds so only the
-    first call per token per minute makes a network round-trip.
+    使用 PocketBase 的 /api/collections/users/auth-refresh 端点。
+    结果缓存 ``_TOKEN_CACHE_TTL`` 秒，因此每个 Token 每分钟
+    仅首次调用会产生网络往返。
 
-    Returns a dict with at least ``username`` and ``role`` keys, or
-    None if the token is invalid / expired.
+    返回至少包含 ``username`` 和 ``role`` 键的字典，
+    如果 Token 无效/已过期则返回 None。
     """
     settings = _pocketbase_settings()
     pocketbase_url = settings["url"]
@@ -126,7 +124,7 @@ def validate_pb_token(token: str) -> dict[str, Any] | None:
 
     now = time.monotonic()
 
-    # Cache hit
+    # 缓存命中
     cached = _TOKEN_CACHE.get(token)
     if cached is not None:
         payload, expires_at = cached
@@ -134,12 +132,12 @@ def validate_pb_token(token: str) -> dict[str, Any] | None:
             return payload
         del _TOKEN_CACHE[token]
 
-    # Cache miss — call PocketBase
+    # 缓存未命中 — 调用 PocketBase
     try:
         from pocketbase import PocketBase  # type: ignore[import]
 
         pb = PocketBase(pocketbase_url)
-        # Inject the user token so auth_refresh validates it
+        # 注入用户 Token 以便 auth_refresh 进行验证
         pb.auth_store.save(token, None)
         result = pb.collection("users").auth_refresh()
 
@@ -163,11 +161,11 @@ def validate_pb_token(token: str) -> dict[str, Any] | None:
 
 async def ping_pocketbase() -> bool:
     """
-    Async health check called during FastAPI lifespan startup.
+    FastAPI 生命周期启动时调用的异步健康检查。
 
-    Returns True if PocketBase is reachable, False otherwise.
-    Logs a clear warning (not an exception) so the server still starts
-    when PocketBase is configured but temporarily unavailable.
+    如果 PocketBase 可达则返回 True，否则返回 False。
+    记录明确的警告（而非异常），使服务器在 PocketBase 已配置但
+    暂时不可用时仍能正常启动。
     """
     settings = _pocketbase_settings()
     pocketbase_url = settings["url"]
@@ -183,14 +181,14 @@ async def ping_pocketbase() -> bool:
                 logger.info(f"PocketBase health check passed at {pocketbase_url}")
                 return True
             logger.warning(
-                f"PocketBase health check returned HTTP {resp.status_code} at {pocketbase_url}. "
-                "Sessions will fail until PocketBase is healthy."
+                f"PocketBase 健康检查在 {pocketbase_url} 返回 HTTP {resp.status_code}。"
+                "在 PocketBase 恢复正常之前，会话将无法工作。"
             )
             return False
     except Exception as exc:
         logger.warning(
-            f"PocketBase is unreachable at {pocketbase_url} ({exc}). "
-            "Sessions and auth will fall back to SQLite until PocketBase is available. "
-            "Check that the pocketbase container is running and integrations.pocketbase_url is correct."
+            f"PocketBase 在 {pocketbase_url} 不可达（{exc}）。"
+            "会话和认证将回退到 SQLite，直到 PocketBase 可用。"
+            "请检查 pocketbase 容器是否正在运行以及 integrations.pocketbase_url 是否正确。"
         )
         return False

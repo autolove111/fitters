@@ -1,4 +1,4 @@
-"""Azure OpenAI provider backed by the OpenAI SDK Responses API."""
+"""基于 OpenAI SDK Responses API 的 Azure OpenAI 提供商。"""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from aidlearning.services.llm.provider_core.openai_responses import (
 
 
 class AzureOpenAIProvider(LLMProvider):
-    """Azure OpenAI provider using the Responses API."""
+    """使用 Responses API 的 Azure OpenAI 提供商。"""
 
     def __init__(
         self,

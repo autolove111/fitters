@@ -110,10 +110,17 @@
           />
 
           <view class="composer-footer">
+            <!-- 已选知识库标签 -->
+            <view v-if="chatStore.state.selectedKnowledgeBases.length > 0" class="kb-tags">
+              <view v-for="kb in chatStore.state.selectedKnowledgeBases" :key="kb" class="kb-tag">
+                <text class="kb-tag-name">📚 {{ kb }}</text>
+                <text class="kb-tag-remove" @click="removeKB(kb)">✕</text>
+              </view>
+            </view>
             <view class="composer-toolbar">
-              <view class="tool-pill" @click="goKnowledge">
-                <u-icon name="file-text" size="22" color="#a59a92" />
-                <text>知识库</text>
+              <view class="tool-pill" @click="showKBSelector">
+                <u-icon name="file-text" size="22" :color="chatStore.state.selectedKnowledgeBases.length > 0 ? '#0ea5e9' : '#a59a92'" />
+                <text :class="{ active: chatStore.state.selectedKnowledgeBases.length > 0 }">知识库</text>
               </view>
               <view class="tool-pill" @click="goSkills">
                 <u-icon name="star" size="22" color="#a59a92" />
@@ -138,6 +145,7 @@
 <script>
 import dayjs from 'dayjs'
 import { useChatStore } from '../../store/chat'
+import { request } from '../../utils/api'
 import ChatMessage from '../../components/ChatMessage.vue'
 
 const capabilityOptions = [
@@ -300,6 +308,48 @@ export default {
     goKnowledge() {
       this.showCapabilityMenu = false
       uni.navigateTo({ url: '/pages/study/aidlearning/knowledge/list' })
+    },
+    // 显示知识库选择器
+    async showKBSelector() {
+      try {
+        const res = await request('/api/v1/knowledge/list')
+        const kbList = Array.isArray(res) ? res : (res?.knowledge_bases || [])
+        if (kbList.length === 0) {
+          uni.showToast({ title: '暂无知识库，请先创建', icon: 'none' })
+          return
+        }
+        const names = kbList.map(kb => kb.name || kb)
+        const selected = this.chatStore.state.selectedKnowledgeBases
+
+        uni.showActionSheet({
+          itemList: names.map(name => {
+            const isSelected = selected.includes(name)
+            return isSelected ? `✅ ${name}` : name
+          }),
+          success: (actionRes) => {
+            const selectedName = names[actionRes.tapIndex]
+            const idx = selected.indexOf(selectedName)
+            if (idx >= 0) {
+              // 已选中，取消选择
+              selected.splice(idx, 1)
+            } else {
+              // 未选中，添加选择
+              selected.push(selectedName)
+            }
+          }
+        })
+      } catch (e) {
+        console.error('获取知识库列表失败:', e)
+        uni.showToast({ title: '获取知识库列表失败', icon: 'none' })
+      }
+    },
+    // 移除已选知识库
+    removeKB(kbName) {
+      const selected = this.chatStore.state.selectedKnowledgeBases
+      const idx = selected.indexOf(kbName)
+      if (idx >= 0) {
+        selected.splice(idx, 1)
+      }
     },
     goSkills() {
       this.showCapabilityMenu = false
@@ -684,10 +734,43 @@ export default {
   padding: 18rpx 20rpx 18rpx 24rpx;
 }
 
+.kb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+
+.kb-tag {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 16rpx;
+  background: rgba(14, 165, 233, 0.12);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(14, 165, 233, 0.2);
+}
+
+.kb-tag-name {
+  font-size: 22rpx;
+  color: #0ea5e9;
+  font-weight: 600;
+}
+
+.kb-tag-remove {
+  font-size: 20rpx;
+  color: #94a3b8;
+  padding: 4rpx;
+}
+
 .composer-toolbar {
   display: flex;
   align-items: center;
   gap: 12rpx;
+}
+
+.tool-pill text.active {
+  color: #0ea5e9;
 }
 
 .capability-pill,

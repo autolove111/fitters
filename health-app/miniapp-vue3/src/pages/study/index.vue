@@ -31,11 +31,11 @@
           <view class="plan-time-row">
             <view class="time-block">
               <text class="time-label">开始</text>
-              <text class="time-value">{{ plan.start }}</text>
+              <text class="time-value">{{ formatDisplayTime(plan.startTime) }}</text>
             </view>
             <view class="time-block">
               <text class="time-label">结束</text>
-              <text class="time-value">{{ plan.end }}</text>
+              <text class="time-value">{{ formatDisplayTime(plan.endTime) }}</text>
             </view>
           </view>
           <!-- <view class="plan-footer">
@@ -73,12 +73,24 @@ import { useThemeStore } from '@/store/theme'
 const themeStore = useThemeStore()
 const { isDark } = themeStore
 
-const plans = ref([
-  { id: 1, content: '测试计划1', start: '2026-05-25 19:00', end: '2026-05-25 20:00' },
-  { id: 2, content: '测试计划2', start: '2026-05-26 09:00', end: '2026-05-26 10:00' }
-])
+const plans = ref([])
 const isLoading = ref(false)
 const loadError = ref('')
+
+// 格式化显示时间：ISO字符串 -> "6月7日 09:00"
+function formatDisplayTime(isoStr) {
+  if (!isoStr) return '--'
+  try {
+    const date = new Date(isoStr)
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${month}月${day}日 ${hours}:${minutes}`
+  } catch {
+    return isoStr
+  }
+}
 
 async function loadPlans() {
   isLoading.value = true

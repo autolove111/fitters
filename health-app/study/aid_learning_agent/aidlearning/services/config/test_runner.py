@@ -135,12 +135,11 @@ class ConfigTestRunner:
         model: dict[str, Any],
         actual_dimension: int,
     ) -> dict[str, Any]:
-        """Write the probe-detected dim onto the active embedding model entry.
+        """将探测到的维度写入活跃 Embedding 模型条目。
 
-        Called after every successful "Test connection" — the probe is the
-        single source of truth, so any prior catalog dim is overwritten.
-        Refreshes the embedding client singleton so subsequent embed calls
-        use the new dim.
+        每次"测试连接"成功后调用 — 探测是唯一数据源，
+        因此会覆盖之前的目录维度。刷新 Embedding 客户端单例，
+        使后续 embed 调用使用新维度。
         """
         from aidlearning.services.embedding.client import reset_embedding_client
 
@@ -154,12 +153,12 @@ class ConfigTestRunner:
 
     @staticmethod
     def _capabilities_from_adapter(adapter: Any, model_name: str) -> dict[str, Any]:
-        """Normalize an adapter's static-model knowledge into a uniform shape.
+        """将适配器的静态模型知识标准化为统一格式。
 
-        Adapters disagree on which keys they expose from ``get_model_info()``
-        (Cohere/Ollama omit ``supported_dimensions`` even though the data is
-        in their ``MODELS_INFO``). This helper folds both sources together
-        so the SSE event payload is always the same shape.
+        各适配器在 ``get_model_info()`` 暴露的键上存在分歧
+        （Cohere/Ollama 遗漏了 ``supported_dimensions``，即使数据
+        存在于其 ``MODELS_INFO`` 中）。此辅助函数将两个来源合并，
+        使 SSE 事件载荷始终保持相同格式。
         """
         info: dict[str, Any] = {}
         try:
@@ -221,9 +220,9 @@ class ConfigTestRunner:
             "info", f"Resolved model `{llm_config.model}` with binding `{llm_config.binding}`."
         )
         run.emit("info", f"Request target: {llm_config.base_url}")
-        # Reasoning models spend part of the budget on internal thinking;
-        # too tight a cap makes them return empty content. Configurable
-        # via diagnostics.llm_probe.max_tokens in agents.yaml.
+        # 推理模型会将部分预算用于内部思考；
+        # 上限过紧会导致返回空内容。可通过 agents.yaml 中的
+        # diagnostics.llm_probe.max_tokens 进行配置。
         from .loader import get_agent_params
 
         probe_params = get_agent_params("llm_probe")
@@ -260,14 +259,14 @@ class ConfigTestRunner:
             ),
         )
 
-        run.emit("info", "Detecting model context window.")
+        run.emit("info", "正在检测模型上下文窗口。")
         detection = await detect_context_window(
             llm_config,
             on_log=lambda message: run.emit("info", message),
         )
         run.emit(
             "context_window",
-            (f"Detected context window {detection.context_window} tokens ({detection.source})."),
+            (f"检测到上下文窗口 {detection.context_window} tokens（{detection.source}）。"),
             context_window=detection.context_window,
             source=detection.source,
             detail=detection.detail,
@@ -275,7 +274,7 @@ class ConfigTestRunner:
         )
         run.emit(
             "info",
-            "Context window detection is available in Settings and was not written automatically.",
+            "上下文窗口检测在设置中可用，但未自动写入。",
         )
 
     async def _test_embedding(
@@ -284,14 +283,13 @@ class ConfigTestRunner:
         from aidlearning.services.embedding.client import EmbeddingClient
         from aidlearning.services.embedding.config import EmbeddingConfig
 
-        run.emit("info", "Loading embedding config from the active catalog selection.")
+        run.emit("info", "正在从活跃目录选择中加载 Embedding 配置。")
         resolved = resolve_embedding_runtime_config(catalog=catalog)
         catalog_dim = _coerce_int(model.get("dimension"), 0, minimum=0)
-        # Force the smoke probe to send NO `dimensions=` parameter so we get
-        # the model's native max dim back. If we used the configured dim,
-        # Matryoshka models (OpenAI text-embedding-3-*, Cohere embed-v4,
-        # Jina v3/v4, DashScope qwen3-vl-embedding) would just truncate and
-        # return whatever we asked for — making "detected_dim" meaningless.
+        # 强制冒烟探测不发送 `dimensions=` 参数，以便获取模型的原生最大维度。
+        # 如果使用配置的维度，Matryoshka 模型（OpenAI text-embedding-3-*、
+        # Cohere embed-v4、Jina v3/v4、DashScope qwen3-vl-embedding）会直接
+        # 截断并返回我们请求的值 — 使 "detected_dim" 失去意义。
         config = EmbeddingConfig(
             model=resolved.model,
             api_key=resolved.api_key,
@@ -309,15 +307,15 @@ class ConfigTestRunner:
             batch_delay=max(0.0, resolved.batch_delay),
         )
         run.emit(
-            "info", f"Resolved embedding model `{config.model}` with binding `{config.binding}`."
+            "info", f"已解析 Embedding 模型 `{config.model}`，绑定 `{config.binding}`。"
         )
         run.emit(
             "info",
-            f"Request target (POSTed exactly as shown in Settings): {config.base_url}",
+            f"请求目标（与设置中显示的完全一致）：{config.base_url}",
         )
         run.emit(
             "info",
-            "Probing native max dimension with a small batch (sending no `dimensions=` param).",
+            "使用小批量探测原生最大维度（不发送 `dimensions=` 参数）。",
         )
         client = EmbeddingClient(config)
         probe_texts = [
@@ -341,10 +339,9 @@ class ConfigTestRunner:
         default_dim = capabilities["default_dim"]
         model_known = capabilities["model_known"]
 
-        # Probe is the source of truth: always overwrite the catalog dim with
-        # the detected value. Matryoshka users who want a truncated variant
-        # can edit the field manually after the test. Source code stays
-        # ``"detected"`` so the UI shows "Source: detected from API probe".
+        # 探测是唯一数据源：始终用检测到的值覆盖目录维度。
+        # 希望使用截断变体的 Matryoshka 用户可在测试后手动编辑该字段。
+        # 来源代码保持为 ``"detected"``，以便 UI 显示"来源：从 API 探测检测"。
         active_dim = detected_dim
         active_source = "detected"
         if catalog_dim and catalog_dim != detected_dim:
@@ -381,11 +378,10 @@ class ConfigTestRunner:
             expected_dimension=catalog_dim or None,
         )
 
-        # Refresh the cached ``supported_dimensions`` CSV on the model entry so
-        # the settings page can populate the dropdown without re-running the
-        # test. Empty list → empty string clears any stale cache. Mutation
-        # happens before the persist call so a single save round-trip carries
-        # both fields.
+        # 刷新模型条目上缓存的 ``supported_dimensions`` CSV，
+        # 以便设置页面无需重新运行测试即可填充下拉菜单。
+        # 空列表 → 空字符串，清除任何过期缓存。变更发生在持久化调用之前，
+        # 以确保单次保存往返携带两个字段。
         new_supported_csv = ",".join(str(d) for d in supported)
         if (model.get("supported_dimensions") or "") != new_supported_csv:
             model["supported_dimensions"] = new_supported_csv
@@ -397,9 +393,9 @@ class ConfigTestRunner:
             active_dim_source=active_source,
         )
 
-        # Always persist: the probe runs end-to-end successfully, so the
-        # detected dim is authoritative. ``_persist_embedding_dimension`` also
-        # writes the refreshed ``supported_dimensions`` CSV in the same save.
+        # 始终持久化：探测端到端运行成功，因此检测到的维度是权威数据。
+        # ``_persist_embedding_dimension`` 在同一次保存中也会写入
+        # 刷新后的 ``supported_dimensions`` CSV。
         saved_catalog = self._persist_embedding_dimension(catalog, model, detected_dim)
         run.emit(
             "catalog",

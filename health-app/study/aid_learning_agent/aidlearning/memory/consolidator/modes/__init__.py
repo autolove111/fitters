@@ -1,14 +1,14 @@
-"""Five user-visible consolidation modes.
+"""五种用户可见的整合模式。
 
-* :func:`run_update`  — chunk-based incremental fact extraction.
-* :func:`run_audit`   — chunk-based line-level edits against raw evidence.
-* :func:`run_dedup`   — iterative line-level dedup over the full doc.
-* :func:`run_merge`   — no-LLM footnote consolidation (collapse duplicate refs).
-* :func:`run_cleanup` — decay-based stale entry removal.
+* :func:`run_update`  — 基于分块的增量事实提取。
+* :func:`run_audit`   — 基于分块的行级编辑对照原始证据检查。
+* :func:`run_dedup`   — 全文档迭代行级去重。
+* :func:`run_merge`   — 无需 LLM 的脚注合并（折叠重复引用）。
+* :func:`run_cleanup` — 基于衰减的过时条目移除。
 
-Plus thin shims (:func:`consolidate_l2`, :func:`consolidate_l3`) kept
-for :mod:`aidlearning.memory.store` so the public API surface
-stays stable while the implementation switches under the hood.
+加上为 :mod:`aidlearning.memory.store` 保留的薄兼容层
+（:func:`consolidate_l2`、:func:`consolidate_l3`），
+使公共 API 接口在底层实现切换时保持稳定。
 """
 
 from __future__ import annotations

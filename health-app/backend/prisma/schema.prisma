@@ -33,6 +33,7 @@ model User {
   workRecords  WorkRecord[]
   waterRecords WaterRecord[]
   weightRecords WeightRecord[]
+  studyPlans   StudyPlan[]
 
   @@map("users")
 }
@@ -168,4 +169,19 @@ model WeightRecord {
 
   @@index([userId, recordDate], map: "idx_weight_records_user_record_date")
   @@map("weight_records")
+}
+
+model StudyPlan {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.VarChar(500)
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  status    String   @default("pending") @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_study_plans_user_id")
+  @@map("study_plans")
 }

@@ -13,7 +13,12 @@
       <view class="input-group">
         <text class="input-label">名称</text>
         <view class="input-wrap">
-          <u-input v-model="name" placeholder="给知识库起个名字" border="none" :customStyle="{ color: '#0f172a' }" />
+          <input
+            class="name-input"
+            v-model="name"
+            placeholder="给知识库起个名字"
+            placeholder-class="name-placeholder"
+          />
         </view>
       </view>
 
@@ -153,6 +158,18 @@ export default {
   padding: 4rpx 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.04);
   border: 1rpx solid rgba(14, 165, 233, 0.08);
+}
+
+.name-input {
+  height: 80rpx;
+  font-size: 28rpx;
+  color: #1a1a1a;
+  background: transparent;
+  width: 100%;
+}
+
+.name-placeholder {
+  color: #94a3b8;
 }
 
 .upload-area {

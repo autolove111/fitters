@@ -1,11 +1,11 @@
-"""Deep Question Capability.
+"""深度出题能力。
 
-Routes one user turn through the right quiz-generation path:
+将单个用户轮次路由到正确的测验生成路径：
 
-* followup — single-call ``FollowupAgent`` reply about one prior question.
-* custom mode — new ``QuestionPipeline`` (explore → plan → per-question loop).
-* mimic mode  — same pipeline, but PDF parsing produces the templates
-  and ``templates_override`` skips explore + plan.
+* followup — 单次调用的 ``FollowupAgent`` 回复，针对先前某个问题。
+* custom 模式 — 新的 ``QuestionPipeline``（探索 -> 计划 -> 逐题循环）。
+* mimic 模式 — 同一流水线，但 PDF 解析生成模板，
+  ``templates_override`` 跳过探索和计划阶段。
 """
 
 from __future__ import annotations
@@ -96,9 +96,9 @@ class DeepQuestionCapability(BaseCapability):
         history_context = str(context.metadata.get("conversation_context_text", "") or "").strip()
 
         if mode != "mimic":
-            # New custom-mode pipeline: explore → plan → per-question quiz loop.
-            # The pipeline owns its own stream.content / stream.result emission;
-            # nothing here to render afterwards.
+            # 自定义模式的新流水线：探索 -> 计划 -> 逐题测验循环。
+            # 流水线自行管理 stream.content / stream.result 发射；
+            # 此处无需额外渲染。
             from aidlearning.agents.question.history import load_session_quiz_history
             from aidlearning.agents.question.pipeline import QuestionPipeline
             from aidlearning.agents.question.request_config import (
@@ -140,9 +140,8 @@ class DeepQuestionCapability(BaseCapability):
             )
             return
 
-        # Mimic mode — also runs through QuestionPipeline, but parses the
-        # exam paper into templates first and passes them via
-        # ``templates_override`` so explore + plan are skipped.
+        # Mimic 模式 — 同样通过 QuestionPipeline 运行，但会先将试卷
+        # 解析为模板，并通过 ``templates_override`` 传入，跳过探索和计划阶段。
         await self._run_mimic_mode(
             context=context,
             stream=stream,
@@ -166,17 +165,15 @@ class DeepQuestionCapability(BaseCapability):
         num_questions: int,
         i18n: StatusI18n | None = None,
     ) -> None:
-        """Resolve an exam paper → templates → ``QuestionPipeline.run`` with
-        ``templates_override``. No legacy AgentCoordinator involvement.
+        """将试卷解析为模板，然后通过 ``templates_override`` 调用 ``QuestionPipeline.run``。
+        不涉及旧版 AgentCoordinator。
 
-        Three input shapes:
+        三种输入形式：
 
-        * Uploaded PDF attachment      → write to tmpfile, parse with MinerU
-        * Server-side parsed directory → skip parsing, just extract questions
-        * ``[Attached Documents]`` in  → no paper available; fall back to
-          the user_message text          custom-mode pipeline with a
-                                         "mimic the attached source" hint
-                                         prefixed onto the user_message
+        * 上传的 PDF 附件        -> 写入临时文件，使用 MinerU 解析
+        * 服务端已解析的目录      -> 跳过解析，直接提取题目
+        * user_message 中的       -> 无可用试卷；回退到自定义模式流水线，
+          ``[Attached Documents]``    在 user_message 前加上"模仿附件来源"的提示
         """
         from aidlearning.agents.question.history import load_session_quiz_history
         from aidlearning.agents.question.mimic_source import (
@@ -274,9 +271,8 @@ class DeepQuestionCapability(BaseCapability):
             return
 
         if "[Attached Documents]" in context.user_message:
-            # No paper available — degrade to custom-mode generation but
-            # bias the pipeline toward shadowing the attached source by
-            # prefixing the user message with an explicit instruction.
+            # 无可用试卷 — 降级为自定义模式生成，但在用户消息前加上
+            # 明确指令来引导流水线模仿附件来源。
             mimic_hint = (
                 "[Mimic the attached source document as closely as possible: "
                 "style, difficulty, structure, and assessed concepts.]\n\n"

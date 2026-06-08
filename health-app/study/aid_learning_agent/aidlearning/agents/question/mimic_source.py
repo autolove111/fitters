@@ -1,13 +1,11 @@
-"""Exam-paper → QuizTemplate adapter for mimic mode.
+"""试卷 → QuizTemplate 适配器，用于模拟模式。
 
-Wraps the (sync, IO-heavy) MinerU PDF parser + the rule-based question
-extractor so the capability layer can hand mimic templates to
-:class:`QuestionPipeline` via its ``templates_override`` entry.
+封装（同步、IO 密集的）MinerU PDF 解析器和基于规则的问题提取器，
+以便能力层可以通过其 ``templates_override`` 入口将模拟模板交给 :class:`QuestionPipeline`。
 
-This module is intentionally narrow: it ONLY converts a PDF (or a
-previously-parsed working directory) into a list of
-:class:`QuizTemplate`. Streaming progress, prompt assembly, LLM calls,
-and result emission all stay in the pipeline / capability layers.
+本模块故意很窄：它仅将 PDF（或先前解析的工作目录）转换为
+:class:`QuizTemplate` 列表。流式进度、提示词组装、LLM 调用和结果发送
+都留在管线/能力层。
 """
 
 from __future__ import annotations
@@ -36,19 +34,18 @@ async def parse_exam_paper_to_templates(
     paper_mode: str,
     output_dir: str | Path,
 ) -> tuple[list[QuizTemplate], dict[str, str]]:
-    """Resolve an exam paper into a list of mimic-mode ``QuizTemplate``\\ s.
+    """将试卷解析为模拟模式 ``QuizTemplate`` 列表。
 
-    ``paper_mode``:
+    ``paper_mode``：
 
-    * ``"upload"``  — ``paper_path`` is a freshly-uploaded PDF; MinerU
-      parses it under ``output_dir`` and we pick the newest subdir.
-    * ``"parsed"``  — ``paper_path`` is a previously-parsed working dir
-      (already contains the MinerU output); skip the parse step.
+    * ``"upload"``  — ``paper_path`` 是新上传的 PDF；MinerU 在 ``output_dir``
+      下解析它，我们选取最新的子目录。
+    * ``"parsed"``  — ``paper_path`` 是先前解析的工作目录（已包含 MinerU 输出）；
+      跳过解析步骤。
 
-    Returns ``(templates, trace)``. ``trace`` carries paths + counts for
-    inclusion in the final ``stream.result`` envelope. Raises
-    ``RuntimeError`` when parsing or extraction fails — the caller emits
-    a user-facing error.
+    返回 ``(templates, trace)``。``trace`` 携带路径和计数用于包含在最终的
+    ``stream.result`` 信封中。解析或提取失败时抛出 ``RuntimeError``
+    —— 调用方发送面向用户的错误。
     """
     return await asyncio.to_thread(
         _parse_sync,

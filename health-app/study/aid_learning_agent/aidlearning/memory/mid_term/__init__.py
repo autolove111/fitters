@@ -1,9 +1,8 @@
-"""Layer 2: Mid-term memory — SQLite FTS5 full-text search.
+"""第 2 层：中期记忆 — SQLite FTS5 全文搜索。
 
-Provides the ``session_search`` tool (via ``tools/builtin``) and the
-``MemoryRetriever`` for cross-layer retrieval.  Mid-term memory uses
-SQLite FTS5 for efficient keyword search across all past message
-content, enabling queries like "what did we talk about last week?".
+提供 ``session_search`` 工具（通过 ``tools/builtin``）和 ``MemoryRetriever``
+用于跨层检索。中期记忆使用 SQLite FTS5 进行跨所有历史消息内容的高效关键词搜索，
+支持类似"上周我们聊了什么？"的查询。
 """
 
 from .search import MemoryRetriever, UnifiedResult, get_memory_retriever, reset_memory_retriever

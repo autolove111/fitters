@@ -1,8 +1,8 @@
 """
-Capability Registry
+能力注册表
 ===================
 
-Central registry for all capabilities (built-in and plugin).
+所有能力（内置和插件）的中心注册表。
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def _load_plugin_hooks():
 
 
 class CapabilityRegistry:
-    """Registry of available capabilities."""
+    """可用能力的注册表。"""
 
     def __init__(self) -> None:
         self._capabilities: dict[str, BaseCapability] = {}

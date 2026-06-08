@@ -1,10 +1,10 @@
-"""Atomic add/edit/delete operations on memory documents.
+"""记忆文档上的原子增/删/改操作。
 
-A batch of ops is validated as a whole and applied only if all ops pass.
-Conflicting ops (e.g. ``delete`` and ``edit`` on the same id within one
-batch) reject the entire batch — the LLM doesn't get to self-contradict.
+一批操作作为整体验证，仅在所有操作通过时才应用。
+冲突的操作（例如同一批次中对同一 id 的 ``delete`` 和 ``edit``）
+会拒绝整个批次 — LLM 不能自相矛盾。
 
-Pure functions; no I/O, no LLM.
+纯函数；无 I/O，无 LLM。
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ Op = Union[AddOp, EditOp, DeleteOp]
 class OpResult:
     op: Op
     status: Literal["applied"]
-    entry_id: str | None = None  # populated for add ops
+    entry_id: str | None = None  # 为 add 操作填充
     detail: str = ""
 
 
@@ -62,7 +62,7 @@ class ApplyReport:
 
 
 class OpValidationError(Exception):
-    """Raised when a batch fails pre-flight validation."""
+    """当批次未通过预检验证时抛出。"""
 
 
 def _validate(doc: Document, ops: list[Op]) -> None:
@@ -118,10 +118,9 @@ def _validate(doc: Document, ops: list[Op]) -> None:
 
 
 def apply(doc: Document, ops: list[Op]) -> ApplyReport:
-    """Apply ops as an atomic batch. Mutates ``doc`` in place on success.
+    """将操作作为原子批次应用。成功时就地修改 ``doc``。
 
-    On validation failure the document is untouched and the report carries
-    ``accepted=False`` with ``reason``.
+    验证失败时文档不被修改，报告携带 ``accepted=False`` 和 ``reason``。
     """
     try:
         _validate(doc, ops)

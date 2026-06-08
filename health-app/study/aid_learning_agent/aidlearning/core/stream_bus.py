@@ -1,18 +1,18 @@
 """
-Stream Bus
+流式总线
 ==========
 
-Async event channel that tools / capabilities emit into and consumers
-(CLI renderer, WebSocket pusher, JSON writer) read from.
+工具/能力向其中发射事件、消费者
+（CLI 渲染器、WebSocket 推送器、JSON 写入器）从中读取的异步事件通道。
 
-Usage::
+用法::
 
     bus = StreamBus()
 
-    # Producer side (inside a capability)
+    # 生产者端（在能力内部）
     await bus.emit(StreamEvent(type=StreamEventType.CONTENT, content="Hello"))
 
-    # Consumer side
+    # 消费者端
     async for event in bus.subscribe():
         print(event.content)
 """
@@ -29,7 +29,7 @@ from .trace import merge_trace_metadata
 
 
 class StreamBus:
-    """Fan-out async event bus for a single chat turn."""
+    """单个聊天轮次的扇出异步事件总线。"""
 
     def __init__(self) -> None:
         self._subscribers: list[asyncio.Queue[StreamEvent | None]] = []
@@ -37,7 +37,7 @@ class StreamBus:
         self._history: list[StreamEvent] = []
 
     async def emit(self, event: StreamEvent) -> None:
-        """Push *event* to every active subscriber."""
+        """将 *event* 推送给每个活跃的订阅者。"""
         if self._closed:
             return
         self._history.append(event)
@@ -45,7 +45,7 @@ class StreamBus:
             await q.put(event)
 
     async def subscribe(self) -> AsyncIterator[StreamEvent]:
-        """Yield events until the bus is closed."""
+        """产出事件直到总线关闭。"""
         q: asyncio.Queue[StreamEvent | None] = asyncio.Queue()
         self._subscribers.append(q)
         try:
@@ -62,12 +62,12 @@ class StreamBus:
             self._subscribers.remove(q)
 
     async def close(self) -> None:
-        """Signal all subscribers that the stream is finished."""
+        """通知所有订阅者流已结束。"""
         self._closed = True
         for q in self._subscribers:
             await q.put(None)
 
-    # ---- convenience helpers for producers ----
+    # ---- 生产者便捷方法 ----
 
     @asynccontextmanager
     async def stage(
@@ -76,7 +76,7 @@ class StreamBus:
         source: str = "",
         metadata: dict[str, Any] | None = None,
     ):
-        """Context manager that emits STAGE_START / STAGE_END around a block."""
+        """在代码块前后发射 STAGE_START / STAGE_END 的上下文管理器。"""
         await self.emit(
             StreamEvent(
                 type=StreamEventType.STAGE_START,
@@ -253,9 +253,9 @@ class StreamBus:
             )
         )
 
-    # ---- consumer adapters ----
+    # ---- 消费者适配器 ----
 
     @staticmethod
     def event_to_json(event: StreamEvent) -> str:
-        """Serialize an event to a single-line JSON string (NDJSON)."""
+        """将事件序列化为单行 JSON 字符串（NDJSON 格式）。"""
         return json.dumps(event.to_dict(), ensure_ascii=False)

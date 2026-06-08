@@ -6,143 +6,119 @@ from backend_client import BackendClient
 from schemas import NextDayWorkoutPlan
 
 try:
-    from langchain.agents import create_agent
-    from langchain.agents.structured_output import ToolStrategy
-    from langchain.tools import tool
-    from langchain_openai import ChatOpenAI
-except Exception:  # pragma: no cover
-    create_agent = None
-    ToolStrategy = None
-    tool = None
-    ChatOpenAI = None
+    from openai import OpenAI
+except Exception:
+    OpenAI = None
 
 
-def _coerce_plan_from_content(content: Any) -> dict[str, Any] | None:
-    if not content:
-        return None
-
-    if isinstance(content, str):
-        try:
-            parsed = json.loads(content)
-        except json.JSONDecodeError:
-            return None
-        return NextDayWorkoutPlan.model_validate(parsed).model_dump()
-
-    if isinstance(content, list):
-        text_parts: list[str] = []
-        for item in content:
-            if isinstance(item, dict) and item.get("type") == "text":
-                text_parts.append(item.get("text", ""))
-        joined = "".join(text_parts).strip()
-        if not joined:
-            return None
-        try:
-            parsed = json.loads(joined)
-        except json.JSONDecodeError:
-            return None
-        return NextDayWorkoutPlan.model_validate(parsed).model_dump()
-
-    return None
+def _fetch_user_data(client: BackendClient, days: int = 7) -> dict:
+    """获取用户数据用于生成训练计划"""
+    data = {}
+    try:
+        data["today"] = client.get("/api/stats/today")
+    except Exception:
+        data["today"] = {}
+    try:
+        data["weekly"] = client.get("/api/stats/weekly")
+    except Exception:
+        data["weekly"] = []
+    try:
+        data["goals"] = client.get("/api/goals")
+    except Exception:
+        data["goals"] = []
+    try:
+        data["workouts"] = client.get("/api/workouts")
+    except Exception:
+        data["workouts"] = []
+    return data
 
 
-def _build_tools(client: BackendClient, days: int):
-    @tool
-    def get_today_stats() -> dict:
-        """Get today's workout, sleep, and diet summary for the current user."""
-        return client.get("/api/stats/today")
-
-    @tool
-    def get_weekly_stats() -> list[dict]:
-        """Get the current user's workout, sleep, and diet trend for the last 7 days."""
-        return client.get("/api/stats/weekly")
-
-    @tool
-    def get_history_stats() -> list[dict]:
-        """Get the current user's historical workout, sleep, and diet stats for recent days."""
-        return client.get("/api/stats/history", params={"days": days})
-
-    @tool
-    def get_workout_goals() -> list[dict]:
-        """Get the current user's workout-related goal settings."""
-        return client.get("/api/goals")
-
-    @tool
-    def get_recent_workouts() -> list[dict]:
-        """Get the current user's workout records."""
-        return client.get("/api/workouts")
-
-    return [
-        get_today_stats,
-        get_weekly_stats,
-        get_history_stats,
-        get_workout_goals,
-        get_recent_workouts,
-    ]
-
-
-def _langchain_plan(request_data: dict[str, Any], authorization: str) -> dict[str, Any]:
-    model_name = os.getenv("OPENAI_MODEL")
+def _generate_plan_with_openai(user_data: dict, request_data: dict) -> dict:
+    """使用 OpenAI 兼容 API 生成训练计划"""
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_BASE_URL")
-    if not all([create_agent, ToolStrategy, tool, ChatOpenAI, model_name, api_key]):
-        raise RuntimeError("LLM is not configured: create_agent, model, or API key is missing")
+    model_name = os.getenv("OPENAI_MODEL", "qwen3-14b")
 
-    days = int(request_data.get("days") or 7)
-    client = BackendClient(authorization)
-    tools = _build_tools(client, days)
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
 
-    model = ChatOpenAI(
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    system_prompt = """你是一名专业的运动规划助手。请根据用户数据生成训练计划。
+
+你必须严格按照以下JSON格式输出，不要输出任何其他内容：
+
+{
+  "personal_analysis": {
+    "body_status": "身体状态评估",
+    "recent_training_load": "近期训练负荷分析",
+    "sleep_quality": "睡眠质量评估",
+    "recovery_status": "恢复状态评估",
+    "summary": "综合分析结论"
+  },
+  "guidance": {
+    "warmup": [
+      {"name": "动作名称", "sets": 1, "reps": "30秒", "rest_seconds": 15, "notes": "注意事项"}
+    ],
+    "main_workout": [
+      {"name": "动作名称", "sets": 3, "reps": "12次", "rest_seconds": 60, "notes": "动作要领"}
+    ],
+    "cooldown": [
+      {"name": "动作名称", "sets": 1, "reps": "30秒", "rest_seconds": 0, "notes": "拉伸要点"}
+    ],
+    "tips": ["建议1", "建议2", "建议3"]
+  }
+}
+
+要求：
+1. 热身至少2-3个动作
+2. 主要训练至少4-6个动作
+3. 拉伸至少2-3个动作
+4. 额外建议至少3条
+5. 结合用户的睡眠、已完成运动量调整强度
+6. 每个动作的reps要写清楚，如"12次"或"30秒"
+"""
+
+    user_prompt = f"""用户数据：
+- 今日数据：{json.dumps(user_data.get('today', {}), ensure_ascii=False)}
+- 本周趋势：{json.dumps(user_data.get('weekly', []), ensure_ascii=False)}
+- 运动目标：{json.dumps(user_data.get('goals', []), ensure_ascii=False)}
+
+请生成今日训练计划。"""
+
+    response = client.chat.completions.create(
         model=model_name,
-        api_key=api_key,
-        base_url=base_url,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
         temperature=0.3,
-        extra_body={"enable_thinking": False},
+        max_tokens=2000,
+        response_format={"type": "json_object"},
+        extra_body={"enable_thinking": False}  # 阿里云 qwen3 模型要求
     )
 
-    agent = create_agent(
-        model=model,
-        tools=tools,
-        response_format=ToolStrategy(NextDayWorkoutPlan),
-        system_prompt=(
-            "你是一名专业、克制、以安全为先的运动规划助手。"
-            "你需要先使用可用工具获取用户今天的状态、近7天或最近若干天的趋势、运动目标和近期运动记录，"
-            "再生成今日剩余时段可执行的训练计划。"
-            "计划必须具体、可执行，强度要结合睡眠和已完成运动量，避免夸张承诺。"
-            "输出必须严格符合结构化字段要求。"
-        ),
-    )
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError("模型返回空内容")
 
-    result = agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "请为我生成今日训练计划。"
-                        f"额外偏好如下：{json.dumps(request_data, ensure_ascii=False)}。"
-                        "请先调用必要工具读取数据，再返回最终计划。"
-                    ),
-                }
-            ]
-        }
-    )
+    # 解析 JSON
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"模型返回的JSON格式错误: {e}")
 
-    structured = result.get("structured_response")
-    if structured is None:
-        messages = result.get("messages") or []
-        if messages:
-            parsed = _coerce_plan_from_content(getattr(messages[-1], "content", None))
-            if parsed is not None:
-                return parsed
-        raise RuntimeError(f"Model returned no structured_response: {result}")
-    if isinstance(structured, NextDayWorkoutPlan):
-        return structured.model_dump()
-    if hasattr(structured, "model_dump"):
-        return structured.model_dump()
-    if isinstance(structured, dict):
-        return structured
-    raise RuntimeError(f"Unsupported structured_response type: {type(structured).__name__}")
+    # 验证并返回
+    plan = NextDayWorkoutPlan.model_validate(parsed)
+    return plan.model_dump()
 
 
 def build_today_workout_plan(request_data: dict[str, Any], authorization: str) -> dict[str, Any]:
-    return _langchain_plan(request_data, authorization)
+    client = BackendClient(authorization)
+    days = int(request_data.get("days") or 7)
+
+    # 获取用户数据
+    user_data = _fetch_user_data(client, days)
+
+    # 生成训练计划
+    return _generate_plan_with_openai(user_data, request_data)

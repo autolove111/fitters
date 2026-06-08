@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Knowledge base initialization (llamaindex-only)."""
+"""知识库初始化（仅限 llamaindex）。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class KnowledgeBaseInitializer:
-    """Knowledge base initializer."""
+    """知识库初始化器。"""
 
     def __init__(
         self,
@@ -47,7 +47,7 @@ class KnowledgeBaseInitializer:
         self.rag_provider = DEFAULT_PROVIDER
 
     def _register_to_config(self) -> None:
-        """Register KB in kb_config.json with initializing state."""
+        """将知识库注册到 kb_config.json，状态为初始化中。"""
         try:
             from aidlearning.knowledge.manager import KnowledgeBaseManager
 
@@ -105,7 +105,7 @@ class KnowledgeBaseInitializer:
             logger.warning(f"Failed to persist provider in centralized config: {config_err}")
 
     def create_directory_structure(self) -> None:
-        """Create KB directory structure."""
+        """创建知识库目录结构。"""
         logger.info(f"Creating directory structure for knowledge base: {self.kb_name}")
 
         for dir_path in [
@@ -128,7 +128,7 @@ class KnowledgeBaseInitializer:
         self._register_to_config()
 
     def copy_documents(self, source_files: list[str]) -> list[str]:
-        """Copy source documents into raw directory."""
+        """将源文档复制到 raw 目录。"""
         copied_files: list[str] = []
         for source in source_files:
             source_path = Path(source)
@@ -143,7 +143,7 @@ class KnowledgeBaseInitializer:
     async def process_documents(
         self,
     ) -> bool:
-        """Process documents with llamaindex provider."""
+        """使用 llamaindex 提供者处理文档。"""
         provider = DEFAULT_PROVIDER
 
         self.progress_tracker.update(
@@ -220,11 +220,11 @@ class KnowledgeBaseInitializer:
         return True
 
     async def fix_structure(self) -> None:
-        """No-op retained for compatibility with previous pipelines."""
+        """保留的空操作，用于兼容之前的流水线。"""
         logger.info("Skipping legacy structure cleanup (llamaindex-only mode)")
 
     async def display_statistics_generic(self) -> None:
-        """Display basic statistics."""
+        """显示基本统计信息。"""
         raw_files = list(self.raw_dir.glob("*")) if self.raw_dir.exists() else []
         from aidlearning.services.rag.index_versioning import list_kb_versions
 
@@ -246,7 +246,7 @@ async def initialize_knowledge_base(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> bool:
-    """Convenience initializer used by CLI wrappers."""
+    """CLI 封装使用的便捷初始化函数。"""
     from aidlearning.knowledge.manager import KnowledgeBaseManager
 
     manager = KnowledgeBaseManager(base_dir=base_dir)

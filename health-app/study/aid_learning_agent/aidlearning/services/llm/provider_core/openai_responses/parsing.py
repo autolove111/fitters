@@ -1,4 +1,4 @@
-"""Parse Responses API SSE streams and SDK response objects."""
+"""解析 Responses API SSE 流和 SDK 响应对象。"""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def map_finish_reason(status: str | None) -> str:
 
 
 async def iter_sse(response: httpx.Response) -> AsyncGenerator[dict[str, Any], None]:
-    """Yield parsed JSON events from a Responses API SSE stream."""
+    """从 Responses API SSE 流中产出已解析的 JSON 事件。"""
     buffer: list[str] = []
 
     def _flush() -> dict[str, Any] | None:
@@ -61,7 +61,7 @@ async def consume_sse(
     response: httpx.Response,
     on_content_delta: Callable[[str], Awaitable[None]] | None = None,
 ) -> tuple[str, list[ToolCallRequest], str]:
-    """Consume a Responses API SSE stream."""
+    """消费 Responses API SSE 流。"""
     content = ""
     tool_calls: list[ToolCallRequest] = []
     tool_call_buffers: dict[str, dict[str, Any]] = {}
@@ -130,7 +130,7 @@ async def consume_sse(
 
 
 def parse_response_output(response: Any) -> LLMResponse:
-    """Parse an SDK Response object into LLMResponse."""
+    """将 SDK Response 对象解析为 LLMResponse。"""
     if not isinstance(response, dict):
         dump = getattr(response, "model_dump", None)
         response = dump() if callable(dump) else vars(response)
@@ -210,7 +210,7 @@ async def consume_sdk_stream(
     on_content_delta: Callable[[str], Awaitable[None]] | None = None,
     on_reasoning_delta: Callable[[str], Awaitable[None]] | None = None,
 ) -> tuple[str, list[ToolCallRequest], str, dict[str, int], str | None]:
-    """Consume an SDK async stream from client.responses.create(stream=True)."""
+    """消费来自 client.responses.create(stream=True) 的 SDK 异步流。"""
     content = ""
     tool_calls: list[ToolCallRequest] = []
     tool_call_buffers: dict[str, dict[str, Any]] = {}

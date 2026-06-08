@@ -1,5 +1,5 @@
 """
-Anthropic LLM provider implementation.
+Anthropic LLM 提供商实现。
 """
 
 import asyncio
@@ -20,7 +20,7 @@ _DISALLOWED_KWARGS = {
     "base_url",
     "binding",
     "logit_bias",
-    "max_retries",  # Handled by factory retry mechanism
+    "max_retries",  # 由工厂重试机制处理
     "response_format",
     "seed",
     "stream",
@@ -31,20 +31,20 @@ F = TypeVar("F", bound=Callable[..., object])
 
 
 class AnthropicDelta(Protocol):
-    """Protocol for Anthropic delta payloads."""
+    """Anthropic delta 载荷协议。"""
 
     text: str | None
 
 
 class AnthropicUsage(Protocol):
-    """Protocol for Anthropic usage payloads."""
+    """Anthropic 用量载荷协议。"""
 
     input_tokens: int
     output_tokens: int
 
 
 class AnthropicChunk(Protocol):
-    """Protocol for Anthropic streaming chunks."""
+    """Anthropic 流式分块协议。"""
 
     type: str
     delta: AnthropicDelta
@@ -52,7 +52,7 @@ class AnthropicChunk(Protocol):
 
 
 class AnthropicStream(Protocol):
-    """Protocol for Anthropic streaming responses."""
+    """Anthropic 流式响应协议。"""
 
     def __aiter__(self) -> AsyncIterator[AnthropicChunk]: ...
 
@@ -75,13 +75,13 @@ def _typed_track_llm_call(provider: str) -> Callable[[F], F]:
 
 def _sanitize_kwargs(kwargs: dict[str, object]) -> dict[str, object]:
     """
-    Remove OpenAI-only and factory-specific kwargs before Anthropic calls.
+    在 Anthropic 调用前移除 OpenAI 专有和工厂特定的参数。
 
     Args:
-        kwargs: Raw kwargs passed to the provider.
+        kwargs: 传递给提供商的原始参数。
 
     Returns:
-        Sanitized kwargs safe for the Anthropic SDK.
+        适用于 Anthropic SDK 的清理后参数。
     """
     import logging
 
@@ -103,20 +103,20 @@ def _sanitize_kwargs(kwargs: dict[str, object]) -> dict[str, object]:
 
 @register_provider("anthropic")
 class AnthropicProvider(BaseLLMProvider):
-    """Anthropic Claude Provider with shared HTTP client."""
+    """使用共享 HTTP 客户端的 Anthropic Claude 提供商。"""
 
     def __init__(self, config: LLMConfig) -> None:
         """
-        Initialize the Anthropic provider.
+        初始化 Anthropic 提供商。
 
         Args:
-            config: Provider configuration object.
+            config: 提供商配置对象。
 
         Returns:
-            None.
+            None。
 
         Raises:
-            Exception: Propagates client initialization failures.
+            Exception: 传播客户端初始化失败。
         """
         super().__init__(config)
         self.client: anthropic.AsyncAnthropic | None = None
@@ -136,17 +136,17 @@ class AnthropicProvider(BaseLLMProvider):
     @_typed_track_llm_call("anthropic")
     async def complete(self, prompt: str, **kwargs: object) -> TutorResponse:
         """
-        Generate a completion using Anthropic.
+        使用 Anthropic 生成补全。
 
         Args:
-            prompt: User prompt content.
-            **kwargs: Provider-specific options.
+            prompt: 用户提示内容。
+            **kwargs: 提供商特定选项。
 
         Returns:
-            TutorResponse containing the completion result.
+            包含补全结果的 TutorResponse。
 
         Raises:
-            Exception: Propagates SDK or execution errors.
+            Exception: 传播 SDK 或执行错误。
         """
         model_raw = kwargs.pop("model", None)
         model = (
@@ -188,17 +188,17 @@ class AnthropicProvider(BaseLLMProvider):
     @_typed_track_llm_call("anthropic")
     def stream(self, prompt: str, **kwargs: object) -> AsyncStreamGenerator:
         """
-        Stream a completion from Anthropic.
+        从 Anthropic 流式获取补全。
 
         Args:
-            prompt: User prompt content.
-            **kwargs: Provider-specific options.
+            prompt: 用户提示内容。
+            **kwargs: 提供商特定选项。
 
         Returns:
-            AsyncStreamGenerator yielding TutorStreamChunk items.
+            产出 TutorStreamChunk 项的 AsyncStreamGenerator。
 
         Raises:
-            Exception: Propagates SDK or execution errors.
+            Exception: 传播 SDK 或执行错误。
         """
         model_raw = kwargs.pop("model", None)
         model = (

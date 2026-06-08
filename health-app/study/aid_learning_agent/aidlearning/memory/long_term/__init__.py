@@ -1,9 +1,8 @@
-"""Layer 3: Long-term memory — Markdown L2/L3 documents + decay scoring.
+"""第 3 层：长期记忆 — Markdown L2/L3 文档 + 衰减评分。
 
-Refined facts extracted from mid-term memory, stored as structured
-Markdown with footnote-style citations.  Each entry carries optional
-decay metadata (timestamps, access count, importance) for time-based
-relevance scoring.
+从中期记忆中提取的精炼事实，以带脚注式引用的结构化 Markdown 存储。
+每个条目携带可选的衰减元数据（时间戳、访问次数、重要性）
+用于基于时间的相关性评分。
 """
 
 from .decay import compute_decay_score, is_stale

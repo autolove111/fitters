@@ -1,5 +1,5 @@
 """
-Task ID Manager - Assigns unique IDs to each background task
+任务 ID 管理器 - 为每个后台任务分配唯一 ID
 """
 
 from datetime import datetime, timedelta
@@ -9,16 +9,16 @@ import uuid
 
 
 class TaskIDManager:
-    """Singleton class for managing task IDs"""
+    """任务 ID 管理的单例类"""
 
     _instance: Optional["TaskIDManager"] = None
     _lock = threading.Lock()
-    _task_ids: dict[str, str] = {}  # task_key -> task_id
-    _task_metadata: dict[str, dict] = {}  # task_id -> metadata
+    _task_ids: dict[str, str] = {}  # 任务键 -> 任务 ID
+    _task_metadata: dict[str, dict] = {}  # 任务 ID -> 元数据
 
     @classmethod
     def get_instance(cls) -> "TaskIDManager":
-        """Get singleton instance"""
+        """获取单例实例"""
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -27,26 +27,26 @@ class TaskIDManager:
 
     def generate_task_id(self, task_type: str, task_key: str) -> str:
         """
-        Generate unique ID for task
+        为任务生成唯一 ID
 
         Args:
-            task_type: Task type (e.g., 'kb_init', 'kb_upload', 'question_gen', 'solve', 'research')
-            task_key: Task unique identifier (e.g., knowledge base name, question ID, etc.)
+            task_type: 任务类型（如 'kb_init'、'kb_upload'、'question_gen'、'solve'、'research'）
+            task_key: 任务唯一标识（如知识库名称、问题 ID 等）
 
         Returns:
-            Task ID (format: {task_type}_{timestamp}_{uuid})
+            任务 ID（格式：{task_type}_{timestamp}_{uuid})
         """
         with self._lock:
-            # If task already exists, return existing ID
+            # 如果任务已存在，返回已有的 ID
             if task_key in self._task_ids:
                 return self._task_ids[task_key]
 
-            # Generate new ID
+            # 生成新 ID
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             unique_id = str(uuid.uuid4())[:8]
             task_id = f"{task_type}_{timestamp}_{unique_id}"
 
-            # Save mapping and metadata
+            # 保存映射和元数据
             self._task_ids[task_key] = task_id
             self._task_metadata[task_id] = {
                 "task_type": task_type,
@@ -58,12 +58,12 @@ class TaskIDManager:
             return task_id
 
     def get_task_id(self, task_key: str) -> str | None:
-        """Get task ID"""
+        """获取任务 ID"""
         with self._lock:
             return self._task_ids.get(task_key)
 
     def update_task_status(self, task_id: str, status: str, **kwargs):
-        """Update task status"""
+        """更新任务状态"""
         with self._lock:
             if task_id in self._task_metadata:
                 self._task_metadata[task_id]["status"] = status
@@ -72,12 +72,12 @@ class TaskIDManager:
                     self._task_metadata[task_id]["finished_at"] = datetime.now().isoformat()
 
     def get_task_metadata(self, task_id: str) -> dict | None:
-        """Get task metadata"""
+        """获取任务元数据"""
         with self._lock:
             return self._task_metadata.get(task_id, {}).copy()
 
     def cleanup_old_tasks(self, max_age_hours: int = 24):
-        """Clean up old tasks (completed tasks older than specified hours)"""
+        """清理旧任务（已完成且超过指定小时数的任务）"""
         with self._lock:
             cutoff = datetime.now() - timedelta(hours=max_age_hours)
 

@@ -1,12 +1,12 @@
 """
-Default configuration values for AidLearning.
+AidLearning 的默认配置值。
 """
 
 from aidlearning.runtime.home import get_runtime_home
 
 _project_root = get_runtime_home()
 
-# Default configuration
+# 默认配置
 DEFAULTS = {
     "llm": {"model": "gpt-4o-mini", "provider": "openai"},
     "paths": {

@@ -1,4 +1,4 @@
-"""Skill visibility guards for non-admin users."""
+"""非管理员用户的技能可见性守卫。"""
 
 from __future__ import annotations
 
@@ -22,17 +22,16 @@ def assigned_skill_ids(user_id: str | None = None) -> set[str]:
 
 
 def _admin_skill_service():
-    """Return a SkillService rooted at the admin workspace (for assigned-skill loads)."""
+    """返回以管理员工作区为根目录的 SkillService（用于加载已分配的技能）。"""
     from aidlearning.services.skill.service import SkillService
 
     return SkillService(root=get_admin_path_service().get_workspace_dir() / "skills")
 
 
 def assigned_skill_infos(user_id: str | None = None) -> list[dict[str, Any]]:
-    """Return SkillInfo-shape dicts for the admin skills assigned to the user.
+    """返回分配给用户的管理员技能的 SkillInfo 格式字典。
 
-    Each dict is annotated with ``source="admin"`` and ``assigned=True`` so the
-    UI can render them next to the user's own skills.
+    每个字典都标注了 ``source="admin"`` 和 ``assigned=True``，以便 UI 将其与用户自己的技能并列显示。
     """
     allowed = assigned_skill_ids(user_id)
     if not allowed:
@@ -47,10 +46,9 @@ def assigned_skill_infos(user_id: str | None = None) -> list[dict[str, Any]]:
 
 
 def assigned_skill_detail(name: str) -> dict[str, Any] | None:
-    """Return the SkillDetail-shape dict for an admin-assigned skill, or None.
+    """返回管理员分配技能的 SkillDetail 格式字典，或 None。
 
-    Caller must already have verified the skill is assigned to the current user
-    (e.g. via ``assert_skill_allowed``).
+    调用方应已验证该技能已分配给当前用户（例如通过 ``assert_skill_allowed``）。
     """
     try:
         detail = _admin_skill_service().get_detail(name)
@@ -62,11 +60,9 @@ def assigned_skill_detail(name: str) -> dict[str, Any] | None:
 
 
 def assert_skill_allowed(name: str) -> None:
-    """Raise 403 when a non-admin tries to read a skill they don't own and
-    don't have an admin grant for.
+    """当非管理员用户尝试读取非自己拥有且未被管理员授权的技能时，抛出 403 错误。
 
-    Pass ``user_owns_skill`` separately from the caller (the skills router
-    already knows whether the name exists in the user's own workspace).
+    ``user_owns_skill`` 由调用方单独传入（技能路由器已知该名称是否存在于用户自己的工作区中）。
     """
     user = get_current_user()
     if user.is_admin:

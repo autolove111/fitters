@@ -1,4 +1,4 @@
-"""Request-scoped logging context."""
+"""请求级别的日志上下文。"""
 
 from __future__ import annotations
 
@@ -23,13 +23,13 @@ _context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
 
 
 def current_log_context() -> dict[str, Any]:
-    """Return a copy of the active logging context."""
+    """返回当前活跃日志上下文的副本。"""
     return dict(_context.get())
 
 
 @contextmanager
 def bind_log_context(**fields: Any) -> Iterator[dict[str, Any]]:
-    """Temporarily bind structured fields to all log records in this context."""
+    """在此上下文中临时将结构化字段绑定到所有日志记录。"""
     clean_fields = {key: value for key, value in fields.items() if value is not None}
     previous = _context.get()
     token = _context.set({**previous, **clean_fields})

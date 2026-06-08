@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Incrementally add documents to a llamaindex knowledge base."""
+"""向 llamaindex 知识库增量添加文档。"""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ DEFAULT_BASE_DIR = "./data/knowledge_bases"
 
 
 class DocumentAdder:
-    """Add documents to an existing llamaindex knowledge base."""
+    """向已有的 llamaindex 知识库添加文档。"""
 
     def __init__(
         self,
@@ -89,7 +89,7 @@ class DocumentAdder:
         return {}
 
     def add_documents(self, source_files: List[str], allow_duplicates: bool = False) -> List[Path]:
-        """Validate and stage files into raw/ before indexing."""
+        """验证文件并将其暂存到 raw/ 目录，等待索引。"""
         logger.info(f"Validating documents for '{self.kb_name}'...")
 
         ingested_hashes = self.get_ingested_hashes()
@@ -124,7 +124,7 @@ class DocumentAdder:
         return files_to_process
 
     async def process_new_documents(self, new_files: List[Path]) -> List[Path]:
-        """Index staged files via llamaindex incremental add."""
+        """通过 llamaindex 增量添加对暂存文件进行索引。"""
         if not new_files:
             return []
 
@@ -172,7 +172,7 @@ class DocumentAdder:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
 
     def update_metadata(self, added_count: int) -> None:
-        """Update metadata after incremental add."""
+        """增量添加后更新元数据。"""
         metadata: dict = {}
         if self.metadata_file.exists():
             try:
@@ -213,7 +213,7 @@ async def add_documents(
     base_url: Optional[str] = None,
     allow_duplicates: bool = False,
 ) -> int:
-    """Convenience function used by CLI wrappers."""
+    """CLI 封装使用的便捷函数。"""
     from aidlearning.knowledge.manager import KnowledgeBaseManager
 
     manager = KnowledgeBaseManager(base_dir=base_dir)

@@ -1,4 +1,4 @@
-"""Small data models for AidLearning's optional multi-user layer."""
+"""AidLearning 可选多用户层的数据模型。"""
 
 from __future__ import annotations
 

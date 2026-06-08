@@ -1,13 +1,11 @@
-"""Workspace → ``Entity`` adapters.
+"""工作区 → ``Entity`` 适配器。
 
-One pure read-only function per surface. Adapters never mutate
-workspace state. They read whatever lives under
-``data/user/workspace/`` (or, for chat/quiz, the chat history SQLite
-DB; for kb-list, the kb config JSON).
+每个 surface 一个纯只读函数。适配器从不修改工作区状态。
+它们读取 ``data/user/workspace/`` 下的内容
+（或对于 chat/quiz，读取聊天历史 SQLite DB；对于 kb 列表，读取 kb 配置 JSON）。
 
-Each adapter returns a ``list[Entity]`` with stable ``id`` and a
-deterministic ``fingerprint`` so the diff engine can detect changes
-across refreshes.
+每个适配器返回 ``list[Entity]``，带有稳定的 ``id`` 和确定性的 ``fingerprint``，
+以便差异引擎可以检测刷新之间的变化。
 """
 
 from __future__ import annotations
@@ -25,7 +23,7 @@ from aidlearning.services.path_service import get_path_service
 logger = logging.getLogger(__name__)
 
 
-# ── Helpers ──────────────────────────────────────────────────────────
+# ── 辅助函数 ──────────────────────────────────────────────────────────
 
 
 def _sha1(*parts: object) -> str:
@@ -57,7 +55,7 @@ def _iso(ts: float | int | str | None) -> str:
     return ""
 
 
-# ── Adapters ─────────────────────────────────────────────────────────
+# ── 适配器 ─────────────────────────────────────────────────────────
 
 
 def read_notebook_entities() -> list[Entity]:
@@ -174,7 +172,7 @@ def read_book_entities() -> list[Entity]:
             continue
         title = m.get("title", "") or ""
         description = m.get("description", "") or ""
-        # Pull page titles + chapter outline from spine for L2 to chew on.
+        # 从 spine 中提取页面标题 + 章节大纲供 L2 处理。
         spine_path = entry / "spine.json"
         page_titles: list[str] = []
         if spine_path.exists():
@@ -249,10 +247,9 @@ def read_tutorbot_entities() -> list[Entity]:
 
 
 def read_kb_entities() -> list[Entity]:
-    """KB *list* snapshot — one Entity per registered knowledge base.
+    """KB *列表*快照 — 每个注册的知识库一个 Entity。
 
-    KB queries stay event-driven and live in the trace store; the L2
-    consolidator combines both signals.
+    KB 查询保持事件驱动，存储在追踪存储中；L2 整合器组合两种信号。
     """
     kb_root = get_path_service().get_knowledge_bases_root()
     cfg_file = kb_root / "kb_config.json"
@@ -309,8 +306,8 @@ def read_kb_entities() -> list[Entity]:
 
 
 def read_chat_entities() -> list[Entity]:
-    """One Entity per chat session. ``content`` inlines all turns as
-    ``user / assistant`` blocks so L2 sees the actual conversation."""
+    """每个聊天会话一个 Entity。``content`` 将所有轮次内联为
+    ``user / assistant`` 块，以便 L2 看到实际对话。"""
     db_path = get_path_service().get_chat_history_db()
     if not db_path.exists():
         return []
@@ -358,7 +355,7 @@ def read_chat_entities() -> list[Entity]:
 
 
 def read_quiz_entities() -> list[Entity]:
-    """One Entity per recorded quiz attempt (notebook_entries row)."""
+    """每次记录的测验尝试一个 Entity（notebook_entries 行）。"""
     db_path = get_path_service().get_chat_history_db()
     if not db_path.exists():
         return []
@@ -415,7 +412,7 @@ def read_quiz_entities() -> list[Entity]:
     return out
 
 
-# ── Dispatch ─────────────────────────────────────────────────────────
+# ── 调度 ─────────────────────────────────────────────────────────
 
 
 _READERS = {

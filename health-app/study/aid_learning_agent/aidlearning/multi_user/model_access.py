@@ -1,4 +1,4 @@
-"""Server-side model grant resolution and redacted model views."""
+"""服务端模型授权解析和脱敏模型视图。"""
 
 from __future__ import annotations
 
@@ -108,7 +108,7 @@ def allowed_llm_options() -> dict[str, Any]:
 
 
 def apply_allowed_llm_selection(selection: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Allow only admin-granted LLM profile/model selections for ordinary users."""
+    """仅允许普通用户使用管理员授权的 LLM 配置/模型选择。"""
     user = get_current_user()
     if user.is_admin or not selection:
         return selection

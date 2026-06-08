@@ -496,20 +496,77 @@ async function generateTrainingPlan() {
     }
     const res = await statsApi.generatePlan(requestData)
     const lines = []
-    if (res.summary) lines.push(res.summary)
-    if (Array.isArray(res.items) && res.items.length) {
+
+    // 第一部分：个人情况分析
+    if (res.personal_analysis) {
+      lines.push('【个人情况分析】')
+      lines.push('━━━━━━━━━━━━━━━━')
+      if (res.personal_analysis.body_status) {
+        lines.push(`▸ 身体状态：${res.personal_analysis.body_status}`)
+      }
+      if (res.personal_analysis.recent_training_load) {
+        lines.push(`▸ 近期训练负荷：${res.personal_analysis.recent_training_load}`)
+      }
+      if (res.personal_analysis.sleep_quality) {
+        lines.push(`▸ 睡眠质量：${res.personal_analysis.sleep_quality}`)
+      }
+      if (res.personal_analysis.recovery_status) {
+        lines.push(`▸ 恢复状态：${res.personal_analysis.recovery_status}`)
+      }
+      if (res.personal_analysis.summary) {
+        lines.push(`▸ 综合评估：${res.personal_analysis.summary}`)
+      }
+    }
+
+    // 第二部分：详细锻炼指导
+    if (res.guidance) {
       lines.push('')
-      res.items.forEach((item, index) => {
-        lines.push(`${index + 1}. ${item.stage}：${item.activity} ${item.minutes}分钟（${item.intensity}）`)
-        if (item.notes) lines.push(`   ${item.notes}`)
-      })
+      lines.push('【详细锻炼指导】')
+      lines.push('━━━━━━━━━━━━━━━━')
+
+      // 热身环节
+      if (Array.isArray(res.guidance.warmup) && res.guidance.warmup.length) {
+        lines.push('')
+        lines.push('🔥 热身环节')
+        res.guidance.warmup.forEach((task, index) => {
+          lines.push(`  ${index + 1}. ${task.name}`)
+          lines.push(`     ${task.sets}组 × ${task.reps} | 休息${task.rest_seconds}秒`)
+          if (task.notes) lines.push(`     要点：${task.notes}`)
+        })
+      }
+
+      // 主要训练
+      if (Array.isArray(res.guidance.main_workout) && res.guidance.main_workout.length) {
+        lines.push('')
+        lines.push('💪 主要训练')
+        res.guidance.main_workout.forEach((task, index) => {
+          lines.push(`  ${index + 1}. ${task.name}`)
+          lines.push(`     ${task.sets}组 × ${task.reps} | 休息${task.rest_seconds}秒`)
+          if (task.notes) lines.push(`     要点：${task.notes}`)
+        })
+      }
+
+      // 拉伸放松
+      if (Array.isArray(res.guidance.cooldown) && res.guidance.cooldown.length) {
+        lines.push('')
+        lines.push('🧘 拉伸放松')
+        res.guidance.cooldown.forEach((task, index) => {
+          lines.push(`  ${index + 1}. ${task.name}`)
+          lines.push(`     ${task.sets}组 × ${task.reps} | 休息${task.rest_seconds}秒`)
+          if (task.notes) lines.push(`     要点：${task.notes}`)
+        })
+      }
+
+      // 额外建议
+      if (Array.isArray(res.guidance.tips) && res.guidance.tips.length) {
+        lines.push('')
+        lines.push('💡 额外建议')
+        res.guidance.tips.forEach((tip, index) => {
+          lines.push(`  ${index + 1}. ${tip}`)
+        })
+      }
     }
-    if (Array.isArray(res.tips) && res.tips.length) {
-      lines.push('', '小提示：')
-      res.tips.forEach((tip, index) => {
-        lines.push(`${index + 1}. ${tip}`)
-      })
-    }
+
     trainingPlan.value = lines.join('\n') || '今日训练计划已生成，但暂无可展示内容。'
   } catch (error) {
     console.error('调用后端接口失败', error)

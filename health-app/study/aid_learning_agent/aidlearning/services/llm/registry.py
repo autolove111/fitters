@@ -1,25 +1,25 @@
 """
-LLM Provider Registry
-====================
+LLM Provider 注册表
+=================
 
-Simple provider registration system for LLM providers.
+LLM Provider 的简单注册系统。
 """
 
 from collections.abc import Callable
 
-# Global registry for LLM providers
+# LLM Provider 全局注册表
 _provider_registry: dict[str, type] = {}
 
 
 def register_provider(name: str) -> Callable[[type], type]:
     """
-    Decorator to register an LLM provider class.
+    注册 LLM Provider 类的装饰器。
 
     Args:
-        name: Name to register the provider under
+        name: 注册 Provider 使用的名称
 
     Returns:
-        Decorator function
+        装饰器函数
     """
 
     def decorator(cls: type) -> type:
@@ -34,38 +34,38 @@ def register_provider(name: str) -> Callable[[type], type]:
 
 def get_provider_class(name: str) -> type:
     """
-    Get a registered provider class by name.
+    按名称获取已注册的 Provider 类。
 
     Args:
-        name: Provider name
+        name: Provider 名称
 
     Returns:
-        Provider class
+        Provider 类
 
     Raises:
-        KeyError: If provider is not registered
+        KeyError: 如果 Provider 未注册
     """
     return _provider_registry[name]
 
 
 def list_providers() -> list[str]:
     """
-    List all registered provider names.
+    列出所有已注册的 Provider 名称。
 
     Returns:
-        List of provider names
+        Provider 名称列表
     """
     return list(_provider_registry.keys())
 
 
 def is_provider_registered(name: str) -> bool:
     """
-    Check if a provider is registered.
+    检查 Provider 是否已注册。
 
     Args:
-        name: Provider name
+        name: Provider 名称
 
     Returns:
-        True if registered, False otherwise
+        如果已注册返回 True，否则返回 False
     """
     return name in _provider_registry

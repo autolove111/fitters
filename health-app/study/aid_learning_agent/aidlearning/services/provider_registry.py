@@ -22,11 +22,11 @@ from pydantic.alias_generators import to_snake
 
 @dataclass(frozen=True)
 class ProviderSpec:
-    """Single provider metadata entry.
+    """单个 Provider 元数据条目。
 
-    Placeholders in env_extras values:
-      {api_key}  — the user's API key
-      {api_base} — api_base from config, or this spec's default_api_base
+    env_extras 值中的占位符：
+      {api_key}  — 用户的 API 密钥
+      {api_base} — 配置中的 api_base，或此规格的 default_api_base
     """
 
     name: str
@@ -34,7 +34,7 @@ class ProviderSpec:
     env_key: str
     display_name: str = ""
 
-    # Which provider implementation to use:
+    # 使用哪个 Provider 实现：
     # "openai_compat" | "anthropic" | "azure_openai" | "openai_codex" | "github_copilot"
     backend: str = "openai_compat"
 
@@ -52,10 +52,9 @@ class ProviderSpec:
     is_oauth: bool = False
     is_direct: bool = False
     thinking_style: str = ""
-    # Substring patterns (case-insensitive) marking models whose native
-    # reasoning trace should be surfaced. When the caller does not pass an
-    # explicit reasoning_effort, the provider auto-injects "high" so the
-    # thinking_style flag (e.g. extra_body.thinking.type=enabled) is sent.
+    # 子串模式（不区分大小写），标记需要展示原生推理轨迹的模型。
+    # 当调用方未传入显式 reasoning_effort 时，Provider 会自动注入 "high"，
+    # 以便发送 thinking_style 标志（如 extra_body.thinking.type=enabled）。
     reasoning_model_patterns: tuple[str, ...] = ()
 
     @property
@@ -97,7 +96,7 @@ PROVIDER_ALIASES = {
 
 
 def canonical_provider_name(name: str | None) -> str | None:
-    """Normalize incoming provider names and legacy aliases."""
+    """标准化传入的 Provider 名称和旧版别名。"""
     if not name:
         return None
     key = name.strip()
@@ -108,11 +107,11 @@ def canonical_provider_name(name: str | None) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# PROVIDERS — the registry.  Order = priority.
+# PROVIDERS — 注册表。顺序 = 优先级。
 # ---------------------------------------------------------------------------
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
-    # === Direct (user supplies everything, no auto-detection) ===============
+    # === 直连（用户自行配置，无自动检测）================================
     ProviderSpec(
         name="custom",
         keywords=(),
@@ -137,7 +136,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         backend="azure_openai",
         is_direct=True,
     ),
-    # === Gateways (detected by api_key / api_base, route any model) ========
+    # === 网关（通过 api_key / api_base 检测，可路由任意模型）================
     ProviderSpec(
         name="openrouter",
         keywords=("openrouter",),
@@ -216,7 +215,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         strip_model_prefix=True,
         thinking_style="thinking_type",
     ),
-    # === Standard providers (matched by model-name keywords) ===============
+    # === 标准 Provider（通过模型名称关键词匹配）============================
     ProviderSpec(
         name="anthropic",
         keywords=("anthropic", "claude"),
@@ -345,7 +344,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         backend="openai_compat",
         default_api_base="https://api.xiaomimimo.com/v1",
     ),
-    # === Local deployment ==================================================
+    # === 本地部署 ==========================================================
     ProviderSpec(
         name="vllm",
         keywords=("vllm",),
@@ -394,7 +393,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         is_local=True,
         default_api_base="http://localhost:8000/v3",
     ),
-    # === Auxiliary ==========================================================
+    # === 辅助 ============================================================
     ProviderSpec(
         name="nvidia_nim",
         keywords=("nvidia_nim", "nvidia-nim", "nim"),
@@ -477,7 +476,7 @@ def find_gateway(
 
 
 def strip_provider_prefix(model: str, spec: ProviderSpec | None) -> str:
-    """Strip the provider/ prefix from a model name if applicable."""
+    """如果适用，从模型名称中去除 provider/ 前缀。"""
     if not model or not spec:
         return model
     if spec.strip_model_prefix and "/" in model:

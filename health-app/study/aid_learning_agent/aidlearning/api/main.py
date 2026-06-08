@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class _SuppressWsNoise(logging.Filter):
-    """Suppress noisy uvicorn logs for WebSocket connection churn."""
+    """抑制 WebSocket 连接频繁断开/重连时 uvicorn 产生的冗余日志。"""
 
     _SUPPRESSED = ("connection open", "connection closed")
 
@@ -33,14 +33,13 @@ class _SuppressWsNoise(logging.Filter):
 logging.getLogger("uvicorn.error").addFilter(_SuppressWsNoise())
 
 CONFIG_DRIFT_ERROR_TEMPLATE = (
-    "Configuration Drift Detected: Capability tool references {drift} are not "
-    "registered in the runtime tool registry. Register the missing tools or "
-    "remove the stale tool names from the capability manifests."
+    "检测到配置偏差：能力清单中引用的工具 {drift} 未在运行时工具注册表中注册。"
+    "请注册缺失的工具，或从能力清单中移除过时的工具名称。"
 )
 
 
 class SafeOutputStaticFiles(StaticFiles):
-    """Static file mount that only exposes explicitly whitelisted artifacts."""
+    """静态文件挂载，仅对外提供经过白名单校验的文件。"""
 
     def __init__(self, *args, path_service, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,8 +53,7 @@ class SafeOutputStaticFiles(StaticFiles):
 
 def validate_tool_consistency():
     """
-    Validate that capability manifests only reference tools that are actually
-    registered in the runtime ``ToolRegistry``.
+    校验能力清单中引用的所有工具是否都已在运行时 ToolRegistry 中注册。
     """
     try:
         from aidlearning.runtime.registry.capability_registry import get_capability_registry
@@ -95,7 +93,7 @@ def _split_origins(value: str | None) -> list[str]:
 
 
 def _build_cors_settings() -> dict[str, object]:
-    """Build CORS settings for both localhost and remote Docker deployments."""
+    """构建 CORS 配置，同时兼容本地开发和远程 Docker 部署场景。"""
     system_settings = load_system_settings()
     auth_settings = load_auth_settings()
     frontend_port = str(system_settings["frontend_port"])
@@ -112,10 +110,9 @@ def _build_cors_settings() -> dict[str, object]:
         if origin not in origins:
             origins.append(origin)
 
-    # Auth is disabled by default. In that local/single-user mode, mirror the
-    # pre-v1.3.8 behavior and allow remote Docker/LAN origins out of the box.
-    # When auth is enabled, require explicit CORS_ORIGIN(S) for credentialed
-    # cross-origin requests.
+    # 认证默认关闭。在此本地/单用户模式下，保持 v1.3.8 之前的行为，
+    # 默认允许远程 Docker/局域网来源。
+    # 开启认证后，需要显式配置 CORS_ORIGIN(S) 以支持携带凭证的跨域请求。
     allow_origin_regex = None if auth_settings["enabled"] else r"https?://.*"
     return {"allow_origins": origins, "allow_origin_regex": allow_origin_regex}
 
@@ -123,17 +120,16 @@ def _build_cors_settings() -> dict[str, object]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Application lifecycle management
-    Gracefully handle startup and shutdown events, avoid CancelledError
+    应用生命周期管理
+    优雅处理启动和关闭事件，避免 CancelledError
     """
-    # Execute on startup
+    # 启动时执行
     logger.info("Application startup")
 
-    # Validate configuration consistency
+    # 校验配置一致性
     validate_tool_consistency()
 
-    # Initialize LLM client early so OPENAI_* env vars are available before
-    # any downstream provider integrations start.
+    # 提前初始化 LLM 客户端，确保 OPENAI_* 环境变量在下游集成启动前就绪。
     try:
         from aidlearning.services.llm import get_llm_client
 
@@ -151,7 +147,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Failed to start EventBus: {e}")
 
-    # Ping PocketBase if configured — logs a warning (not an error) if unreachable
+    # 如果配置了 PocketBase 则进行连通性检测——不可达时记录警告（非错误）
     try:
         from aidlearning.services.pocketbase_client import ping_pocketbase
 
@@ -159,8 +155,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"PocketBase startup check failed: {e}")
 
-    # Migrate any v1 memory files (PROFILE.md / SUMMARY.md) into a
-    # backup folder so the v2 three-layer subsystem starts clean.
+    # 将 v1 记忆文件（PROFILE.md / SUMMARY.md）迁移到备份目录，
+    # 使 v2 三层记忆子系统以干净状态启动。
     try:
         from aidlearning.memory import migrate_v1_if_needed
 
@@ -172,10 +168,10 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Execute on shutdown
+    # 关闭时执行
     logger.info("Application shutdown")
 
-    # Stop EventBus
+    # 停止 EventBus
     try:
         from aidlearning.events.event_bus import get_event_bus
 
@@ -190,14 +186,13 @@ app = FastAPI(
     title="AidLearning API",
     version="1.0.0",
     lifespan=lifespan,
-    # Disable automatic trailing slash redirects to prevent protocol downgrade issues
-    # when deployed behind HTTPS reverse proxies (e.g., nginx).
-    # Without this, FastAPI's 307 redirects may change HTTPS to HTTP.
-    # See: https://github.com/HKUDS/AidLearning/issues/112
+    # 禁用自动尾部斜杠重定向，防止在 HTTPS 反向代理（如 nginx）后部署时
+    # 出现协议降级问题。否则 FastAPI 的 307 重定向可能将 HTTPS 变为 HTTP。
+    # 参见：https://github.com/HKUDS/AidLearning/issues/112
     redirect_slashes=False,
 )
 
-# Log only non-200 requests (uvicorn access_log is disabled in run_server.py)
+# 仅记录非 200 请求（run_server.py 中已禁用 uvicorn 的 access_log）
 _access_logger = logging.getLogger("uvicorn.access")
 
 
@@ -226,18 +221,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount a filtered view over user outputs.
-# Only whitelisted artifact paths are readable through the static handler.
+# 挂载用户输出的过滤视图。
+# 仅白名单中的文件路径可通过静态文件处理器访问。
 path_service = get_path_service()
 user_dir = path_service.get_public_outputs_root()
 
-# Initialize user directories on startup
+# 启动时初始化用户目录
 try:
     from aidlearning.services.setup import init_user_directories
 
     init_user_directories()
 except Exception:
-    # Fallback: just create the main directory if it doesn't exist
+    # 兜底方案：主目录不存在时直接创建
     if not user_dir.exists():
         user_dir.mkdir(parents=True)
 
@@ -247,8 +242,8 @@ app.mount(
     name="outputs",
 )
 
-# Import routers only after runtime settings are initialized.
-# Some router modules load YAML settings at import time.
+# 在运行时设置初始化完成后再导入路由模块。
+# 部分路由模块会在导入时加载 YAML 配置。
 from aidlearning.api.routers import (
     agent_config,
     attachments,
@@ -268,11 +263,11 @@ from aidlearning.api.routers import (
 )
 from aidlearning.multi_user.router import router as multi_user_router  # noqa: E402
 
-# Auth router is public — login/logout/register/status require no token
+# 认证路由为公开接口——登录/登出/注册/状态查询无需 token
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 
-# All other routers require a valid session when AUTH_ENABLED=true.
-# require_auth is a no-op when AUTH_ENABLED=false, so this is safe for local use.
+# 其他所有路由在 AUTH_ENABLED=true 时需要有效的会话。
+# 当 AUTH_ENABLED=false 时 require_auth 为空操作，本地使用无需担心。
 from aidlearning.api.routers.auth import require_auth  # noqa: E402
 
 _auth = [Depends(require_auth)]
@@ -316,8 +311,7 @@ app.include_router(
     dependencies=_auth,
 )
 
-# Unified WebSocket endpoint — auth is checked inside the handler (WebSockets
-# cannot use FastAPI dependencies in the standard way)
+# 统一 WebSocket 端点——鉴权在处理器内部完成（WebSocket 无法以标准方式使用 FastAPI 依赖注入）
 app.include_router(unified_ws.router, prefix="/api/v1", tags=["unified-ws"])
 
 

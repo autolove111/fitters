@@ -1,27 +1,24 @@
 """
-Answer-Now Helpers
+即时应答辅助模块
 ==================
 
-Per-capability fast-path utilities for the universal "Answer now" interrupt.
+为通用"即时应答"中断提供的各能力快速通道工具。
 
-Each capability owns *what* its fast path produces (text answer, quiz JSON,
-manim code, ...). This module provides the shared plumbing:
+每个能力决定其快速通道输出的内容（文本回答、测验 JSON、manim 代码等）。
+本模块提供共享的基础设施：
 
-* :func:`extract_answer_now_context` — parse and validate the payload that
-  the frontend bundled with the cancelled turn.
-* :func:`format_trace_summary` — render captured stream events into a
-  compact, prompt-friendly summary the LLM can read in one shot.
-* :func:`stream_synthesis` — thin async generator wrapper around the LLM
-  service that yields text chunks while pushing them into the StreamBus.
-* :func:`make_skip_notice` — i18n-aware notice prepended/appended to the
-  fast-path output so the user knows which stages were skipped.
+* :func:`extract_answer_now_context` — 解析并验证前端随取消轮次一起打包的负载。
+* :func:`format_trace_summary` — 将捕获的流事件渲染为紧凑的、适合提示词的摘要，
+  供 LLM 一次性读取。
+* :func:`stream_synthesis` — 围绕 LLM 服务的轻量异步生成器封装，
+  在产出文本块的同时将其推送到 StreamBus。
+* :func:`make_skip_notice` — 国际化感知的通知，附加在快速通道输出的前/后，
+  让用户了解哪些阶段被跳过。
 
-The orchestrator no longer re-routes ``answer_now`` to ``chat``; instead
-each capability that supports it checks for the payload at the top of
-``run()`` and dispatches to its own answer-now path. ``chat`` keeps its
-original synthesis behavior. ``deep_solve`` / ``deep_question`` /
-``deep_research`` deliberately do not expose Answer Now — their UI gates
-the button so this module is never invoked for them.
+编排器不再将 ``answer_now`` 重路由到 ``chat``；而是每个支持该功能的能力
+在 ``run()`` 入口处检查该负载并分派到自己的即时应答路径。``chat`` 保留
+其原有的综合行为。``deep_solve`` / ``deep_question`` / ``deep_research``
+故意不暴露即时应答 — 它们的 UI 会屏蔽该按钮，因此本模块不会为它们调用。
 """
 
 from __future__ import annotations
@@ -43,25 +40,21 @@ from aidlearning.services.llm import (
 )
 from aidlearning.services.prompt.manager import get_prompt_manager
 
-# Per-event content cap. The trace can grow unbounded (especially for
-# deep_research / deep_solve with many tool calls) so we truncate each
-# entry rather than the whole transcript — this preserves event
-# coverage at the cost of detail per step.
+# 单事件内容上限。追踪记录可能无限增长（尤其是包含大量工具调用的
+# deep_research / deep_solve），因此我们截断每个条目而非整个记录 —
+# 这在牺牲每步细节的同时保留了事件覆盖。
 _MAX_EVENT_SNIPPET = 800
-# Total trace summary cap. Far above this and we start eating into the
-# answer budget on small-context models.
+# 追踪摘要总上限。远超此值会开始占用小上下文模型的回答预算。
 _MAX_TRACE_TOTAL = 6000
 
 
 def extract_answer_now_context(context: UnifiedContext) -> dict[str, Any] | None:
     """
-    Return the validated ``answer_now_context`` payload or ``None``.
+    返回已验证的 ``answer_now_context`` 负载，若无效则返回 ``None``。
 
-    The frontend always packages ``original_user_message`` + an optional
-    ``partial_response`` + an ``events`` array. We require at minimum a
-    non-empty ``original_user_message`` because that's what every
-    fast-path prompt is anchored on; if it is missing the capability
-    falls through to its normal pipeline.
+    前端始终打包 ``original_user_message`` + 可选的 ``partial_response`` + ``events`` 数组。
+    我们至少要求一个非空的 ``original_user_message``，因为每个快速通道提示词
+    都以此为基础；如果缺失，该能力将回退到其正常流水线。
     """
     raw = context.config_overrides.get("answer_now_context")
     if not isinstance(raw, dict):
@@ -72,10 +65,10 @@ def extract_answer_now_context(context: UnifiedContext) -> dict[str, Any] | None
 
 
 def format_trace_summary(events: Any, *, language: str = "en") -> str:
-    """Render captured stream events into a compact text summary.
+    """将捕获的流事件渲染为紧凑的文本摘要。
 
-    Truncates each event to ``_MAX_EVENT_SNIPPET`` chars and the whole
-    transcript to ``_MAX_TRACE_TOTAL`` chars so the prompt stays bounded.
+    将每个事件截断至 ``_MAX_EVENT_SNIPPET`` 个字符，将整个记录截断至
+    ``_MAX_TRACE_TOTAL`` 个字符，以保持提示词长度可控。
     """
     fallback = (
         "没有可用的中间执行记录。"
@@ -121,16 +114,15 @@ def format_trace_summary(events: Any, *, language: str = "en") -> str:
 
 
 def labeled_block(label: str, content: str) -> str:
-    """Format a labeled section in a way the LLM reliably picks up."""
+    """以 LLM 能可靠识别的格式化标记段落。"""
     body = content.strip() if isinstance(content, str) and content.strip() else "(empty)"
     return f"[{label}]\n{body}"
 
 
 def make_skip_notice(*, capability: str, language: str, stages_skipped: list[str]) -> str:
-    """A short user-visible note prepended to the fast-path output.
+    """附加在快速通道输出前的简短用户可见提示。
 
-    Helps the user understand that the result is a "best-effort early
-    exit" rather than the full pipeline output.
+    帮助用户理解该结果是"尽力而为的提前退出"，而非完整流水线输出。
     """
     if not stages_skipped:
         return ""
@@ -150,7 +142,7 @@ def build_answer_now_trace_metadata(
     phase: str,
     label: str,
 ) -> dict[str, Any]:
-    """Standard trace card metadata for an answer-now stage."""
+    """即时应答阶段的标准追踪卡片元数据。"""
     return build_trace_metadata(
         call_id=new_call_id(f"{capability}-answer-now"),
         phase=phase,
@@ -175,19 +167,17 @@ async def stream_synthesis(
     response_format: dict[str, Any] | None = None,
 ) -> AsyncIterator[str]:
     """
-    Stream a single LLM synthesis call into the StreamBus.
+    将单次 LLM 综合调用以流式方式传入 StreamBus。
 
-    Yields raw chunks (still useful for capabilities that need to
-    parse them, e.g. structured JSON outputs). When ``push_content``
-    is true (default), every chunk is also pushed as a ``CONTENT``
-    event so the frontend renders the answer live.
+    产出原始文本块（对需要解析块的能力仍然有用，如结构化 JSON 输出）。
+    当 ``push_content`` 为 true（默认）时，每个块还会作为 ``CONTENT`` 事件推送，
+    以便前端实时渲染回答。
 
-    ``temperature`` and the default ``max_tokens`` are sourced from
-    ``capabilities.chat`` in ``agents.yaml`` (the same knobs the chat
-    capability uses for its own answer-now fallback), so users can tune
-    answer-now globally from the Settings UI instead of touching code.
-    Callers may still pass an explicit ``max_tokens`` to override the
-    setting per call site (e.g. visualize bumps it for ``html``).
+    ``temperature`` 和默认的 ``max_tokens`` 来自 ``agents.yaml`` 中的
+    ``capabilities.chat``（与 chat 能力自身的即时应答回退使用的配置相同），
+    因此用户可以从设置 UI 全局调优即时应答，而无需修改代码。
+    调用方仍可传递显式的 ``max_tokens`` 以按调用点覆盖设置
+    （例如可视化功能为 ``html`` 调高该值）。
     """
     llm_config = get_llm_config()
     model = getattr(llm_config, "model", None)
@@ -256,7 +246,7 @@ async def stream_synthesis(
 
 
 def join_chunks(chunks: list[str]) -> str:
-    """Concatenate chunks and strip OpenAI-style ``<think>`` wrappers."""
+    """拼接文本块并去除 OpenAI 风格的 think 标签封装。"""
     text = "".join(chunks)
     llm_config = get_llm_config()
     binding = getattr(llm_config, "binding", None) or "openai"
@@ -265,14 +255,13 @@ def join_chunks(chunks: list[str]) -> str:
 
 
 def load_answer_now_prompts(module: str, language: str) -> dict[str, Any]:
-    """Load the bilingual ``answer_now.yaml`` prompts for a capability.
+    """为指定能力加载双语 answer_now.yaml 提示词。
 
-    All capability fast paths share the same payload contract
-    (``original``, ``current_draft``, ``execution_trace``); each one only
-    differs in tone and JSON schema. Centralizing the loader keeps
-    ``aidlearning/capabilities/*.py`` free of any per-language strings — the
-    Python code only formats the user template with capability-specific
-    variables.
+    所有能力的快速通道共享相同的负载契约
+    （original、current_draft、execution_trace）；
+    各能力仅在语气和 JSON 结构上有所不同。集中加载器使
+    aidlearning/capabilities/*.py 不包含任何按语言区分的字符串 —
+    Python 代码仅使用能力特定的变量格式化用户模板。
     """
     return get_prompt_manager().load_prompts(module, "answer_now", language)
 

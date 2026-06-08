@@ -1,14 +1,13 @@
 """
-Base exception classes for consistent error handling across the application.
-Provides a standardized way to distinguish between bugs, recoverable errors,
-and configuration issues.
+基础异常类，用于应用中一致的错误处理。
+提供标准化方式来区分程序缺陷、可恢复错误和配置问题。
 """
 
 from typing import Any, Dict, Optional
 
 
 class AidLearningError(Exception):
-    """Base class for all application errors in AidLearning."""
+    """AidLearning 中所有应用错误的基类。"""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(message)
@@ -22,36 +21,36 @@ class AidLearningError(Exception):
 
 
 class ConfigurationError(AidLearningError):
-    """Raised when there's a configuration-related error."""
+    """当出现配置相关错误时抛出。"""
 
     pass
 
 
 class ValidationError(AidLearningError):
-    """Raised when input validation fails."""
+    """当输入验证失败时抛出。"""
 
     pass
 
 
 class ServiceError(AidLearningError):
-    """Base class for service layer errors."""
+    """服务层错误的基类。"""
 
     pass
 
 
 class LLMServiceError(ServiceError):
-    """Base class for LLM service-related errors."""
+    """LLM 服务相关错误的基类。"""
 
     pass
 
 
 class LLMContextError(LLMServiceError):
-    """Raised when prompt exceeds model context window."""
+    """当提示词超过模型上下文窗口时抛出。"""
 
     pass
 
 
 class EnvironmentConfigError(ConfigurationError):
-    """Raised when there's an environment-related configuration error."""
+    """当出现环境相关配置错误时抛出。"""
 
     pass

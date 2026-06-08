@@ -1,7 +1,7 @@
-"""Embedding endpoint URL helpers.
+"""Embedding 端点 URL 辅助函数。
 
-Embedding adapters post to the configured URL exactly. These helpers keep the
-user-visible Settings value aligned with provider-specific endpoint paths.
+Embedding 适配器向配置的 URL 精确发送请求。这些辅助函数确保
+用户可见的设置值与 Provider 特定的端点路径保持一致。
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ def _same_origin_url(url: str, path: str) -> str:
 
 
 def normalize_embedding_endpoint_for_display(provider: str | None, base_url: str | None) -> str:
-    """Return the full endpoint URL that should be shown and saved in Settings."""
+    """返回应在设置中显示和保存的完整端点 URL。"""
     provider_name = canonical_embedding_provider_name(provider)
     url = str(base_url or "").strip()
     if not url:
@@ -94,11 +94,11 @@ def normalize_embedding_endpoint_for_display(provider: str | None, base_url: str
 
 
 def embedding_endpoint_validation_error(provider: str | None, base_url: str | None) -> str | None:
-    """Validate that known providers use the exact endpoint path shown to users."""
+    """验证已知 Provider 使用的端点路径与展示给用户的一致。"""
     provider_name = canonical_embedding_provider_name(provider)
     url = str(base_url or "").strip()
     if not url:
-        return "Embedding endpoint URL is empty."
+        return "Embedding 端点 URL 为空。"
 
     parsed = urlparse(url if "://" in url else f"http://{url}")
     path = parsed.path.rstrip("/")

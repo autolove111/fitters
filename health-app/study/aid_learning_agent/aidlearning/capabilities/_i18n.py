@@ -1,17 +1,17 @@
-"""Shared i18n helper for capability status / UI strings.
+"""能力状态/UI 字符串的共享国际化辅助模块。
 
-Capability ``run()`` methods stream short status messages to the chat UI
-(``stream.thinking``, ``stream.progress``, ``stream.error``). Those strings
-must respect the user's locale. This module wires them into the existing
-``PromptManager`` so each capability can keep its UI copy alongside its
-LLM prompts under ``aidlearning/capabilities/prompts/{en,zh}/<name>.yaml``.
+能力的 ``run()`` 方法向聊天 UI 流式发送短状态消息
+（``stream.thinking``、``stream.progress``、``stream.error``）。
+这些字符串必须遵循用户的语言设置。本模块将它们接入现有的
+``PromptManager``，使每个能力可以将其 UI 文案与 LLM 提示词一起
+放在 ``aidlearning/capabilities/prompts/{en,zh}/<name>.yaml`` 中。
 
-Conventions:
+约定：
 
-* YAML files contain a single top-level ``status:`` mapping, key → string.
-* Strings may use ``{name}`` placeholders rendered via ``str.format``.
-* Missing keys / files fall back to the ``default`` argument so a new
-  hardcoded string still works while its translation is being added.
+* YAML 文件包含一个顶层 ``status:`` 映射，键 -> 字符串。
+* 字符串可以使用 ``{name}`` 占位符，通过 ``str.format`` 渲染。
+* 缺失的键/文件会回退到 ``default`` 参数，这样新增的硬编码字符串
+  在翻译添加之前仍能正常工作。
 """
 
 from __future__ import annotations
@@ -22,11 +22,10 @@ from aidlearning.services.prompt import get_prompt_manager
 
 
 class StatusI18n:
-    """Per-capability localized status-string lookup.
+    """按能力的本地化状态字符串查找。
 
-    Construct once at the top of ``run()`` with the capability name and
-    ``context.language``, then call ``t(key, default, **kwargs)`` wherever
-    a hardcoded English string was previously emitted.
+    在 ``run()`` 顶部使用能力名称和 ``context.language`` 构造一次，
+    然后在之前输出硬编码英文字符串的地方调用 ``t(key, default, **kwargs)``。
     """
 
     __slots__ = ("_strings",)

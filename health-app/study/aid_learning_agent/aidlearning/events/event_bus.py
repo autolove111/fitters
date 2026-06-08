@@ -1,9 +1,9 @@
 """
-Event Bus
+事件总线
 =========
 
-Asynchronous event bus for inter-module communication.
-Supports publish/subscribe pattern with non-blocking event delivery.
+用于模块间通信的异步事件总线。
+支持发布/订阅模式，提供非阻塞事件投递。
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class EventType(str, Enum):
-    """Supported event types."""
+    """支持的事件类型。"""
 
     SOLVE_COMPLETE = "SOLVE_COMPLETE"
     QUESTION_COMPLETE = "QUESTION_COMPLETE"
@@ -29,7 +29,7 @@ class EventType(str, Enum):
 
 @dataclass
 class Event:
-    """Event data structure for the event bus."""
+    """事件总线的事件数据结构。"""
 
     type: EventType
     task_id: str
@@ -60,10 +60,10 @@ EventHandler = Callable[[Event], Coroutine[Any, Any, None]]
 
 class EventBus:
     """
-    Singleton asynchronous event bus.
+    单例异步事件总线。
 
-    Provides publish/subscribe functionality with non-blocking event delivery.
-    Events are processed in the background without blocking the publisher.
+    提供发布/订阅功能，支持非阻塞事件投递。
+    事件在后台处理，不会阻塞发布者。
     """
 
     _instance: "EventBus | None" = None
@@ -198,7 +198,7 @@ _event_bus: EventBus | None = None
 
 
 def get_event_bus() -> EventBus:
-    """Get the singleton EventBus instance."""
+    """获取单例 EventBus 实例。"""
     global _event_bus
     if _event_bus is None:
         _event_bus = EventBus()

@@ -1,4 +1,4 @@
-"""Local Web launcher for the installed AidLearning app."""
+"""已安装 AidLearning 应用的本地 Web 启动器。"""
 
 from __future__ import annotations
 
@@ -28,8 +28,7 @@ FRONTEND_REUSE_PROBE_TIMEOUT = 2
 KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 WEB_CACHE_DIR = Path("data") / "user" / "runtime" / "web"
 
-# Mutable holder so module-level helpers can format messages in the active
-# UI language without threading the labels through every function.
+# 可变容器，使模块级辅助函数可以使用当前 UI 语言格式化消息，而无需在每个函数中传递标签。
 _ACTIVE_LABELS: dict[str, str] = labels_for("en")
 
 
@@ -70,7 +69,7 @@ def _log(message: str) -> None:
 
 
 def _reset_runtime_singletons() -> None:
-    """Make a just-selected AIDLEARNING_HOME visible to path/config singletons."""
+    """使刚选择的 AIDLEARNING_HOME 对路径/配置单例可见。"""
     try:
         from aidlearning.services.path_service import PathService
 
@@ -234,12 +233,10 @@ def _copy_packaged_web_if_needed(
     api_base: str,
     auth_enabled: bool,
 ) -> Path:
-    """Copy packaged Next.js standalone files into a writable runtime cache.
+    """将打包的 Next.js 独立文件复制到可写的运行时缓存中。
 
-    Next public variables are inlined at build time, so placeholders must be
-    replaced before ``server.js`` starts. The installed package may live in a
-    read-only site-packages directory; the cache keeps mutation local to the
-    active workspace.
+    Next 公共变量在构建时内联，因此占位符必须在 ``server.js`` 启动前替换。
+    已安装的包可能位于只读的 site-packages 目录中；缓存将修改限制在当前工作区内。
     """
 
     cache = home / WEB_CACHE_DIR
@@ -381,7 +378,7 @@ def _local_app_url(value: object, port: int) -> str:
 
 
 def _detect_existing_source_frontend(frontend: FrontendRuntime) -> ExistingFrontendRuntime | None:
-    """Return an already-running Next dev server for this source checkout."""
+    """返回此源码检出中已运行的 Next 开发服务器。"""
 
     if frontend.kind != "source":
         return None
@@ -440,7 +437,7 @@ def _looks_like_next_process(pid: int | None) -> bool:
 
 
 def _stop_unhealthy_source_frontend(frontend: ExistingFrontendRuntime) -> bool:
-    """Stop a locked Next dev server only when the lock points at Next itself."""
+    """仅当锁定文件指向 Next 本身时，停止被锁定的 Next 开发服务器。"""
 
     if frontend.pid is None:
         return False

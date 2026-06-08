@@ -1,30 +1,25 @@
-"""Line-numbered view of a memory document + line-level edit ops.
+"""记忆文档的行号视图 + 行级编辑操作。
 
-The audit / dedup modes ask the LLM to operate on a memory document
-the same way an IDE assistant operates on source code: it sees
-numbered lines and emits structured edits referencing those numbers.
+审计/去重模式要求 LLM 以与 IDE 助手操作源代码相同的方式操作记忆文档：
+它看到带编号的行并发出引用这些编号的结构化编辑。
 
-To keep the document's invariants intact, the LLM only ever sees a
-**sanitized** view — section headers (``## name``) and entry bullets
-(``- text [^m_xxx]``). The footnote block is hidden and rebuilt by
-:func:`apply_edits` from the surviving entries' refs.
+为保持文档的不变量完整，LLM 只能看到**净化后的**视图 —
+节标题（``## name``）和条目要点（``- text [^m_xxx]``）。
+脚注块被隐藏，由 :func:`apply_edits` 从存活条目的引用中重建。
 
-Editing model
+编辑模型
 -------------
-Three op types: ``ReplaceLineOp``, ``DeleteLinesOp``, ``InsertAfterOp``.
-Apply in **descending line order** so earlier lines never shift under
-later edits. Each op carries a free-form ``reason`` for observability;
-audit/dedup prompts require it. Refs are mandatory on replace / insert
-of an entry (validated by the runtime).
+三种操作类型：``ReplaceLineOp``、``DeleteLinesOp``、``InsertAfterOp``。
+按**行号降序**应用，以确保前面的行不会因后面的编辑而偏移。
+每个操作携带一个自由格式的 ``reason`` 用于可观测性；
+审计/去重提示词要求提供该字段。替换/插入条目时引用是必需的（由运行时验证）。
 
-Public API
+公共 API
 ----------
-* :func:`render_view` — turn a :class:`Document` into a list of numbered
-  :class:`Line` rows + lookup tables.
-* :func:`apply_edits` — apply a batch of edits to a document; pure
-  function (returns a new document) so callers can preview without
-  mutating shared state.
-* :func:`parse_edits_payload` — tolerant JSON → typed edit list parser.
+* :func:`render_view` — 将 :class:`Document` 转换为带编号的 :class:`Line` 行列表 + 查找表。
+* :func:`apply_edits` — 将一批编辑应用到文档；纯函数（返回新文档），
+  调用方可以预览而不修改共享状态。
+* :func:`parse_edits_payload` — 容错的 JSON → 类型化编辑列表解析器。
 """
 
 from __future__ import annotations
@@ -45,16 +40,16 @@ LineKind = Literal["title", "blank", "section", "bullet"]
 
 @dataclass(frozen=True)
 class Line:
-    number: int  # 1-based, matches what the LLM sees
+    number: int  # 从 1 开始，与 LLM 看到的一致
     kind: LineKind
-    text: str  # rendered text (no leading "n: ")
-    entry_id: str | None = None  # for bullet lines, the m_xxx id
-    section: str | None = None  # for bullet lines, owning section name
+    text: str  # 渲染后的文本（无前缀 "n: "）
+    entry_id: str | None = None  # 对于要点行，为 m_xxx id
+    section: str | None = None  # 对于要点行，为所属节名称
 
 
 @dataclass(frozen=True)
 class LineView:
-    """Snapshot of the sanitized document seen by audit / dedup LLMs."""
+    """审计/去重 LLM 看到的净化后文档快照。"""
 
     lines: list[Line]
     entry_by_id: dict[str, Entry]
@@ -70,7 +65,7 @@ class LineView:
         return self.lines[number - 1] if 1 <= number <= len(self.lines) else None
 
 
-# ── Edit ops ────────────────────────────────────────────────────────────
+# ── 编辑操作 ────────────────────────────────────────────────────────────
 
 
 @dataclass(frozen=True)
@@ -85,7 +80,7 @@ class ReplaceLineOp:
 @dataclass(frozen=True)
 class DeleteLinesOp:
     line_start: int
-    line_end: int  # inclusive
+    line_end: int  # 包含
     reason: str = ""
     op: Literal["delete"] = "delete"
 
@@ -95,9 +90,8 @@ class InsertAfterOp:
     after_line: int
     text: str
     refs: list[str]
-    # ``section`` is optional: when None, the engine uses the section
-    # containing ``after_line``. If after_line is 0 (top-of-doc) or
-    # points at a title/blank, section MUST be provided.
+    # ``section`` 是可选的：为 None 时，引擎使用包含 ``after_line`` 的节。
+    # 如果 after_line 为 0（文档顶部）或指向标题/空行，则必须提供 section。
     section: str | None = None
     reason: str = ""
     op: Literal["insert"] = "insert"
@@ -123,11 +117,11 @@ class EditReport:
         return self.applied + self.rejected
 
 
-# ── Render: Document → LineView ─────────────────────────────────────────
+# ── 渲染：Document → LineView ─────────────────────────────────────────
 
 
 def render_view(doc: Document) -> LineView:
-    """Produce the numbered view the LLM operates on."""
+    """生成 LLM 操作的带编号视图。"""
     lines: list[Line] = []
     entries_in_order: list[Entry] = []
     entry_by_id: dict[str, Entry] = {}
@@ -154,8 +148,7 @@ def render_view(doc: Document) -> LineView:
             entry_by_id[entry.id] = entry
         lines.append(Line(number=len(lines) + 1, kind="blank", text=""))
 
-    # Strip the trailing blank so the rendered view doesn't end with an
-    # empty line — keeps line counts predictable.
+    # 去除尾部空行，使渲染视图不以空行结尾 — 保持行数可预测。
     while lines and lines[-1].kind == "blank":
         lines.pop()
 
@@ -166,19 +159,19 @@ def render_view(doc: Document) -> LineView:
     )
 
 
-# ── Apply edits ─────────────────────────────────────────────────────────
+# ── 应用编辑 ─────────────────────────────────────────────────────────
 
 
 def apply_edits(doc: Document, edits: Iterable[Edit]) -> tuple[Document, EditReport]:
-    """Apply a batch of edits, in reverse line order, to a fresh copy.
+    """按行号降序将一批编辑应用到新副本。
 
-    Returns ``(new_doc, report)``. ``new_doc`` is always returned; if
-    any edit was rejected, those are captured in ``report.rejected`` and
-    the rest are still applied. The caller decides what to do with a
-    partial-success batch (audit/dedup just write the partial result).
+    返回 ``(new_doc, report)``。始终返回 ``new_doc``；
+    如果有编辑被拒绝，它们会被捕获到 ``report.rejected`` 中，
+    其余编辑仍然会被应用。调用方决定如何处理部分成功的批次
+    （审计/去重只写入部分结果）。
 
-    Reverse order avoids line-number drift: removing line 5 does not
-    affect the meaning of "line 3" since 3 < 5 and we process 5 first.
+    降序避免行号漂移：删除第 5 行不影响"第 3 行"的含义，
+    因为 3 < 5 且我们先处理第 5 行。
     """
     view = render_view(doc)
     edit_list = _sort_reverse(list(edits))
@@ -205,7 +198,7 @@ def apply_edits(doc: Document, edits: Iterable[Edit]) -> tuple[Document, EditRep
 
 
 class _Reject(Exception):
-    """Internal sentinel — signals one edit is unsafe; siblings still apply."""
+    """内部哨兵 — 表示某个编辑不安全；同级编辑仍然应用。"""
 
 
 def _apply_one(edit: Edit, doc: Document, view: LineView) -> str:
@@ -250,7 +243,7 @@ def _apply_delete(edit: DeleteLinesOp, doc: Document, view: LineView) -> str:
         raise _Reject("range covers no entries")
     for _name, entries in doc.sections:
         entries[:] = [e for e in entries if e.id not in ids_to_drop]
-    return f"deleted {len(ids_to_drop)} entries"
+    return f"已删除 {len(ids_to_drop)} 个条目"
 
 
 def _apply_insert(edit: InsertAfterOp, doc: Document, view: LineView) -> str:
@@ -273,14 +266,15 @@ def _apply_insert(edit: InsertAfterOp, doc: Document, view: LineView) -> str:
             raise _Reject("no section context for insert; supply `section`")
 
     entry = Entry(
+
+    entry = Entry(
         id=new_entry_id(),
         section=section,
         text=edit.text.strip(),
         refs=list(edit.refs),
     )
     target = _section_entries(doc, section)
-    # When inserting after a bullet inside an existing section, honor
-    # the local position; otherwise append at end.
+    # 在现有节内的要点之后插入时，尊重本地位置；否则追加到末尾。
     anchor = view.line(edit.after_line) if 1 <= edit.after_line <= len(view.lines) else None
     if anchor and anchor.kind == "bullet" and anchor.section == section and anchor.entry_id:
         for idx, existing in enumerate(target):
@@ -291,10 +285,10 @@ def _apply_insert(edit: InsertAfterOp, doc: Document, view: LineView) -> str:
             target.append(entry)
     else:
         target.append(entry)
-    return f"inserted {entry.id} into {section!r}"
+    return f"已将 {entry.id} 插入 {section!r}"
 
 
-# ── Parse edits payload ─────────────────────────────────────────────────
+# ── 解析编辑 payload ─────────────────────────────────────────────────
 
 
 _REF_WRAPPER_CHARS = "`[](){}<>^ \t\n\r"
@@ -302,20 +296,17 @@ _ENTRY_ID_REF_RE = re.compile(r"^m_[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 def _clean_refs(raw_refs: object, *, layer: str | None) -> list[str]:
-    """Strip wrappers + drop garbage refs from one ``refs`` array.
+    """从一个 ``refs`` 数组中去除包装字符 + 丢弃垃圾引用。
 
-    Two cleanups, in order:
+    两次清理，按顺序：
 
-    1. **Wrapper strip**. The audit / dedup line-numbered view shows each
-       bullet as ``- text [^m_xxx]``. LLMs sometimes copy the marker
-       (``^m_xxx``) wholesale into the new refs array — caret and all.
-       Strip ``` ` [ ] ( ) { } < > ^ ``` plus whitespace from both sides.
+    1. **去除包装**。审计/去重行号视图将每个要点显示为 ``- text [^m_xxx]``。
+       LLM 有时会将标记（``^m_xxx``）整体复制到新的 refs 数组中 — 包括插入号。
+       从两侧去除 ``` ` [ ] ( ) { } < > ^ ``` 以及空白字符。
 
-    2. **Layer-shape filter**. After stripping, an L2 doc whose refs
-       still look like ``m_<ULID>`` (an entry id from the line view) is
-       almost certainly hallucinated — real L2 refs are ``surface:id``.
-       Drop them. L3 ref shape *is* ``m_<ULID>`` so the filter is a
-       no-op there.
+    2. **层形状过滤**。去除包装后，如果 L2 文档的引用仍然形如 ``m_<ULID>``
+       （来自行视图的条目 id），则几乎可以确定是幻觉 — 真正的 L2 引用是 ``surface:id``。
+       丢弃它们。L3 引用的形状*就是* ``m_<ULID>``，所以该过滤器在那里是无操作。
     """
     if not isinstance(raw_refs, list):
         return []
@@ -333,15 +324,13 @@ def _clean_refs(raw_refs: object, *, layer: str | None) -> list[str]:
 
 
 def parse_edits_payload(raw: str, *, layer: str | None = None) -> list[Edit]:
-    """Tolerant JSON parse → list[Edit].
+    """容错 JSON 解析 → list[Edit]。
 
-    Accepts ``{"edits": [...]}`` or a top-level ``[...]``. Each entry's
-    ``op`` field discriminates the type. Unknown ops are dropped.
+    接受 ``{"edits": [...]}`` 或顶层 ``[...]``。每个条目的 ``op`` 字段决定类型。
+    未知操作被丢弃。
 
-    ``layer`` (``"L2"`` / ``"L3"``) controls ref-shape filtering — see
-    :func:`_clean_refs`. Omit it (or pass ``None``) when the caller
-    can't or shouldn't filter by layer; refs are still stripped of
-    wrapper characters.
+    ``layer``（``"L2"`` / ``"L3"``）控制引用形状过滤 — 参见 :func:`_clean_refs`。
+    当调用方无法或不应按层过滤时省略（或传 ``None``）；引用仍会去除包装字符。
     """
     snippet = _extract_json(raw)
     if snippet is None:
@@ -394,7 +383,7 @@ def parse_edits_payload(raw: str, *, layer: str | None = None) -> list[Edit]:
     return edits
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────
+# ── 辅助函数 ─────────────────────────────────────────────────────────────
 
 
 def _sort_reverse(edits: list[Edit]) -> list[Edit]:
@@ -402,7 +391,7 @@ def _sort_reverse(edits: list[Edit]) -> list[Edit]:
         if isinstance(e, ReplaceLineOp):
             return (e.line, 0)
         if isinstance(e, DeleteLinesOp):
-            return (e.line_end, 1)  # delete sorts before insert at same line
+            return (e.line_end, 1)  # 在同一行上，删除排在插入之前
         if isinstance(e, InsertAfterOp):
             return (e.after_line, 2)
         return (0, 9)
@@ -448,7 +437,7 @@ _FENCE_RE = re.compile(r"^```[a-zA-Z]*\s*|\s*```$")
 
 def _extract_json(raw: str) -> str | None:
     text = _FENCE_RE.sub("", raw.strip())
-    # Find the outermost {...} or [...].
+    # 查找最外层的 {...} 或 [...]。
     obj_start = text.find("{")
     arr_start = text.find("[")
     if obj_start == -1 and arr_start == -1:

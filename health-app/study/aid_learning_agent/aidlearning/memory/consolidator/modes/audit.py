@@ -1,23 +1,18 @@
-"""Audit mode — line-level edits checked against raw evidence.
+"""审计模式 — 对照原始证据检查行级编辑。
 
-Algorithm
+算法
 ---------
-1. Render the target md as a line-numbered, footnote-stripped view
-   (:func:`line_doc.render_view`).
-2. Chunk the rendered view into ≤ budget pieces; each chunk is a
-   contiguous slice of lines whose bullet entries get **annotated with
-   their full source content** (no truncation).
-3. Per chunk: LLM call → parse edits → apply against the in-memory doc
-   in reverse line order. Across chunks, edits stack — but because we
-   slice on whole-line boundaries and apply per-chunk before the next
-   chunk runs, the line numbers the next chunk sees are still the ones
-   the LLM was given.
-4. Atomic flush.
+1. 将目标 markdown 渲染为带行号、去除脚注的视图
+   （:func:`line_doc.render_view`）。
+2. 将渲染视图分块为不超过 budget 个片段；每个片段是连续的行切片，
+   其要点条目被**标注完整来源内容**（不截断）。
+3. 每个块：LLM 调用 → 解析编辑 → 按行号降序应用到内存中的文档。
+   跨块编辑会叠加 — 但由于我们按整行边界切片并在下一个块运行前
+   应用当前块，下一个块看到的行号仍然是 LLM 被给出的那些。
+4. 原子刷新。
 
-The chunker is deliberately char-based (same as update) so chunk size
-behaves predictably alongside the annotation block (which can be much
-larger than the bare md). The annotated block fed to the LLM is what
-gets counted against the budget.
+分块器特意基于字符（与更新模式相同），因此块大小在标注块旁边表现可预测
+（标注块可能比裸 markdown 大得多）。喂给 LLM 的标注块就是计入预算的部分。
 """
 
 from __future__ import annotations
@@ -69,7 +64,7 @@ class AuditResult:
     no_doc: bool = False
 
 
-# ── Public entry ────────────────────────────────────────────────────────
+# ── 公共入口 ────────────────────────────────────────────────────────
 
 
 async def run_audit(
@@ -123,7 +118,7 @@ async def run_audit(
         reset_llm_selection(token)
 
 
-# ── L2 ──────────────────────────────────────────────────────────────────
+# ── L2 层 ──────────────────────────────────────────────────────────────────
 
 
 async def _run_audit_l2(
@@ -229,7 +224,7 @@ async def _run_audit_l2(
                     "detail": res.detail,
                 },
             )
-        # Refresh annotation for the next chunk — line numbers shifted.
+        # 为下一个块刷新标注 — 行号已偏移。
         annotated_text, line_ranges = _build_annotated_l2(doc, surface, entity_lookup)
 
     await emit(
@@ -262,7 +257,7 @@ async def _run_audit_l2(
     )
 
 
-# ── L3 ──────────────────────────────────────────────────────────────────
+# ── L3 层 ──────────────────────────────────────────────────────────────────
 
 
 async def _run_audit_l3(
@@ -402,17 +397,17 @@ async def _run_audit_l3(
     )
 
 
-# ── Annotation builders ────────────────────────────────────────────────
+# ── 标注构建器 ─────────────────────────────────────────────────
 
 
 def _build_annotated_l2(
     doc: Document, surface: str, entity_lookup: dict[str, Entity]
 ) -> tuple[str, list[tuple[int, int]]]:
-    """Render the doc as `line N: ... ` + per-bullet source dumps.
+    """将文档渲染为 `line N: ... ` + 每个要点的来源转储。
 
-    Returns ``(text, ranges)`` where ``ranges`` is per-bullet
-    ``(start_char, end_char)`` for future fine-grained linking. Not
-    consumed by the LLM directly; reserved for the UI's diff view.
+    返回 ``(text, ranges)``，其中 ``ranges`` 是每个要点的
+    ``(start_char, end_char)``，供未来细粒度链接使用。
+    不直接由 LLM 消费；保留给 UI 的差异视图。
     """
     view = render_view(doc)
     pieces: list[str] = [_render_line_index(view)]
@@ -427,7 +422,7 @@ def _build_annotated_l2(
         block = annotate_l2_line_with_evidence(
             line.number, entry, surface=surface, entity_lookup=entity_lookup
         )
-        # Two newlines separate annotation blocks.
+        # 两个换行分隔标注块。
         prefix = "\n\n"
         start = cursor + len(prefix)
         pieces.append(prefix + block)

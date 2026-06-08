@@ -1,4 +1,4 @@
-"""Cohere Embedding Adapter for v1 and v2 API."""
+"""Cohere Embedding 适配器，支持 v1 和 v2 API。"""
 
 import logging
 from typing import Any, Dict
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class CohereEmbeddingAdapter(BaseEmbeddingAdapter):
-    """Adapter for Cohere Embed API (v1 and v2)."""
+    """Cohere Embed API 适配器（v1 和 v2）。"""
 
     MODELS_INFO = {
         "embed-v4.0": {
@@ -57,9 +57,9 @@ class CohereEmbeddingAdapter(BaseEmbeddingAdapter):
 
         model_name = request.model or self.model
         model_info = self.MODELS_INFO.get(model_name, {})
-        # `api_version` is now purely a request-shape selector (v1 vs v2 payload).
-        # The URL itself is whatever the user configured. Resolution order:
-        #   explicit self.api_version (catalog/env override) → MODELS_INFO entry → "v2"
+        # `api_version` 现在纯粹是请求格式选择器（v1 vs v2 载荷）。
+        # URL 本身为用户配置的值。解析顺序：
+        #   显式 self.api_version（目录/环境覆盖）→ MODELS_INFO 条目 → "v2"
         api_version = self.api_version or model_info.get("api_version") or "v2"
         dimension = request.dimensions or self.dimensions
 
@@ -91,10 +91,9 @@ class CohereEmbeddingAdapter(BaseEmbeddingAdapter):
             }
 
             if request.contents:
-                # Cohere v2 multimodal: `inputs: [{content: [{type, text|image_url}]}]`
-                # We translate the simple [{text|image|video}] contract into v2's
-                # nested form. v2 cannot mix text+image in one input, so each
-                # content dict becomes its own input item.
+                # Cohere v2 多模态：`inputs: [{content: [{type, text|image_url}]}]`
+                # 我们将简单的 [{text|image|video}] 契约转换为 v2 的嵌套格式。
+                # v2 无法在一个输入中混合文本+图片，因此每个内容字典成为独立的输入项。
                 inputs = []
                 for item in request.contents:
                     if not isinstance(item, dict):

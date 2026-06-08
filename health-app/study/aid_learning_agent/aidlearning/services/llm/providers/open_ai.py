@@ -1,4 +1,4 @@
-"""OpenAI provider implementation using shared HTTP client."""
+"""使用共享 HTTP 客户端的 OpenAI 提供商实现。"""
 
 from __future__ import annotations
 
@@ -24,25 +24,25 @@ F = TypeVar("F", bound=Callable[..., object])
 
 
 class OpenAIChoiceDelta(Protocol):
-    """Protocol for OpenAI delta payloads."""
+    """OpenAI delta 载荷协议。"""
 
     content: str | None
 
 
 class OpenAIChoice(Protocol):
-    """Protocol for OpenAI choices in streaming responses."""
+    """OpenAI 流式响应中的 choices 协议。"""
 
     delta: OpenAIChoiceDelta
 
 
 class OpenAIChunk(Protocol):
-    """Protocol for OpenAI streaming chunks."""
+    """OpenAI 流式分块协议。"""
 
     choices: list[OpenAIChoice]
 
 
 class OpenAIStream(Protocol):
-    """Protocol for OpenAI streaming responses."""
+    """OpenAI 流式响应协议。"""
 
     def __aiter__(self) -> AsyncIterator[OpenAIChunk]: ...
 
@@ -53,7 +53,7 @@ def _typed_track_llm_call(provider: str) -> Callable[[F], F]:
 
 @register_provider("openai")
 class OpenAIProvider(BaseLLMProvider):
-    """Production-ready OpenAI Provider with shared HTTP client."""
+    """使用共享 HTTP 客户端的生产级 OpenAI 提供商。"""
 
     def __init__(self, config: LLMConfig) -> None:
         super().__init__(config)

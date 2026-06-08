@@ -1,10 +1,9 @@
 """
-Capability Protocol
+能力协议
 ===================
 
-Base class for the Capability layer (Level 2).
-Capabilities are multi-step agent pipelines invoked when the user selects
-a deep mode (e.g. Deep Solve, Deep Question).
+能力层（第二层）的基类。
+能力是当用户选择深度模式（如深度解题、深度出题）时调用的多步智能体流水线。
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ from .stream_bus import StreamBus
 
 @dataclass
 class CapabilityManifest:
-    """Static metadata for a capability."""
+    """能力的静态元数据。"""
 
     name: str
     description: str
@@ -32,11 +31,11 @@ class CapabilityManifest:
 
 class BaseCapability(ABC):
     """
-    Abstract base for all capabilities (deep modes).
+    所有能力（深度模式）的抽象基类。
 
-    Subclasses must provide ``manifest`` and implement ``run``.
+    子类必须提供 ``manifest`` 并实现 ``run``。
 
-    Example::
+    示例::
 
         class MySolverCapability(BaseCapability):
             manifest = CapabilityManifest(
@@ -56,7 +55,7 @@ class BaseCapability(ABC):
 
     @abstractmethod
     async def run(self, context: UnifiedContext, stream: StreamBus) -> None:
-        """Execute the full capability pipeline, emitting events to *stream*."""
+        """执行完整的能力流水线，向 *stream* 发射事件。"""
         ...
 
     @property

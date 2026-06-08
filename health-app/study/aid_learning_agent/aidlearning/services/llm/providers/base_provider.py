@@ -1,4 +1,4 @@
-"""Base LLM provider with unified configuration and retries."""
+"""具有统一配置和重试机制的 LLM 提供商基类。"""
 
 from abc import ABC
 from collections.abc import Awaitable, Callable
@@ -31,22 +31,22 @@ T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
-# Cap retry delays to avoid excessive waits during outages.
+# 限制重试延迟以避免在故障期间等待过长。
 MAX_RETRY_DELAY_SECONDS = 60.0
 BASE_RETRY_DELAY_SECONDS = 1.0
 
 
 class BaseLLMProvider(ABC):
-    """Base class for all LLM providers with unified config and retries."""
+    """所有 LLM 提供商的基类，提供统一配置和重试机制。"""
 
     def __init__(self, config: LLMConfig) -> None:
-        """Initialize provider with shared configuration and traffic control."""
+        """使用共享配置和流量控制初始化提供商。"""
         self.config = config
         self.provider_name = config.provider_name
         self.api_key = getattr(config, "get_api_key", lambda: config.api_key)()
         self.base_url = config.base_url or config.effective_url
 
-        # Isolation: Each provider gets its own traffic controller instance
+        # 隔离：每个提供商拥有自己的流量控制器实例
         self.traffic_controller: TrafficController
         traffic_controller = getattr(config, "traffic_controller", None)
         if isinstance(traffic_controller, TrafficController):
@@ -59,22 +59,22 @@ class BaseLLMProvider(ABC):
             )
 
     async def complete(self, prompt: str, **kwargs: object) -> TutorResponse:
-        """Run a completion call for the provider."""
+        """执行提供商的补全调用。"""
         raise NotImplementedError
 
     def stream(self, prompt: str, **kwargs: object) -> AsyncStreamGenerator:
-        """Return an async generator for streaming completions."""
+        """返回用于流式补全的异步生成器。"""
         raise NotImplementedError
 
     def _map_exception(self, e: Exception) -> LLMError:
         return map_error(e, provider=self.provider_name)
 
     def calculate_cost(self, usage: dict[str, object]) -> float:
-        """Calculate cost estimate for a provider call."""
+        """计算提供商调用的成本估算。"""
         return 0.0
 
     def _check_circuit_breaker(self) -> None:
-        """Raise when the circuit breaker is open for this provider."""
+        """当此提供商的熔断器打开时抛出异常。"""
         if not is_call_allowed(self.provider_name):
             record_provider_call(self.provider_name, success=False)
             error = LLMCircuitBreakerError(
@@ -85,7 +85,7 @@ class BaseLLMProvider(ABC):
             raise error
 
     def _should_record_failure(self, error: LLMError) -> bool:
-        """Return True when failures should trip the circuit breaker."""
+        """当故障应触发熔断器时返回 True。"""
         if isinstance(error, (LLMRateLimitError, LLMTimeoutError)):
             return True
         if isinstance(error, LLMAPIError):
@@ -96,7 +96,7 @@ class BaseLLMProvider(ABC):
         return False
 
     def _should_retry_error(self, error: BaseException) -> bool:
-        """Return True when an error should trigger a retry."""
+        """当错误应触发重试时返回 True。"""
         if isinstance(error, (LLMRateLimitError, LLMTimeoutError)):
             return True
         if isinstance(error, LLMAPIError):
@@ -107,7 +107,7 @@ class BaseLLMProvider(ABC):
         return False
 
     def _wait_strategy(self, retry_state: tenacity.RetryCallState) -> float:
-        """Return the next retry delay based on error context."""
+        """根据错误上下文返回下一次重试延迟。"""
         outcome = retry_state.outcome
         if outcome is None:
             return BASE_RETRY_DELAY_SECONDS
@@ -139,11 +139,11 @@ class BaseLLMProvider(ABC):
         **kwargs: object,
     ) -> T:
         """
-        Core execution pipeline:
-        1) circuit breaker check
-        2) traffic control context
-        3) call execution
-        4) mapping + metrics
+        核心执行管线：
+        1) 熔断器检查
+        2) 流量控制上下文
+        3) 调用执行
+        4) 映射 + 指标
         """
         self._check_circuit_breaker()
 
@@ -160,7 +160,7 @@ class BaseLLMProvider(ABC):
                 if self._should_record_failure(mapped_exc):
                     record_call_failure(self.provider_name)
                 raise mapped_exc from exc
-            # Internal/runtime errors should bubble up without being rewrapped.
+            # 内部/运行时错误应直接向上抛出，无需重新包装。
             raise mapped_exc
 
     async def execute(
@@ -169,7 +169,7 @@ class BaseLLMProvider(ABC):
         *args: object,
         **kwargs: object,
     ) -> T:
-        """Execute a single attempt without retry."""
+        """执行单次尝试，不重试。"""
         return await self._execute_core(func, *args, **kwargs)
 
     async def execute_with_retry(
@@ -180,7 +180,7 @@ class BaseLLMProvider(ABC):
         sleep: Callable[[int | float], Awaitable[None] | None] | None = None,
         **kwargs: object,
     ) -> T:
-        """Execute with automatic retries using tenacity."""
+        """使用 tenacity 执行自动重试。"""
 
         def _default_sleep(_delay: int | float) -> None:
             return None

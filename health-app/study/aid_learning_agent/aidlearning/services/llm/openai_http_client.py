@@ -1,4 +1,4 @@
-"""HTTP client helpers for OpenAI-compatible SDK providers."""
+"""OpenAI 兼容 SDK Provider 的 HTTP 客户端辅助函数。"""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ _warning_logged = False
 
 
 def disable_ssl_verify_enabled() -> bool:
-    """Return whether outbound TLS verification should be disabled."""
+    """返回是否应禁用出站 TLS 验证。"""
     if not load_system_settings()["disable_ssl_verify"]:
         return False
     if os.getenv("ENVIRONMENT", "").strip().lower() in {"prod", "production"}:
@@ -36,14 +36,14 @@ def disable_ssl_verify_enabled() -> bool:
 
 
 def build_openai_http_client(**kwargs: Any) -> httpx.AsyncClient | None:
-    """Build a custom SDK httpx client when DISABLE_SSL_VERIFY is enabled."""
+    """当 DISABLE_SSL_VERIFY 启用时构建自定义 SDK httpx 客户端。"""
     if not disable_ssl_verify_enabled():
         return None
     return httpx.AsyncClient(verify=False, **kwargs)  # nosec B501
 
 
 def openai_client_kwargs(**httpx_kwargs: Any) -> dict[str, httpx.AsyncClient]:
-    """Return kwargs to pass into ``AsyncOpenAI`` for custom HTTP behavior."""
+    """返回传递给 ``AsyncOpenAI`` 的 kwargs 以实现自定义 HTTP 行为。"""
     client = build_openai_http_client(**httpx_kwargs)
     return {"http_client": client} if client is not None else {}
 

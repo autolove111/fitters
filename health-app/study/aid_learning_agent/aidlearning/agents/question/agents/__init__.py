@@ -1,9 +1,8 @@
-"""Question generation sub-agents.
+"""问题生成子 Agent。
 
-Currently only the standalone single-call ``FollowupAgent`` lives here —
-the per-question / per-batch agents (idea_agent, generator) were
-replaced by the single :mod:`aidlearning.agents.question.pipeline` module
-during the Phase A → C refactor.
+目前仅独立的单次调用 ``FollowupAgent`` 在此 —— 每问题/每批次的 Agent
+（idea_agent、generator）在 Phase A → C 重构期间已被单一的
+:mod:`aidlearning.agents.question.pipeline` 模块替代。
 """
 
 from importlib import import_module

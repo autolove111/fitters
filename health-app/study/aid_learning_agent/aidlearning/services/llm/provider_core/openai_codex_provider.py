@@ -1,4 +1,4 @@
-"""OpenAI Codex Responses provider backed by oauth-cli-kit."""
+"""基于 oauth-cli-kit 的 OpenAI Codex Responses 提供商。"""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ DEFAULT_ORIGINATOR = "AidLearning"
 
 
 class OpenAICodexProvider(LLMProvider):
-    """Use OpenAI Codex OAuth tokens to call the Responses API."""
+    """使用 OpenAI Codex OAuth 令牌调用 Responses API。"""
 
     def __init__(self, default_model: str = "openai-codex/gpt-5.1-codex"):
         super().__init__(api_key=None, api_base=None)

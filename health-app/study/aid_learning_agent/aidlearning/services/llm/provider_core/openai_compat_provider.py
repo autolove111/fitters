@@ -1,7 +1,7 @@
-"""OpenAI-compatible provider for all non-Anthropic LLM APIs.
+"""适用于所有非 Anthropic LLM API 的 OpenAI 兼容提供商。
 
-Uses the official ``openai.AsyncOpenAI`` SDK to talk to any OpenAI-compatible
-endpoint (OpenAI, DeepSeek, Gemini, Moonshot, MiniMax, gateways, local, etc.).
+使用官方 ``openai.AsyncOpenAI`` SDK 连接任何 OpenAI 兼容端点
+（OpenAI、DeepSeek、Gemini、Moonshot、MiniMax、网关、本地等）。
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ _THINKING_DISABLED_BY_DEFAULT: tuple[tuple[str, str], ...] = (("deepseek", "deep
 
 
 def _short_tool_id() -> str:
-    """9-char alphanumeric ID compatible with all providers (incl. Mistral)."""
+    """兼容所有提供商（包括 Mistral）的 9 字符字母数字 ID。"""
     return "".join(secrets.choice(_ALNUM) for _ in range(9))
 
 
@@ -117,10 +117,9 @@ def _disable_thinking_by_default(spec: "ProviderSpec | None", model_name: str) -
 
 
 class OpenAICompatProvider(LLMProvider):
-    """Unified provider for all OpenAI-compatible APIs.
+    """所有 OpenAI 兼容 API 的统一提供商。
 
-    Receives a resolved ``ProviderSpec`` from the caller — no internal
-    registry lookups needed.
+    从调用方接收已解析的 ``ProviderSpec`` —— 无需内部注册表查询。
     """
 
     def __init__(
@@ -177,7 +176,7 @@ class OpenAICompatProvider(LLMProvider):
             os.environ.setdefault(env_name, resolved)
 
     # ------------------------------------------------------------------
-    # Prompt caching
+    # 提示词缓存
     # ------------------------------------------------------------------
 
     @classmethod
@@ -217,7 +216,7 @@ class OpenAICompatProvider(LLMProvider):
         return new_messages, new_tools
 
     # ------------------------------------------------------------------
-    # Message sanitization
+    # 消息清理
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -253,7 +252,7 @@ class OpenAICompatProvider(LLMProvider):
         return sanitized
 
     # ------------------------------------------------------------------
-    # Build kwargs
+    # 构建参数
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -321,9 +320,9 @@ class OpenAICompatProvider(LLMProvider):
         if spec and spec.name == "dashscope" and semantic_effort == "minimal":
             wire_effort = "minimum"
 
-        # Providers with thinking_style handle thinking via extra_body.
-        # "minimal" means disable thinking — only send via extra_body, never
-        # as a top-level reasoning_effort (e.g. DeepSeek rejects it).
+        # 具有 thinking_style 的提供商通过 extra_body 处理思考。
+        # "minimal" 表示禁用思考 —— 仅通过 extra_body 发送，绝不作为顶层
+        # reasoning_effort（例如 DeepSeek 会拒绝）。
         if wire_effort and not (spec and spec.thinking_style and semantic_effort == "minimal"):
             kwargs["reasoning_effort"] = wire_effort
 
@@ -469,7 +468,7 @@ class OpenAICompatProvider(LLMProvider):
         return body
 
     # ------------------------------------------------------------------
-    # Response parsing
+    # 响应解析
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -671,17 +670,16 @@ class OpenAICompatProvider(LLMProvider):
         return LLMResponse(content=msg, finish_reason="error")
 
     # ------------------------------------------------------------------
-    # Public API
+    # 公共 API
     # ------------------------------------------------------------------
 
     @staticmethod
     def _is_tool_format_error(e: Exception) -> bool:
-        """Detect errors caused by strict tool-argument JSON validation.
+        """检测由严格的工具参数 JSON 验证引起的错误。
 
-        Some endpoints (e.g. DashScope Coding Plan) reject non-streaming
-        tool calls with 400 when the model produces malformed arguments.
-        Streaming avoids this because the SDK accumulates tokens into a
-        well-formed response.
+        某些端点（如 DashScope Coding Plan）在模型生成格式错误的参数时，
+        会以 400 拒绝非流式工具调用。流式传输可避免此问题，因为 SDK 会
+        将 token 累积为格式正确的响应。
         """
         text = str(getattr(e, "body", None) or getattr(e, "message", None) or e).lower()
         return any(

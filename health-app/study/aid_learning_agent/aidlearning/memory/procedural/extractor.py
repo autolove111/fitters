@@ -1,12 +1,10 @@
-"""Procedural memory — automatic skill card extraction from operation patterns.
+"""程序性记忆 — 从操作模式中自动提取技能卡片。
 
-Procedural memory captures *how* to do things (reusable methods and
-workflows) rather than *what* happened (episodic facts).  This module
-scans mid-term memory for repeated operation patterns and generates
-skill card drafts using LLM summarization.
+程序性记忆捕获*如何*做事（可复用的方法和工作流）而非*发生了什么*（情节性事实）。
+此模块扫描中期记忆中的重复操作模式，并使用 LLM 摘要生成技能卡片草稿。
 
-The generated cards follow the same ``SKILL.md`` format used by the
-existing skill system, with YAML frontmatter and markdown body.
+生成的卡片遵循现有技能系统使用的相同 ``SKILL.md`` 格式，
+包含 YAML frontmatter 和 markdown 正文。
 """
 
 from __future__ import annotations
@@ -24,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SkillCandidate:
-    """A detected pattern of repeated operations."""
+    """检测到的重复操作模式。"""
     kind: str
     surface: str
     occurrences: int
@@ -36,7 +34,7 @@ class SkillCandidate:
 
 @dataclass
 class SkillDraft:
-    """A generated skill card draft ready for user confirmation."""
+    """生成的技能卡片草稿，等待用户确认。"""
     name: str
     description: str
     content: str  # SKILL.md body (markdown)
@@ -47,14 +45,14 @@ class SkillDraft:
 
 @dataclass
 class ExtractionResult:
-    """Result of a procedural memory extraction run."""
+    """程序性记忆提取运行的结果。"""
     candidates_found: int
     drafts_generated: int
     drafts: list[SkillDraft]
 
 
 class ProceduralMemoryExtractor:
-    """Extract reusable skill cards from mid-term memory patterns."""
+    """从中期记忆模式中提取可复用的技能卡片。"""
 
     def __init__(
         self,
@@ -78,10 +76,10 @@ class ProceduralMemoryExtractor:
         now = time.time()
         since = now - time_window_days * 86400
 
-        # Fetch recent entries grouped by kind
+        # 获取按 kind 分组的最近条目
         entries = await self._mid.search_by_time(since=since, limit=500)
 
-        # Group by (kind, surface)
+        # 按 (kind, surface) 分组
         groups: dict[tuple[str, str], list[MidTermEntry]] = {}
         for entry in entries:
             key = (entry.kind, entry.surface)
@@ -92,7 +90,7 @@ class ProceduralMemoryExtractor:
             if len(group_entries) < min_occurrences:
                 continue
 
-            # Sort by time
+            # 按时间排序
             group_entries.sort(key=lambda e: e.created_at)
 
             candidates.append(SkillCandidate(
@@ -114,17 +112,16 @@ class ProceduralMemoryExtractor:
         *,
         language: str = "zh",
     ) -> SkillDraft | None:
-        """Generate a skill card draft from a candidate pattern.
+        """从候选模式生成技能卡片草稿。
 
-        Uses LLM to summarize the operation pattern into a reusable
-        skill card.  Returns None if LLM is not available or generation
-        fails.
+        使用 LLM 将操作模式总结为可复用的技能卡片。
+        如果 LLM 不可用或生成失败则返回 None。
         """
         if self._llm is None:
             logger.warning("No LLM available for skill card generation")
             return None
 
-        # Build the prompt
+        # 构建提示词
         samples_text = "\n".join(
             f"- [{i+1}] {content}" for i, content in enumerate(candidate.sample_contents)
         )
@@ -165,7 +162,7 @@ to accomplish this type of task. Focus on the HOW, not the WHAT.
             logger.warning("Skill card generation failed: %s", exc)
             return None
 
-        # Validate
+        # 验证
         name = data.get("name", "").strip()
         if not name:
             return None
@@ -176,7 +173,7 @@ to accomplish this type of task. Focus on the HOW, not the WHAT.
             content=data.get("content", ""),
             tags=data.get("tags", [candidate.kind, candidate.surface]),
             source_entry_ids=candidate.sample_entry_ids,
-            confidence=min(1.0, candidate.occurrences / 10.0),  # More occurrences = higher confidence
+            confidence=min(1.0, candidate.occurrences / 10.0),  # 出现次数越多 = 置信度越高
         )
 
     async def auto_extract(
@@ -185,11 +182,11 @@ to accomplish this type of task. Focus on the HOW, not the WHAT.
         language: str = "zh",
         min_occurrences: int = 3,
     ) -> ExtractionResult:
-        """Fully automatic extraction: find patterns → generate cards → return drafts."""
+        """全自动提取：发现模式 → 生成卡片 → 返回草稿。"""
         candidates = await self.extract_candidates(min_occurrences=min_occurrences)
 
         drafts: list[SkillDraft] = []
-        for candidate in candidates[:5]:  # Limit to top 5 candidates
+        for candidate in candidates[:5]:  # 限制为前 5 个候选
             draft = await self.generate_skill_card(candidate, language=language)
             if draft:
                 drafts.append(draft)
@@ -212,11 +209,10 @@ async def record_operation(
     raw_payload: Any = None,
     importance: float = 0.5,
 ) -> str:
-    """Convenience function to record an operation in mid-term memory.
+    """在中期记忆中记录操作的便捷函数。
 
-    This should be called at the end of significant operations (tool
-    executions, capability completions, etc.) to build up the mid-term
-    memory corpus for procedural extraction.
+    应在重要操作（工具执行、能力完成等）结束时调用，
+    以建立用于程序性提取的中期记忆语料库。
     """
     return await mid_term_store.record(
         surface=surface,

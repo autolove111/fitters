@@ -1,21 +1,17 @@
-"""Deep Research capability — agentic-engine-based deep research.
+"""深度研究能力 — 基于智能体引擎的深度研究。
 
-Thin shim that delegates to :class:`ResearchPipeline`. All orchestration
-— rephrase (mini agentic loop with ``ask_user``), decompose, per-block
-research loops with ``THINK`` / ``TOOL`` / ``APPEND`` / ``FINISH``,
-queue scheduler, and iterative reporting — lives in the pipeline
-module. The capability only handles:
+薄封装层，委托给 :class:`ResearchPipeline`。所有编排逻辑
+— 改写（带 ``ask_user`` 的小型智能体循环）、分解、带 ``THINK`` / ``TOOL`` /
+``APPEND`` / ``FINISH`` 的逐模块研究循环、队列调度器和迭代报告
+— 都在流水线模块中。该能力仅处理：
 
-* request-config validation,
-* the outline-preview two-stage flow (first call returns sub-topics
-  the user edits / confirms; second call drives Phase 3+4 with the
-  confirmed outline).
+* 请求配置验证，
+* 大纲预览两阶段流程（首次调用返回用户可编辑/确认的子主题；
+  第二次调用使用确认后的大纲驱动第 3+4 阶段）。
 
-Tool composition is delegated to the shared
-:mod:`aidlearning.tools.composition` policy — same as chat,
-so the user's composer toggles + the attached KB drive what the per-block
-research loop actually has access to. There is no separate "sources"
-knob.
+工具组合委托给共享的 :mod:`aidlearning.tools.composition` 策略
+— 与 chat 相同，用户的组合开关和附件的知识库决定逐模块研究循环
+实际可访问哪些工具。没有单独的"来源"开关。
 """
 
 from __future__ import annotations
@@ -55,10 +51,9 @@ class DeepResearchCapability(BaseCapability):
             kb_name=kb_name,
         )
 
-        # Outline-preview two-stage flow: first call lacks a confirmed
-        # outline → pipeline returns ``outline_preview`` and exits; the
-        # frontend surfaces the outline editor and (after the user
-        # confirms) sends a second call with ``confirmed_outline`` set.
+        # 大纲预览两阶段流程：首次调用缺少确认的大纲 ->
+        # 流水线返回 ``outline_preview`` 并退出；前端展示大纲编辑器，
+        # 用户确认后发送第二次调用并设置 ``confirmed_outline``。
         confirmed_outline_items: list[SubTopicItem] | None = None
         if request_config.confirmed_outline is not None:
             confirmed_outline_items = [
@@ -80,10 +75,9 @@ class DeepResearchCapability(BaseCapability):
             stream=stream,
         )
 
-        # Outline-preview payloads carry the sub-topics + the original
-        # request config so the second call has everything it needs to
-        # confirm and resume. Fields live at top level so
-        # ``event.metadata.outline_preview`` resolves on the FE.
+        # 大纲预览负载携带子主题和原始请求配置，以便第二次调用
+        # 拥有确认和恢复所需的全部信息。字段位于顶层，因此
+        # ``event.metadata.outline_preview`` 可在前端解析。
         if result.get("outline_preview"):
             research_config: dict[str, Any] = {
                 "mode": request_config.mode,

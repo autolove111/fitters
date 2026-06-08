@@ -1,8 +1,8 @@
-"""Unified embedding client and adapters for all AidLearning modules.
+"""AidLearning 所有模块的统一 Embedding 客户端和适配器。
 
-Supported bindings are resolved by ``services.config.provider_runtime`` and
-currently include openai, custom, azure_openai, cohere, jina, ollama, vllm,
-siliconflow, aliyun, openrouter, plus legacy custom_openai_sdk configs.
+支持的绑定由 ``services.config.provider_runtime`` 解析，
+当前包括 openai、custom、azure_openai、cohere、jina、ollama、vllm、
+siliconflow、aliyun、openrouter，以及旧版 custom_openai_sdk 配置。
 """
 
 from .adapters import (

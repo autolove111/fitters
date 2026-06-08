@@ -11,9 +11,9 @@ from aidlearning.services.rag.index_versioning import list_kb_versions
 
 logger = logging.getLogger(__name__)
 
-# Legacy fallback only — frozen at admin scope at import time. Production code
-# must enter through ``get_kb_config_service()`` (not used directly here, see
-# ``aidlearning/services/config/__init__.py``) which resolves the path lazily.
+# 仅作旧版回退 — 在导入时冻结于管理员作用域。生产代码应通过
+# ``get_kb_config_service()`` 进入（此处不直接使用，见
+# ``aidlearning/services/config/__init__.py``），该函数延迟解析路径。
 DEFAULT_CONFIG_PATH = get_path_service().get_knowledge_bases_root() / "kb_config.json"
 
 
@@ -96,12 +96,11 @@ class KnowledgeBaseConfigService:
             json.dump(self._config, handle, indent=2, ensure_ascii=False)
 
     def _refresh(self) -> None:
-        """Re-read kb_config.json so this singleton sees changes made by
-        ``KnowledgeBaseManager`` (orphan pruning, new KB registrations).
+        """重新读取 kb_config.json，使此单例能感知
+        ``KnowledgeBaseManager`` 所做的更改（孤立文件清理、新知识库注册等）。
 
-        Without this, every mutating call would rewrite the file from the
-        in-memory snapshot taken at process start and undo any external
-        cleanup. Read-modify-write keeps the two writers consistent.
+        如果不这样做，每次修改调用都会从进程启动时的内存快照重写文件，
+        从而撤销任何外部清理操作。读取-修改-写入模式可保持两个写入者的一致性。
         """
         self._config = self._load_config()
 

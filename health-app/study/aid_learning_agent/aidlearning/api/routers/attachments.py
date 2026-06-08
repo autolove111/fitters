@@ -1,18 +1,15 @@
-"""HTTP endpoint for chat attachment downloads / previews.
+"""聊天附件下载/预览的 HTTP 端点。
 
-The chat turn runtime persists every uploaded attachment to the
-:class:`~aidlearning.services.storage.AttachmentStore` and records the public
-URL on the message. The frontend preview drawer loads files via this
-router, which only serves paths the store hands back — every component is
-sanitised to defend against directory traversal.
+对话轮次运行时会将每个上传的附件持久化到
+AttachmentStore，并在消息上记录公开 URL。
+前端预览抽屉通过此路由加载文件，该路由仅提供存储层返回的路径——每个组件都经过净化处理以防御目录遍历攻击。
 
-URL shape::
+URL 格式::
 
     GET /api/attachments/{session_id}/{attachment_id}/{filename}
 
-The session id functions as the ACL boundary, mirroring how the rest of
-the app treats sessions today (single-tenant, session ownership is local
-trust). Once multi-user auth lands we should swap this for signed URLs.
+session_id 作为 ACL 边界，与应用当前对会话的处理方式一致（单租户，会话归属基于本地信任）。
+待多用户认证上线后，应改用签名 URL。
 """
 
 from __future__ import annotations
@@ -35,15 +32,14 @@ router = APIRouter()
 
 
 def _content_disposition(filename: str, *, disposition: str = "inline") -> str:
-    """Build a Content-Disposition header that survives non-ASCII filenames.
+    """构建能正确处理非 ASCII 文件名的 Content-Disposition 头。
 
-    HTTP/1.1 headers are latin-1, so dropping a Chinese / accented filename
-    straight into ``filename="..."`` blows up with UnicodeEncodeError. RFC
-    6266 / RFC 5987 cover this: emit ``filename*=UTF-8''<percent-encoded>``
-    plus an ASCII fallback on ``filename=`` for legacy clients.
+    HTTP/1.1 头部使用 latin-1 编码，直接将中文/带重音符号的文件名放入
+    filename="..." 会抛出 UnicodeEncodeError。RFC 6266 / RFC 5987 对此有解决方案：
+    输出 filename*=UTF-8''<百分比编码> 并在 filename= 上为旧版客户端提供 ASCII 回退。
     """
     ascii_fallback = filename.encode("ascii", errors="replace").decode("ascii")
-    # Quotes / backslashes break the simple-quoted-string form; collapse them.
+    # 引号和反斜杠会破坏简单引号字符串格式，需要替换掉。
     ascii_fallback = ascii_fallback.replace('"', "_").replace("\\", "_")
     encoded = quote(filename, safe="")
     return f"{disposition}; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
@@ -55,18 +51,16 @@ async def get_attachment(
     attachment_id: str,
     filename: str,
 ):
-    """Serve a previously uploaded chat attachment.
+    """提供之前上传的聊天附件。
 
-    Responds with ``Content-Disposition: inline`` so browsers preview PDFs
-    and images directly in an ``<iframe>`` / ``<img>``. For unknown types
-    the browser still falls back to download, which is fine for the
-    drawer's "Download" button path.
+    响应使用 Content-Disposition: inline，使浏览器可在 iframe / img 中
+    直接预览 PDF 和图片。对于未知类型，浏览器会回退到下载模式，
+    这对抽屉的"下载"按钮路径来说是可以接受的。
     """
     store = get_attachment_store()
     if not isinstance(store, LocalDiskAttachmentStore):
-        # Future remote backends should issue a redirect to the signed URL
-        # here. Local-disk is the only backend today, so this branch just
-        # guards against an unexpected configuration.
+        # 未来的远程后端应在此处重定向到签名 URL。
+        # 目前本地磁盘是唯一的后端，此分支仅用于防御意外配置。
         raise HTTPException(status_code=501, detail="Attachment backend not servable")
 
     target = store.resolve_path(
@@ -81,11 +75,10 @@ async def get_attachment(
     if not media_type:
         media_type = "application/octet-stream"
 
-    # ``inline`` lets the browser preview the file when possible while still
-    # honouring the suggested filename for the drawer's download action.
+    # inline 使浏览器在可能的情况下预览文件，同时保留建议的文件名供抽屉下载操作使用。
     headers = {
         "Content-Disposition": _content_disposition(target.name),
-        # User-uploaded data; do not let intermediaries cache it.
+        # 用户上传的数据，不允许中间层缓存。
         "Cache-Control": "private, max-age=0, must-revalidate",
     }
     return FileResponse(path=str(target), media_type=media_type, headers=headers)

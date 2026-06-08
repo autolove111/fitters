@@ -1,4 +1,4 @@
-"""OpenAI-compatible embedding adapter for OpenAI, Azure, HuggingFace, LM Studio, etc."""
+"""OpenAI 兼容 Embedding 适配器，支持 OpenAI、Azure、HuggingFace、LM Studio 等。"""
 
 import json
 import logging
@@ -29,7 +29,7 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
     }
 
     def _auth_api_key(self) -> str:
-        """Return a real API key, suppressing local-provider placeholder keys."""
+        """返回真实的 API 密钥，过滤本地 Provider 的占位密钥。"""
         key = str(self.api_key or "").strip()
         if key == self.NO_KEY_SENTINEL:
             return ""
@@ -38,19 +38,19 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
     @staticmethod
     def _extract_embeddings_from_response(data: Any) -> list[list[float]]:
         """
-        Extract embeddings from different OpenAI-compatible response schemas.
+        从不同的 OpenAI 兼容响应 Schema 中提取嵌入。
 
-        Supported shapes include:
+        支持的格式包括：
         - {"data": [{"embedding": [...]}, ...]}
         - {"embeddings": [[...], ...]}
-        - {"embedding": [...]}  (Ollama /api/embeddings)
+        - {"embedding": [...]}  （Ollama /api/embeddings）
         - {"result": {"data": [{"embedding": [...]}, ...]}}
         - {"output": {"embeddings": [[...], ...]}}
         """
         if not isinstance(data, dict):
             raise ValueError(f"Embedding response is not a JSON object: type={type(data).__name__}")
 
-        # Some providers return HTTP 200 with {"error": ...} payload.
+        # 某些 Provider 返回 HTTP 200 但载荷中包含 {"error": ...}。
         if "error" in data:
             err = data.get("error")
             if isinstance(err, dict):
@@ -118,14 +118,14 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
     _RATE_LIMIT_BACKOFF = 5.0
 
     def _should_send_dimensions(self, model_name: str | None) -> bool:
-        """Decide whether to attach `dimensions` to the request payload.
+        """决定是否在请求载荷中附加 `dimensions`。
 
-        Tri-state semantics driven by `self.send_dimensions`:
-        * ``True``  -> always send (user explicitly opted in)
-        * ``False`` -> never send (user explicitly opted out)
-        * ``None``  -> auto: send for known model families that accept the
-          OpenAI-style ``dimensions`` parameter — OpenAI ``text-embedding-3*``,
-          Qwen3-Embedding, Qwen3-VL-Embedding.
+        由 `self.send_dimensions` 驱动的三态语义：
+        * ``True``  -> 始终发送（用户显式选择启用）
+        * ``False`` -> 从不发送（用户显式选择禁用）
+        * ``None``  -> 自动：对已知接受 OpenAI 风格 ``dimensions`` 参数的
+          模型系列发送 — OpenAI ``text-embedding-3*``、
+          Qwen3-Embedding、Qwen3-VL-Embedding。
         """
         if self.send_dimensions is True:
             return True
@@ -152,10 +152,8 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
             headers["Authorization"] = f"Bearer {api_key}"
         headers.update({str(k): str(v) for k, v in self.extra_headers.items()})
 
-        # Multimodal: pass `contents` through as `input` only for model names
-        # that clearly advertise image/vision embedding support. This prevents
-        # image indexing from accidentally hitting ordinary text-embedding
-        # models just because the provider family has some multimodal models.
+        # 多模态：仅对明确支持图片/视觉嵌入的模型名称将 `contents` 作为 `input` 传递。
+        # 这防止因 Provider 系列中存在某些多模态模型而导致图片索引意外命中普通文本嵌入模型。
         model = request.model or self.model
         if request.contents and not looks_like_multimodal_embedding_model(model):
             raise ValueError(
@@ -170,17 +168,15 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
             "encoding_format": request.encoding_format or "float",
         }
 
-        # `dimensions` is opt-in. The user's `send_dimensions` flag wins when set
-        # explicitly (True/False); otherwise we fall back to a model-family
-        # heuristic since only OpenAI's text-embedding-3* family officially
-        # supports the param — other providers (e.g. Qwen text-embedding-v4 via
-        # litellm gateway) return HTTP 400 if we send it.
+        # `dimensions` 为可选启用。用户的 `send_dimensions` 标志在显式设置时（True/False）优先；
+        # 否则回退到模型系列启发式，因为只有 OpenAI 的 text-embedding-3* 系列官方支持此参数
+        # — 其他 Provider（如通过 litellm 网关的 Qwen text-embedding-v4）会返回 HTTP 400。
         dim_value = request.dimensions or self.dimensions
         if dim_value and self._should_send_dimensions(model):
             payload["dimensions"] = dim_value
 
-        # URL transparency: hit `base_url` verbatim. Azure's `?api-version=...`
-        # is a query param (not a path component) so we still append it.
+        # URL 透明：直接请求 `base_url`。Azure 的 `?api-version=...`
+        # 是查询参数（非路径组件），因此仍然追加。
         url = self.base_url
         if self.api_version:
             if "?" not in url:
@@ -204,7 +200,7 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
                 ) as client:
                     response = await client.post(url, json=payload, headers=headers)
 
-                    # Handle rate limiting (429) with retry
+                    # 处理限流（429）并重试
                     if response.status_code == 429:
                         retry_after = float(response.headers.get("Retry-After", 0))
                         wait = max(retry_after, self._RATE_LIMIT_BACKOFF * (2**attempt))
@@ -228,9 +224,8 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
                             provider="openai_compat",
                         )
 
-                    # A 2xx response with non-JSON body usually means the
-                    # endpoint/model pairing is wrong or a gateway routed us to
-                    # an HTML page. Surface that as structured diagnostics.
+                    # 2xx 响应但非 JSON 主体通常意味着端点/模型配对错误，
+                    # 或网关将请求路由到了 HTML 页面。将其作为结构化诊断信息输出。
                     try:
                         data = response.json()
                     except (json.JSONDecodeError, ValueError) as exc:
@@ -240,18 +235,16 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
                         hint = ""
                         if not body_text.strip():
                             hint = (
-                                " The response body was empty — the endpoint may "
-                                "not support embeddings or the selected model "
-                                "may not be an embedding model."
+                                " 响应主体为空 — 该端点可能不支持嵌入，"
+                                "或所选模型可能不是嵌入模型。"
                             )
                         elif (
                             "text/html" in content_type.lower()
                             or body_preview.lstrip().startswith("<")
                         ):
                             hint = (
-                                " The response was HTML, not JSON — the URL is "
-                                "likely wrong or the gateway does not expose "
-                                "`/v1/embeddings`."
+                                " 响应为 HTML 而非 JSON — URL 可能有误，"
+                                "或网关未暴露 `/v1/embeddings`。"
                             )
                         raise EmbeddingProviderError(
                             (
@@ -266,11 +259,10 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
                         ) from exc
                 break
             except httpx.TransportError as exc:
-                # httpx.TransportError covers all transient transport-layer
-                # failures: ConnectError, ReadError, WriteError, ConnectTimeout,
-                # ReadTimeout, WriteTimeout, PoolTimeout, RemoteProtocolError, etc.
-                # Retrying any of these with backoff is safe and obviates the
-                # need to keep extending an explicit allow-list.
+                # httpx.TransportError 涵盖所有瞬态传输层故障：
+                # ConnectError、ReadError、WriteError、ConnectTimeout、
+                # ReadTimeout、WriteTimeout、PoolTimeout、RemoteProtocolError 等。
+                # 对这些错误进行退避重试是安全的，无需不断扩展显式白名单。
                 last_exc = exc
                 if attempt < self._MAX_RETRIES:
                     wait = self._RETRY_BACKOFF * (2**attempt)

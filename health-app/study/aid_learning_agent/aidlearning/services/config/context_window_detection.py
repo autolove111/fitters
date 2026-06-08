@@ -1,4 +1,4 @@
-"""Detect or suggest a model context window during settings diagnostics."""
+"""在设置诊断期间检测或建议模型上下文窗口大小。"""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ _KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, int], ...] = (("deepseek-v4", 1_000_000
 
 @dataclass(frozen=True)
 class ContextWindowDetectionResult:
-    """Structured context-window detection output."""
+    """结构化的上下文窗口检测输出。"""
 
     context_window: int
     source: str
@@ -158,7 +158,7 @@ async def _detect_from_models_endpoint(
                 if response.status != 200:
                     if on_log is not None:
                         on_log(
-                            f"`GET {url}` returned HTTP {response.status}; skipping metadata detection."
+                            f"`GET {url}` 返回 HTTP {response.status}；跳过元数据检测。"
                         )
                     return None
                 payload = await response.json()
@@ -176,14 +176,14 @@ async def detect_context_window(
     *,
     on_log: Callable[[str], None] | None = None,
 ) -> ContextWindowDetectionResult:
-    """Detect the current model's context window or fall back to the runtime default."""
+    """检测当前模型的上下文窗口，或回退到运行时默认值。"""
     detected_at = datetime.now(timezone.utc).isoformat()
     metadata_window = await _detect_from_models_endpoint(llm_config, on_log=on_log)
     if metadata_window is not None:
         return ContextWindowDetectionResult(
             context_window=metadata_window,
             source="metadata",
-            detail="Detected from provider `/models` metadata.",
+            detail="从 Provider `/models` 元数据中检测到。",
             detected_at=detected_at,
         )
 
@@ -192,7 +192,7 @@ async def detect_context_window(
         return ContextWindowDetectionResult(
             context_window=known_window,
             source="known_model",
-            detail="Matched built-in context-window metadata for this model family.",
+            detail="匹配到此模型系列的内置上下文窗口元数据。",
             detected_at=detected_at,
         )
 
@@ -203,7 +203,7 @@ async def detect_context_window(
     return ContextWindowDetectionResult(
         context_window=fallback,
         source="default",
-        detail="Provider metadata did not expose a window; using the runtime fallback.",
+        detail="Provider 元数据未暴露窗口大小；使用运行时回退值。",
         detected_at=detected_at,
     )
 

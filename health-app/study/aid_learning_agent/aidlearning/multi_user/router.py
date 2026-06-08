@@ -1,4 +1,4 @@
-"""Admin and current-user APIs for the optional multi-user layer."""
+"""可选多用户层的管理员和当前用户 API。"""
 
 from __future__ import annotations
 

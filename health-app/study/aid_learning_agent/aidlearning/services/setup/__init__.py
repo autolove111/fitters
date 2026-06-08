@@ -1,18 +1,18 @@
 """
-Setup Service
-=============
+设置服务
+=======
 
-System setup and initialization for AidLearning.
+AidLearning 的系统设置和初始化。
 
-Port configuration is done via data/user/settings/system.json.
+端口配置通过 data/user/settings/system.json 完成。
 
-Usage:
+用法：
     from aidlearning.services.setup import init_user_directories, get_backend_port
 
-    # Initialize user directories
+    # 初始化用户目录
     init_user_directories()
 
-    # Get server ports
+    # 获取服务器端口
     backend_port = get_backend_port()
     frontend_port = get_frontend_port()
 """

@@ -1,4 +1,4 @@
-"""Canonical identity store for the optional multi-user layer."""
+"""可选多用户层的规范身份存储。"""
 
 from __future__ import annotations
 
@@ -17,11 +17,9 @@ from .models import Role
 
 logger = logging.getLogger(__name__)
 
-# Serialises writes to USERS_FILE so a concurrent burst of /register requests
-# cannot all see ``not users`` and each promote themselves to admin. Single-
-# process FastAPI deployments (the ``aidlearning start`` launcher) are fully covered;
-# multi-worker deployments still race and must rely on an external user store
-# (e.g. PocketBase), which is documented in the multi-user README.
+# 对 USERS_FILE 的写入进行序列化，防止并发的 /register 请求同时看到 ``not users`` 并各自将自己提升为管理员。
+# 单进程 FastAPI 部署（``aidlearning start`` 启动器）已完全覆盖；
+# 多工作进程部署仍存在竞争条件，需依赖外部用户存储（如 PocketBase），详见多用户 README。
 _USERS_WRITE_LOCK = threading.Lock()
 
 PROJECT_ROOT = get_runtime_home()
@@ -127,7 +125,7 @@ def load_users(  # nosec B107 - empty defaults mean "no env fallback supplied".
     env_username: str = "",
     env_password_hash: str = "",
 ) -> dict[str, dict[str, Any]]:
-    """Load canonical users, migrating legacy records and env fallback in memory."""
+    """加载规范用户数据，迁移旧版记录并在内存中回退到环境变量。"""
     users: dict[str, dict[str, Any]] | None = None
     if USERS_FILE.exists():
         users = _read_json(USERS_FILE)
@@ -172,8 +170,7 @@ def load_users(  # nosec B107 - empty defaults mean "no env fallback supplied".
 
 def save_user(username: str, hashed_password: str, role: Role = "user") -> dict[str, Any]:
     USERS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Read-modify-write must be atomic so concurrent first-time registrations
-    # cannot each see an empty store and each promote themselves to admin.
+    # 读取-修改-写入必须是原子操作，防止并发的首次注册请求各自看到空存储并将自己提升为管理员。
     with _USERS_WRITE_LOCK:
         users = load_users()
         effective_role: Role = "admin" if not users else role

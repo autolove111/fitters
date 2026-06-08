@@ -1,4 +1,4 @@
-"""Jina AI embedding adapter with task-aware embeddings and late chunking."""
+"""Jina AI Embedding 适配器，支持任务感知嵌入和延迟分块。"""
 
 import logging
 from typing import Any, Dict
@@ -35,7 +35,7 @@ class JinaEmbeddingAdapter(BaseEmbeddingAdapter):
     }
 
     def _should_send_dimensions(self, model_name: str | None, dim: int) -> bool:
-        """Decide whether to attach `dimensions` (Matryoshka truncation)."""
+        """决定是否附加 `dimensions`（Matryoshka 截断）。"""
         if self.send_dimensions is True:
             return True
         if self.send_dimensions is False:
@@ -62,9 +62,9 @@ class JinaEmbeddingAdapter(BaseEmbeddingAdapter):
         }
         headers.update({str(k): str(v) for k, v in self.extra_headers.items()})
 
-        # Jina v4 accepts mixed `["text", "https://image.url", "data:..."]`
-        # arrays in `input`; v3 is text-only. Treat `contents` as advisory:
-        # if set, flatten each {"text"|"image"|"video": value} to its value.
+        # Jina v4 接受 `input` 中的混合数组 `["text", "https://image.url", "data:..."]`；
+        # v3 仅支持文本。将 `contents` 视为建议性参数：
+        # 如果设置了，将每个 {"text"|"image"|"video": value} 展平为其值。
         if request.contents:
             if not self._supports_multimodal(request.model or self.model):
                 raise ValueError(
@@ -82,10 +82,9 @@ class JinaEmbeddingAdapter(BaseEmbeddingAdapter):
             "model": request.model or self.model,
         }
 
-        # `dimensions` opt-in: tri-state send_dimensions wins; otherwise only
-        # send when the configured model is in MODELS_INFO and exposes a
-        # supported list (Matryoshka). Avoids HTTP 400 on models that reject
-        # the param.
+        # `dimensions` 可选启用：三态 send_dimensions 优先；否则仅在配置的模型
+        # 存在于 MODELS_INFO 中且暴露了支持列表（Matryoshka）时才发送。
+        # 避免在拒绝此参数的模型上出现 HTTP 400。
         dim_value = request.dimensions or self.dimensions
         if dim_value and self._should_send_dimensions(request.model or self.model, dim_value):
             payload["dimensions"] = dim_value

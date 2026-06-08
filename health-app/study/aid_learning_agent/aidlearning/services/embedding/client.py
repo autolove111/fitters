@@ -1,4 +1,4 @@
-"""Unified embedding client backed by normalized provider runtime config."""
+"""基于标准化 Provider 运行时配置的统一 Embedding 客户端。"""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def _resolve_adapter_class(binding: str) -> type[BaseEmbeddingAdapter]:
 
 
 class EmbeddingClient:
-    """Unified embedding client for RAG and retrieval services."""
+    """用于 RAG 和检索服务的统一 Embedding 客户端。"""
 
     def __init__(self, config: Optional[EmbeddingConfig] = None):
         self.config = config or get_embedding_config()
@@ -69,10 +69,10 @@ class EmbeddingClient:
 
         import asyncio
 
-        # Clamp configured batch size against the provider's per-request item
-        # cap. SiliconFlow Qwen3 family caps at 32; DashScope at 20; others
-        # have generous defaults. Without this clamp, indexing a doc with many
-        # chunks fails on the second batch even when "Test connection" passes.
+        # 根据 Provider 的单次请求批量上限约束配置的 batch_size。
+        # SiliconFlow Qwen3 系列上限为 32；DashScope 为 20；其他较宽松。
+        # 如果不进行此约束，索引包含大量分块的文档时，
+        # 即使"测试连接"通过，第二批也会失败。
         spec = EMBEDDING_PROVIDERS.get(self.config.binding)
         provider_max = spec.max_batch_items if spec else 256
         batch_size = max(1, min(self.config.batch_size, provider_max))
@@ -96,8 +96,7 @@ class EmbeddingClient:
             try:
                 response = await self.adapter.embed(request)
             except Exception as exc:
-                # Capture batch context so the task log stream / KB diagnostics
-                # show actionable info instead of a bare exception string.
+                # 捕获批次上下文，以便任务日志流/知识库诊断显示可操作的信息，而非裸异常字符串。
                 import traceback
 
                 first_chunk_chars = len(batch[0]) if batch else 0
@@ -134,14 +133,14 @@ class EmbeddingClient:
 
             all_embeddings.extend(validated)
 
-            # Report progress after each batch
+            # 每批次后报告进度
             if progress_callback:
                 try:
                     progress_callback(i + 1, total_batches)
                 except Exception:
                     pass
 
-            # Delay between batches to avoid rate limiting
+            # 批次间延迟以避免触发限流
             if i < total_batches - 1 and batch_delay > 0:
                 await asyncio.sleep(batch_delay)
 
@@ -152,7 +151,7 @@ class EmbeddingClient:
         return all_embeddings
 
     def supports_multimodal_contents(self) -> bool:
-        """Return whether the configured adapter/model accepts multimodal contents."""
+        """返回已配置的适配器/模型是否接受多模态内容。"""
         try:
             info = self.adapter.get_model_info()
             if "multimodal" in info:
@@ -169,10 +168,10 @@ class EmbeddingClient:
         *,
         progress_callback=None,
     ) -> List[List[float]]:
-        """Embed provider-agnostic multimodal content items.
+        """嵌入与 Provider 无关的多模态内容项。
 
-        ``contents`` uses the same simple contract as ``EmbeddingRequest``:
-        ``[{"text": "..."}, {"image": "data:...|url"}, {"video": "..."}]``.
+        ``contents`` 使用与 ``EmbeddingRequest`` 相同的简单契约：
+        ``[{"text": "..."}, {"image": "data:...|url"}, {"video": "..."}]``。
         """
         if not contents:
             return []

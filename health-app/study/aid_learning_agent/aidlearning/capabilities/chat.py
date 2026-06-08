@@ -1,4 +1,4 @@
-"""Agentic chat capability."""
+"""智能体聊天能力。"""
 
 from __future__ import annotations
 

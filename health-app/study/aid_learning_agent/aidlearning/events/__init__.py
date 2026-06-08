@@ -1,4 +1,4 @@
-"""Application event bus utilities."""
+"""应用事件总线工具。"""
 
 from .event_bus import (
     Event,

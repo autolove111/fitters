@@ -1,4 +1,4 @@
-"""Path resolution for admin-local and per-user workspaces."""
+"""管理员本地和每用户工作区的路径解析。"""
 
 from __future__ import annotations
 

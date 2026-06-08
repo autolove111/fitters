@@ -1,9 +1,8 @@
 """
-Unified Context
+统一上下文
 ===============
 
-A single data object that flows through the orchestrator into every
-tool / capability / plugin invocation.
+流经编排器进入每个工具/能力/插件调用的单一数据对象。
 """
 
 from __future__ import annotations
@@ -14,46 +13,45 @@ from typing import Any
 
 @dataclass
 class Attachment:
-    """A file or image attached to the user message."""
+    """用户消息附带的文件或图片。"""
 
     type: str  # "image" | "file" | "pdf"
     url: str = ""
     base64: str = ""
     filename: str = ""
     mime_type: str = ""
-    # Stable per-attachment identifier; doubles as the directory segment
-    # under which the original bytes live in the AttachmentStore.
+    # 每个附件的稳定标识符；同时用作 AttachmentStore 中
+    # 原始文件存储目录的路径段。
     id: str = ""
-    # Plain-text rendering of binary documents (PDF/DOCX/XLSX/PPTX).
-    # Populated by ``extract_documents_from_records`` so the frontend can
-    # show "what the LLM saw" when previewing office files.
+    # 二进制文档（PDF/DOCX/XLSX/PPTX）的纯文本渲染。
+    # 由 ``extract_documents_from_records`` 填充，使前端在预览
+    # Office 文件时能展示"LLM 看到的内容"。
     extracted_text: str = ""
 
 
 @dataclass
 class UnifiedContext:
     """
-    Everything a capability or tool needs to process a single user turn.
+    能力或工具处理单个用户轮次所需的一切信息。
 
-    Attributes:
-        session_id: Persistent conversation identifier.
-        user_message: The current user input.
-        conversation_history: Previous messages in OpenAI format.
-        enabled_tools: Tool names the user has toggled on (Level 1).
-            ``None`` means "not specified", while ``[]`` means
-            "explicitly disable all optional tools".
-        active_capability: Capability name selected by the user, or None for plain chat.
-        knowledge_bases: KB names to use for RAG.
-        attachments: Images / files sent with the message.
-        config_overrides: Per-request config tweaks (e.g. temperature).
-        language: UI / response language ("en" | "zh").
-        memory_context: Memory snapshot text injected into the system prompt.
-        skills_context: Skill instructions injected into the system prompt.
-        source_manifest: Plain-text manifest of attached sources (one line per
-            source: id/name/type/preview). Empty when no sources are attached.
-            Consumed by the chat capability to render an "Attached Sources"
-            section in the system prompt and to enable the ``read_source`` tool.
-        metadata: Catch-all for capability-specific extras.
+    属性：
+        session_id: 持久化会话标识符。
+        user_message: 当前用户输入。
+        conversation_history: OpenAI 格式的历史消息。
+        enabled_tools: 用户已开启的工具名称（第一层）。
+            ``None`` 表示"未指定"，``[]`` 表示"明确禁用所有可选工具"。
+        active_capability: 用户选择的能力名称，普通聊天时为 None。
+        knowledge_bases: 用于 RAG 的知识库名称。
+        attachments: 随消息发送的图片/文件。
+        config_overrides: 每次请求的配置覆盖（如 temperature）。
+        language: UI/响应语言（"en" | "zh"）。
+        memory_context: 注入系统提示词的记忆快照文本。
+        skills_context: 注入系统提示词的技能指令。
+        source_manifest: 附件来源的纯文本清单（每个来源一行：
+            id/name/type/preview）。无附件时为空。
+            由 chat 能力消费，用于在系统提示词中渲染"附件来源"段，
+            并启用 ``read_source`` 工具。
+        metadata: 用于能力特定扩展的通用字段。
     """
 
     session_id: str = ""

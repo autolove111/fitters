@@ -1,4 +1,4 @@
-"""Helpers for reasoning about model context-window budgets."""
+"""用于推理模型上下文窗口预算的辅助函数。"""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ KNOWN_LARGE_CONTEXT_MARKERS = (
 
 
 def coerce_positive_int(value: Any) -> int | None:
-    """Parse a positive integer from arbitrary input."""
+    """从任意输入中解析正整数。"""
     try:
         parsed = int(str(value).strip())
     except (TypeError, ValueError):
@@ -33,7 +33,7 @@ def coerce_positive_int(value: Any) -> int | None:
 
 
 def looks_like_large_context_model(model: str) -> bool:
-    """Return True when a model family is typically backed by a large window."""
+    """当模型系列通常具有大窗口时返回 True。"""
     normalized = (model or "").strip().lower()
     return any(marker in normalized for marker in KNOWN_LARGE_CONTEXT_MARKERS)
 
@@ -43,7 +43,7 @@ def default_context_window_for_model(
     model: str,
     max_tokens: Any = None,
 ) -> int:
-    """Return the fallback window used when no explicit model metadata exists."""
+    """当不存在显式模型元数据时使用的回退窗口。"""
     if looks_like_large_context_model(model):
         return LARGE_CONTEXT_MODEL_DEFAULT
     output_limit = coerce_positive_int(max_tokens) or 4096
@@ -56,7 +56,7 @@ def resolve_effective_context_window(
     model: str,
     max_tokens: Any = None,
 ) -> int:
-    """Resolve the bounded history-planning window for the current model."""
+    """解析当前模型的有界历史规划窗口。"""
     configured = coerce_positive_int(context_window)
     if configured is not None:
         return min(configured, MAX_EFFECTIVE_CONTEXT_WINDOW)

@@ -1,11 +1,10 @@
-"""User-tunable parameters for the memory consolidator.
+"""记忆整合器的用户可调参数。
 
-Single source of truth is ``data/user/settings/main.yaml`` under the
-``memory:`` subtree. Defaults live here. The frontend ``/settings/memory``
-page reads/writes the same subtree via the API.
+唯一数据源是 ``data/user/settings/main.yaml`` 中 ``memory:`` 子树。
+默认值定义在此处。前端 ``/settings/memory`` 页面通过 API 读写同一子树。
 
-Decoupled from the algorithm code: every mode picks values up via
-:func:`load_memory_settings`, never via module-level constants.
+与算法代码解耦：每个模式通过 :func:`load_memory_settings` 获取参数值，
+而不是通过模块级常量。
 """
 
 from __future__ import annotations
@@ -38,7 +37,7 @@ class DedupSettings:
 
 @dataclass(frozen=True)
 class MergeSettings:
-    """No-LLM footnote consolidation (collapse duplicate refs into one footnote each)."""
+    """无需 LLM 的脚注合并（将重复引用合并为每个一个脚注）。"""
 
     auto_after_update: bool = True
     auto_after_audit: bool = True
@@ -61,7 +60,7 @@ class ReferenceSettings:
 
 @dataclass(frozen=True)
 class DecaySettings:
-    """Time-based memory decay parameters."""
+    """基于时间的记忆衰减参数。"""
     half_life_days: float = 90.0
     auto_cleanup_enabled: bool = True
     cleanup_threshold: float = 0.05
@@ -70,7 +69,7 @@ class DecaySettings:
 
 @dataclass(frozen=True)
 class RetrievalSettings:
-    """Smart retrieval parameters for mid-term + long-term memory."""
+    """中期+长期记忆的智能检索参数。"""
     enabled: bool = True
     top_k: int = 10
     token_budget: int = 2000
@@ -93,20 +92,20 @@ class MemorySettings:
 
 
 def load_memory_settings() -> MemorySettings:
-    """Return the current ``memory:`` subtree merged on top of defaults.
+    """返回当前 ``memory:`` 子树与默认值合并后的结果。
 
-    Missing keys fall back to defaults. Out-of-range numeric values are
-    clamped to safe ranges so a malformed YAML never crashes a run.
+    缺失的键回退到默认值。超出范围的数值会被钳制到安全范围内，
+    以防止格式错误的 YAML 导致运行崩溃。
     """
     raw = ConfigManager().load_config().get(_SETTINGS_KEY) or {}
     return _from_dict(MemorySettings, raw)
 
 
 def save_memory_settings(payload: dict[str, Any]) -> MemorySettings:
-    """Merge ``payload`` into the on-disk ``memory:`` subtree.
+    """将 ``payload`` 合并到磁盘上的 ``memory:`` 子树中。
 
-    Unknown keys are dropped; values are coerced to the schema's types
-    so the YAML never picks up junk. Returns the post-merge settings.
+    未知键会被丢弃；值会被强制转换为模式定义的类型，
+    以防止 YAML 中出现垃圾数据。返回合并后的设置。
     """
     merged = _from_dict(MemorySettings, payload)
     coerced = asdict(merged)
@@ -115,11 +114,11 @@ def save_memory_settings(payload: dict[str, Any]) -> MemorySettings:
 
 
 def memory_settings_dict() -> dict[str, Any]:
-    """Settings as a plain dict — JSON-safe for the API response."""
+    """以普通字典形式返回设置 — JSON 安全，适用于 API 响应。"""
     return asdict(load_memory_settings())
 
 
-# ── Coercion + clamping ─────────────────────────────────────────────────
+# ── 类型转换 + 钳制 ─────────────────────────────────────────────────
 
 
 _MIN_BUDGET = 1
@@ -134,11 +133,10 @@ _BOUNDARIES = ("paragraph", "sentence")
 
 
 def _from_dict(cls: type, raw: Any) -> Any:
-    """Build a frozen dataclass from a partial dict.
+    """从部分字典构建冻结 dataclass。
 
-    Strategy: walk fields, if a field is itself a dataclass and the input
-    has a matching dict, recurse. Otherwise coerce + clamp. Defaults fill
-    any missing field.
+    策略：遍历字段，如果字段本身是 dataclass 且输入中有匹配的字典，
+    则递归处理。否则进行类型转换+钳制。默认值填充所有缺失字段。
     """
     if not is_dataclass(cls):
         raise TypeError(f"{cls!r} is not a dataclass")
@@ -154,7 +152,7 @@ def _from_dict(cls: type, raw: Any) -> Any:
         if isinstance(f.type, type) and is_dataclass(f.type):
             kwargs[f.name] = _from_dict(f.type, provided) if provided is not None else default
             continue
-        # nested dataclass detection through the actual default type
+        # 通过实际默认类型检测嵌套 dataclass
         if is_dataclass(default):
             kwargs[f.name] = (
                 _from_dict(type(default), provided) if provided is not None else default
@@ -205,7 +203,7 @@ def _clamp_float(name: str, value: float, default: float) -> float:
     if name == "overlap_ratio":
         return max(_MIN_OVERLAP, min(_MAX_OVERLAP, value))
     if name == "half_life_days":
-        return max(1.0, min(3650.0, value))  # 1 day to 10 years
+        return max(1.0, min(3650.0, value))  # 1 天到 10 年
     if name == "cleanup_threshold":
         return max(0.0, min(1.0, value))
     if name in ("weight_similarity", "weight_decay", "weight_importance", "weight_recency"):

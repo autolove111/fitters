@@ -1,4 +1,4 @@
-"""Validation helpers for embedding vectors."""
+"""Embedding 向量的验证辅助函数。"""
 
 from __future__ import annotations
 
@@ -44,11 +44,11 @@ def validate_embedding_batch(
     total_batches: int | None = None,
     start_index: int = 0,
 ) -> list[list[float]]:
-    """Return normalized float vectors or raise a clear provider error.
+    """返回标准化的浮点向量，或抛出明确的 Provider 错误。
 
-    Provider smoke tests and RAG indexing both ultimately need a list of dense
-    numeric vectors. A single ``None`` coordinate otherwise reaches LlamaIndex's
-    similarity code and fails later as ``NoneType * float``.
+    Provider 冒烟测试和 RAG 索引最终都需要稠密的数值向量列表。
+    单个 ``None`` 坐标会进入 LlamaIndex 的相似度计算，
+    稍后以 ``NoneType * float`` 的形式失败。
     """
 
     context = _context(

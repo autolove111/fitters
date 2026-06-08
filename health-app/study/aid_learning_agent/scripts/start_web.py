@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Compatibility wrapper for ``aidlearning start``."""
+"""``aidlearning start`` 的兼容性包装器。"""
 
 from __future__ import annotations
 
@@ -15,12 +15,12 @@ from aidlearning.runtime.launcher import start  # noqa: E402
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Start AidLearning Web.")
+    parser = argparse.ArgumentParser(description="启动 AidLearning Web。")
     parser.add_argument(
         "--home",
         type=Path,
         default=None,
-        help="Runtime workspace root. Defaults to the current directory.",
+        help="运行时工作区根目录。默认为当前目录。",
     )
     return parser
 

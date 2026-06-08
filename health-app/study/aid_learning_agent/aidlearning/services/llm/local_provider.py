@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 def _extract_message_from_payload(payload: dict[str, object]) -> str:
-    """Extract message content from a local provider payload.
+    """从本地 Provider 载荷中提取消息内容。
 
     Args:
-        payload: Provider response payload.
+        payload: Provider 响应载荷。
     Returns:
-        Extracted content string.
+        提取的内容字符串。
     Raises:
-        None.
+        无。
     """
     if not payload:
         return ""
@@ -59,8 +59,8 @@ def _extract_message_from_payload(payload: dict[str, object]) -> str:
     return ""
 
 
-# Extended timeout for local servers (may be slower than cloud)
-DEFAULT_TIMEOUT = 300  # 5 minutes
+# 本地服务器的扩展超时（可能比云端慢）
+DEFAULT_TIMEOUT = 300  # 5 分钟
 
 
 async def complete(
@@ -73,33 +73,33 @@ async def complete(
     **kwargs: object,
 ) -> str:
     """
-    Complete a prompt using local LLM server.
+    使用本地 LLM 服务器补全提示。
 
-    Uses aiohttp for better compatibility with local servers.
+    使用 aiohttp 以获得与本地服务器更好的兼容性。
 
     Args:
-        prompt: The user prompt (ignored if messages provided)
-        system_prompt: System prompt for context
-        model: Model name
-        api_key: API key (optional for most local servers)
-        base_url: Base URL for the local server
-        messages: Pre-built messages array (optional)
-        **kwargs: Additional parameters (temperature, max_tokens, etc.)
+        prompt: 用户提示（如果提供了 messages 则忽略）
+        system_prompt: 系统提示上下文
+        model: 模型名称
+        api_key: API 密钥（大多数本地服务器可选）
+        base_url: 本地服务器的基础 URL
+        messages: 预构建的消息数组（可选）
+        **kwargs: 附加参数（temperature, max_tokens 等）
 
     Returns:
-        str: The LLM response
+        str: LLM 响应
     """
     if not base_url:
         raise LLMConfigError("base_url is required for local LLM provider")
 
-    # Sanitize URL and build chat endpoint
+    # 清理 URL 并构建聊天端点
     base_url = sanitize_url(base_url, model or "")
     url = build_chat_url(base_url)
 
-    # Build headers using unified utility
+    # 使用统一工具构建请求头
     headers = build_auth_headers(api_key)
 
-    # Build messages
+    # 构建消息
     if messages:
         msg_list = messages
     else:
@@ -108,7 +108,7 @@ async def complete(
             {"role": "user", "content": prompt},
         ]
 
-    # Build request data
+    # 构建请求数据
     data = {
         "model": model or "default",
         "messages": msg_list,
@@ -116,7 +116,7 @@ async def complete(
         "stream": False,
     }
 
-    # Add optional parameters
+    # 添加可选参数
     if kwargs.get("max_tokens"):
         data["max_tokens"] = kwargs["max_tokens"]
 
@@ -156,34 +156,34 @@ async def stream(
     **kwargs: object,
 ) -> AsyncGenerator[str, None]:
     """
-    Stream a response from local LLM server.
+    从本地 LLM 服务器流式获取响应。
 
-    Uses aiohttp for better compatibility with local servers.
-    Falls back to non-streaming if streaming fails.
+    使用 aiohttp 以获得与本地服务器更好的兼容性。
+    流式失败时回退到非流式。
 
     Args:
-        prompt: The user prompt (ignored if messages provided)
-        system_prompt: System prompt for context
-        model: Model name
-        api_key: API key (optional for most local servers)
-        base_url: Base URL for the local server
-        messages: Pre-built messages array (optional)
-        **kwargs: Additional parameters (temperature, max_tokens, etc.)
+        prompt: 用户提示（如果提供了 messages 则忽略）
+        system_prompt: 系统提示上下文
+        model: 模型名称
+        api_key: API 密钥（大多数本地服务器可选）
+        base_url: 本地服务器的基础 URL
+        messages: 预构建的消息数组（可选）
+        **kwargs: 附加参数（temperature, max_tokens 等）
 
     Yields:
-        str: Response chunks
+        str: 响应分块
     """
     if not base_url:
         raise LLMConfigError("base_url is required for local LLM provider")
 
-    # Sanitize URL and build chat endpoint
+    # 清理 URL 并构建聊天端点
     base_url = sanitize_url(base_url, model or "")
     url = build_chat_url(base_url)
 
-    # Build headers using unified utility
+    # 使用统一工具构建请求头
     headers = build_auth_headers(api_key)
 
-    # Build messages
+    # 构建消息
     if messages:
         msg_list = messages
     else:
@@ -192,7 +192,7 @@ async def stream(
             {"role": "user", "content": prompt},
         ]
 
-    # Build request data
+    # 构建请求数据
     data = {
         "model": model or "default",
         "messages": msg_list,
@@ -220,18 +220,18 @@ async def stream(
                         provider="local",
                     )
 
-                # Track if we're inside a thinking block
+                # 跟踪是否在思考块内
                 in_thinking_block = False
                 thinking_buffer = ""
 
                 async for line in response.content:
                     line_str = line.decode("utf-8").strip()
 
-                    # Skip empty lines
+                    # 跳过空行
                     if not line_str:
                         continue
 
-                    # Handle SSE format
+                    # 处理 SSE 格式
                     if line_str.startswith("data:"):
                         data_str = line_str[5:].strip()
 
@@ -273,14 +273,14 @@ async def stream(
                                     yield content
 
                         except json.JSONDecodeError:
-                            # Log and skip malformed JSON chunks
+                            # 记录并跳过格式错误的 JSON 块
                             logger.warning(
                                 "Skipping malformed JSON chunk: %s...",
                                 data_str[:50],
                             )
                             continue
 
-                    # Some servers don't use SSE format
+                    # 某些服务器不使用 SSE 格式
                     elif line_str.startswith("{"):
                         try:
                             chunk_data = json.loads(line_str)
@@ -292,9 +292,9 @@ async def stream(
                             pass
 
     except LLMAPIError:
-        raise  # Re-raise LLM errors as-is
+        raise  # 原样重新抛出 LLM 错误
     except Exception as e:
-        # Streaming failed, fall back to non-streaming
+        # 流式失败，回退到非流式
         logger.warning("Streaming failed (%s), falling back to non-streaming", e)
 
         try:
@@ -321,22 +321,22 @@ async def fetch_models(
     api_key: str | None = None,
 ) -> list[str]:
     """
-    Fetch available models from local LLM server.
+    从本地 LLM 服务器获取可用模型。
 
-    Supports:
+    支持：
     - Ollama (/api/tags)
-    - OpenAI-compatible (/models)
+    - OpenAI 兼容 (/models)
 
     Args:
-        base_url: Base URL for the local server
-        api_key: API key (optional)
+        base_url: 本地服务器的基础 URL
+        api_key: API 密钥（可选）
 
     Returns:
-        List of available model names
+        可用模型名称列表
     """
     base_url = base_url.rstrip("/")
 
-    # Build headers using unified utility
+    # 使用统一工具构建请求头
     headers = build_auth_headers(api_key)
     # Remove Content-Type for GET request
     headers.pop("Content-Type", None)
@@ -344,7 +344,7 @@ async def fetch_models(
     timeout = aiohttp.ClientTimeout(total=30)
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        # Try Ollama /api/tags first
+        # 先尝试 Ollama /api/tags
         is_ollama = ":11434" in base_url or "ollama" in base_url.lower()
         if is_ollama:
             try:
@@ -361,14 +361,14 @@ async def fetch_models(
                     exc,
                 )
 
-        # Try OpenAI-compatible /models
+        # 尝试 OpenAI 兼容 /models
         try:
             models_url = f"{base_url}/models"
             async with session.get(models_url, headers=headers) as resp:
                 if resp.status == 200:
                     data = await resp.json()
 
-                    # Handle different response formats
+                    # 处理不同的响应格式
                     if "data" in data and isinstance(data["data"], list):
                         return collect_model_names(data["data"])
                     elif "models" in data and isinstance(data["models"], list):

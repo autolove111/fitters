@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-PocketBase collection bootstrap script.
+PocketBase 集合初始化脚本。
 
-Run this once after starting PocketBase for the first time:
+首次启动 PocketBase 后运行此脚本：
 
     python scripts/pb_setup.py
 
-Requires integrations.pocketbase_url, integrations.pocketbase_admin_email, and
-integrations.pocketbase_admin_password in data/user/settings/integrations.json.
+需要在 data/user/settings/integrations.json 中配置 integrations.pocketbase_url、
+integrations.pocketbase_admin_email 和 integrations.pocketbase_admin_password。
 
-Safe to re-run — existing collections are left untouched.
+可重复运行——已存在的集合不会被修改。
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-# Allow running from project root without installing the package.
+# 允许从项目根目录运行而无需安装包。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from aidlearning.services.config import load_integrations_settings

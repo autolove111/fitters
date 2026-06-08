@@ -25,10 +25,10 @@ from pydantic import BaseModel, field_validator
 
 from aidlearning.services.config import load_auth_settings
 
-# SameSite=None lets the cookie work when the browser accesses the frontend via
-# 127.0.0.1 and the backend via localhost (different origins on the same machine).
-# Browsers require Secure=True for SameSite=None, but that needs HTTPS — so in
-# local dev we fall back to SameSite=Lax and tell users to use localhost:// URLs.
+# SameSite=None 允许 cookie 在浏览器通过 127.0.0.1 访问前端、通过 localhost
+# 访问后端（同一机器上的不同源）时正常工作。
+# 浏览器要求 SameSite=None 时必须设置 Secure=True，但这需要 HTTPS——
+# 因此在本地开发中回退为 SameSite=Lax，并提示用户使用 localhost:// URL。
 _SECURE = bool(load_auth_settings()["cookie_secure"])
 _SAMESITE = "none" if _SECURE else "lax"
 
@@ -58,19 +58,19 @@ _COOKIE_MAX_AGE = TOKEN_EXPIRE_HOURS * 3600
 
 
 # ---------------------------------------------------------------------------
-# Schemas
+# 数据模型
 # ---------------------------------------------------------------------------
 
 
 class LoginRequest(BaseModel):
-    """Payload for the POST /login endpoint."""
+    """POST /login 端点的请求体。"""
 
     username: str
     password: str
 
 
 class RegisterRequest(BaseModel):
-    """Payload for the POST /register endpoint."""
+    """POST /register 端点的请求体。"""
 
     username: str
     password: str
@@ -83,8 +83,7 @@ class RegisterRequest(BaseModel):
         v = v.strip()
         if not v:
             raise ValueError("Email cannot be empty")
-        # Accept standard email addresses (used by PocketBase mode) or plain
-        # usernames (used by the built-in SQLite/JSON auth mode).
+        # 接受标准邮箱地址（PocketBase 模式使用）或纯用户名（内置 SQLite/JSON 认证模式使用）。
         email_re = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
         plain_re = re.compile(r"^[A-Za-z0-9_\-.]{3,64}$")
         if not email_re.match(v) and not plain_re.match(v):
@@ -100,7 +99,7 @@ class RegisterRequest(BaseModel):
 
 
 class SetRoleRequest(BaseModel):
-    """Payload for the PUT /users/{username}/role endpoint."""
+    """PUT /users/{username}/role 端点的请求体。"""
 
     role: str
 
@@ -113,7 +112,7 @@ class SetRoleRequest(BaseModel):
 
 
 class AuthStatusResponse(BaseModel):
-    """Response body for the GET /status endpoint."""
+    """GET /status 端点的响应体。"""
 
     enabled: bool
     authenticated: bool
@@ -124,7 +123,7 @@ class AuthStatusResponse(BaseModel):
 
 
 class UserInfo(BaseModel):
-    """Single user record returned by the GET /users endpoint."""
+    """GET /users 端点返回的单条用户记录。"""
 
     id: str = ""
     username: str
@@ -134,18 +133,17 @@ class UserInfo(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Shared helper — extract token from cookie or Bearer header
+# 共享辅助函数 — 从 cookie 或 Bearer 头提取 token
 # ---------------------------------------------------------------------------
 
 
 def _bearer_token_from_header(authorization: str | None) -> str | None:
-    """Parse ``Authorization: Bearer <token>`` without using ``HTTPBearer``.
+    """解析 Authorization: Bearer <token>，不使用 HTTPBearer。
 
-    ``HTTPBearer`` is a class-based dependency whose ``__call__`` is annotated
-    ``request: Request``. FastAPI doesn't inject a Request into WebSocket
-    dependency resolution, which makes ``HTTPBearer`` raise ``TypeError`` the
-    moment a router with this dep mounts a WS endpoint. Doing the parse by
-    hand keeps ``require_auth`` HTTP/WS-symmetric.
+    HTTPBearer 是基于类的依赖，其 __call__ 注解了 request: Request。
+    FastAPI 不会向 WebSocket 依赖解析注入 Request，这会导致使用此依赖的
+    路由在挂载 WS 端点时抛出 TypeError。手动解析可保持 require_auth 的
+    HTTP/WS 对称性。
     """
     if not authorization:
         return None
@@ -161,7 +159,7 @@ def _extract_token(authorization: str | None, dt_token: str | None) -> str | Non
 
 
 # ---------------------------------------------------------------------------
-# Dependencies — reusable auth guards for other routers
+# 依赖注入 — 可复用的鉴权守卫，供其他路由使用
 # ---------------------------------------------------------------------------
 
 
@@ -207,7 +205,7 @@ def require_auth(
 
 
 class _WsAuthFailed:
-    """Sentinel: ws_require_auth failed and closed the WebSocket."""
+    """哨兵对象：ws_require_auth 鉴权失败并已关闭 WebSocket。"""
 
 
 ws_auth_failed: _WsAuthFailed = _WsAuthFailed()
@@ -243,10 +241,10 @@ def require_admin(
     payload: TokenPayload | None = Depends(require_auth),
 ) -> TokenPayload:
     """
-    FastAPI dependency that requires the caller to be an admin.
+    要求调用者为管理员的 FastAPI 依赖。
 
-    Raises HTTP 403 if the authenticated user is not an admin.
-    When AUTH_ENABLED=false, all requests are treated as admin.
+    当认证用户不是管理员时抛出 HTTP 403。
+    当 AUTH_ENABLED=false 时，所有请求均视为管理员。
     """
     if not AUTH_ENABLED:
         from aidlearning.services.auth import TokenPayload as TP
@@ -262,7 +260,7 @@ def require_admin(
 
 
 # ---------------------------------------------------------------------------
-# Public endpoints (no auth required)
+# 公开端点（无需认证）
 # ---------------------------------------------------------------------------
 
 
@@ -271,7 +269,7 @@ async def auth_status(
     authorization: str | None = Header(default=None, alias="Authorization"),
     dt_token: str | None = Cookie(default=None),
 ) -> AuthStatusResponse:
-    """Return whether auth is enabled and whether the current request is authenticated."""
+    """返回认证是否启用以及当前请求是否已认证。"""
     if not AUTH_ENABLED:
         return AuthStatusResponse(
             enabled=False,
@@ -296,13 +294,13 @@ async def auth_status(
 
 @router.post("/login")
 async def login(body: LoginRequest, response: Response) -> dict:
-    """Validate credentials and set a JWT cookie."""
+    """验证凭据并设置 JWT cookie。"""
     if not AUTH_ENABLED:
         return {"ok": True, "message": "Auth is disabled — no login required."}
 
     if POCKETBASE_ENABLED:
-        # PocketBase mode: email = username field for backwards-compat with the
-        # existing LoginRequest schema; users can pass their email as "username".
+        # PocketBase 模式：邮箱 = username 字段，为兼容现有的 LoginRequest 模式；
+        # 用户可以将邮箱作为 "username" 传入。
         pb_result = authenticate_pb(body.username, body.password)
         if not pb_result:
             raise HTTPException(
@@ -327,7 +325,7 @@ async def login(body: LoginRequest, response: Response) -> dict:
             "is_admin": payload.role == "admin",
         }
 
-    # Standard JWT + bcrypt mode
+    # 标准 JWT + bcrypt 模式
     result = authenticate(body.username, body.password)
     if not result:
         raise HTTPException(
@@ -357,7 +355,7 @@ async def login(body: LoginRequest, response: Response) -> dict:
 
 @router.post("/logout")
 async def logout(response: Response) -> dict:
-    """Clear the JWT cookie."""
+    """清除 JWT cookie。"""
     response.delete_cookie(key=_COOKIE_NAME, samesite=_SAMESITE)
     return {"ok": True}
 
@@ -365,13 +363,13 @@ async def logout(response: Response) -> dict:
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest) -> dict:
     """
-    Bootstrap-only registration.
+    仅限引导注册。
 
-    Public endpoint that creates the *first* admin account when the user store
-    is empty. Once an admin exists, this endpoint is closed; further accounts
-    must be created by an admin via ``POST /api/v1/auth/users``.
+    公开端点，在用户存储为空时创建第一个管理员账户。
+    一旦管理员存在，此端点将关闭；后续账户必须由管理员通过
+    POST /api/v1/auth/users 创建。
 
-    Only available when AUTH_ENABLED=true.
+    仅在 AUTH_ENABLED=true 时可用。
     """
     if not AUTH_ENABLED:
         raise HTTPException(
@@ -380,8 +378,8 @@ async def register(body: RegisterRequest) -> dict:
         )
 
     if POCKETBASE_ENABLED:
-        # PocketBase deployments are documented as single-user. Keep registration
-        # closed and require admins to provision users in the PocketBase admin UI.
+        # PocketBase 部署文档定义为单用户模式。保持注册关闭，
+        # 要求管理员在 PocketBase 管理界面中配置用户。
         if not is_first_user():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -403,7 +401,7 @@ async def register(body: RegisterRequest) -> dict:
             "is_admin": False,
         }
 
-    # Standard mode — only allowed before the first admin exists.
+    # 标准模式——仅在第一个管理员创建之前允许。
     if not is_first_user():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -438,18 +436,18 @@ async def register(body: RegisterRequest) -> dict:
 
 @router.get("/is_first_user")
 async def check_is_first_user() -> dict:
-    """Return whether the user store is empty (used by the register UI)."""
+    """返回用户存储是否为空（注册界面使用）。"""
     return {"is_first_user": is_first_user() if AUTH_ENABLED else False}
 
 
 # ---------------------------------------------------------------------------
-# Admin-only endpoints
+# 仅限管理员的端点
 # ---------------------------------------------------------------------------
 
 
 @router.get("/users", response_model=list[UserInfo])
 async def get_users(_: TokenPayload = Depends(require_admin)) -> list[UserInfo]:
-    """List all registered users. Requires admin role."""
+    """列出所有已注册用户。需要管理员角色。"""
     return [UserInfo(**u) for u in list_users()]
 
 
@@ -458,11 +456,11 @@ async def admin_create_user(
     body: RegisterRequest,
     current: TokenPayload = Depends(require_admin),
 ) -> dict:
-    """Admin-only: create a new user account.
+    """仅限管理员：创建新用户账户。
 
-    Replaces the public ``/register`` flow once the first admin exists. The
-    new account is always created with role=``user``; admins can promote
-    later via ``PUT /users/{username}/role``.
+    在第一个管理员存在后，替代公开的 /register 流程。
+    新账户始终以 role=user 创建；管理员可稍后通过
+    PUT /users/{username}/role 进行角色提升。
     """
     if not AUTH_ENABLED:
         raise HTTPException(
@@ -522,7 +520,7 @@ async def remove_user(
     username: str,
     current: TokenPayload = Depends(require_admin),
 ) -> dict:
-    """Delete a user. Admins cannot delete their own account."""
+    """删除用户。管理员不能删除自己的账户。"""
     if current and username == current.username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -543,7 +541,7 @@ async def update_user_role(
     body: SetRoleRequest,
     current: TokenPayload = Depends(require_admin),
 ) -> dict:
-    """Change a user's role. Admins cannot change their own role."""
+    """更改用户角色。管理员不能更改自己的角色。"""
     if current and username == current.username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

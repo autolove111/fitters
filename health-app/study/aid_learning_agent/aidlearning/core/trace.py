@@ -1,4 +1,4 @@
-"""Trace helpers for rendering structured execution timelines in the UI."""
+"""用于在 UI 中渲染结构化执行时间线的追踪辅助函数。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from uuid import uuid4
 
 
 def new_call_id(prefix: str = "call") -> str:
-    """Generate a short stable-enough id for one visible trace card."""
+    """为单个可见追踪卡片生成足够稳定的短 ID。"""
     return f"{prefix}-{uuid4().hex[:10]}"
 
 

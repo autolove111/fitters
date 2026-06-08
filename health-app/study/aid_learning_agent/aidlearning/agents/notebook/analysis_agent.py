@@ -1,4 +1,4 @@
-"""Notebook analysis agent for cross-record grounding."""
+"""笔记本分析 Agent，用于跨记录的上下文关联。"""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _clip_text(value: str, limit: int) -> str:
 
 
 class NotebookAnalysisAgent:
-    """Analyze selected notebook records before the main capability runs."""
+    """在主能力运行前分析选定的笔记本记录。"""
 
     def __init__(self, language: str = "en") -> None:
         self.language = "zh" if str(language or "en").lower().startswith("zh") else "en"
@@ -35,9 +35,8 @@ class NotebookAnalysisAgent:
         self.base_url = getattr(self.llm_config, "base_url", None)
         self.api_version = getattr(self.llm_config, "api_version", None)
         self.binding = getattr(self.llm_config, "binding", None) or "openai"
-        # Prompts come from aidlearning/agents/notebook/prompts/{en,zh}/analysis_agent.yaml
-        # so the three-stage notebook reasoning loop stays bilingual without
-        # carrying language-specific text in this file.
+        # 提示词来自 aidlearning/agents/notebook/prompts/{en,zh}/analysis_agent.yaml
+        # 这样三阶段笔记本推理循环保持双语，无需在此文件中携带语言特定文本。
         self._prompts = get_prompt_manager().load_prompts(
             "notebook", "analysis_agent", self.language
         )

@@ -1,15 +1,14 @@
-"""Shared plumbing for capability ``run()`` endpoints.
+"""能力 ``run()`` 端点的共享基础设施。
 
-Capabilities all converge on the same final emission:
+所有能力最终汇聚到相同的最终发射：
 
     await stream.result({"response": ..., ...}, source="<cap>")
 
-The basic chat capability also attaches a per-turn ``cost_summary`` so the
-frontend can render ``$cost · tokens · calls`` in its message footer.
-Several other capabilities used to duplicate that merge inline (solve,
-research, question followup) and the rest skipped it entirely, so the
-footer only appeared for some capabilities. This module centralizes the
-merge + emit so every capability emits the same envelope shape.
+基础聊天能力还会附带每轮的 ``cost_summary``，使前端能在消息底部
+渲染 ``$cost · tokens · calls``。其他几个能力以前会重复该合并逻辑
+（solve、research、question followup），其余则完全跳过，
+导致底部信息只对部分能力可见。本模块集中了合并+发射逻辑，
+使每个能力发出相同的信封结构。
 """
 
 from __future__ import annotations
@@ -27,12 +26,11 @@ async def emit_capability_result(
     source: str,
     usage: UsageTracker | None = None,
 ) -> None:
-    """Emit the final capability result, attaching cost_summary if available.
+    """发射最终的能力结果，附带费用摘要（如果可用）。
 
-    ``payload`` is mutated in place: when ``usage`` has at least one
-    recorded call, its ``summary()`` is merged into
-    ``payload["metadata"]["cost_summary"]``. Any pre-existing
-    ``payload["metadata"]`` dict is preserved.
+    ``payload`` 会被就地修改：当 ``usage`` 至少有一次已记录的调用时，
+    其 ``summary()`` 会被合并到 ``payload["metadata"]["cost_summary"]``。
+    任何已有的 ``payload["metadata"]`` 字典会被保留。
     """
     if usage is not None:
         cs = usage.summary()

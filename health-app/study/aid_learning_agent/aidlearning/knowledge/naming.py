@@ -1,4 +1,4 @@
-"""Knowledge-base name validation helpers."""
+"""知识库名称验证辅助工具。"""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ _MAX_KB_NAME_LENGTH = 120
 
 
 def validate_knowledge_base_name(name: str) -> str:
-    """Validate and normalize a user-facing knowledge-base name.
+    """验证并规范化面向用户的知识库名称。
 
-    Names may contain Unicode letters, spaces, dots, hyphens, underscores, and
-    common punctuation, but must not contain filesystem or URL-reserved
-    separators that would break KB directories or API route paths.
+    名称可以包含 Unicode 字母、空格、点号、连字符、下划线和
+    常见标点符号，但不能包含会破坏知识库目录或 API 路由路径的
+    文件系统或 URL 保留分隔符。
     """
     normalized = unicodedata.normalize("NFC", str(name or "")).strip()
     if not normalized:

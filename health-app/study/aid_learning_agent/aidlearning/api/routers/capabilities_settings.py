@@ -1,18 +1,15 @@
-"""Capabilities settings endpoint.
+"""能力设置端点。
 
-Surfaces the per-capability tunables (temperature, max_tokens, stage
-budgets, iteration limits) currently scattered across
-``data/user/settings/agents.yaml`` and ``data/user/settings/main.yaml``.
+暴露各能力的可调参数（temperature、max_tokens、阶段预算、迭代限制），
+这些参数当前分散在 data/user/settings/agents.yaml 和 data/user/settings/main.yaml 中。
 
-Mirrors the pattern used by ``/api/v1/memory/settings``:
+与 /api/v1/memory/settings 的模式一致：
 
-* ``GET  /settings``  → returns the full schema with defaults merged in.
-* ``PUT  /settings``  → merges payload back into both YAML files and
-                        returns the new state.
+* GET  /settings  → 返回完整 schema（含默认值）。
+* PUT  /settings  → 将请求体合并回两个 YAML 文件并返回新状态。
 
-Validation lives in
-:mod:`aidlearning.services.config.capabilities_settings` so the API stays
-a thin transport layer.
+校验逻辑在 aidlearning.services.config.capabilities_settings 中，
+API 层仅作为薄传输层。
 """
 
 from __future__ import annotations

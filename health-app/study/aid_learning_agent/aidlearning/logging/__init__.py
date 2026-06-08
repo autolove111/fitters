@@ -1,4 +1,4 @@
-"""AidLearning Logging 2.0: stdlib core plus structured process-log events."""
+"""AidLearning 日志 2.0：标准库核心加结构化进程日志事件。"""
 
 from .config import LoggingConfig, get_default_log_dir, get_global_log_level, load_logging_config
 from .configure import configure_logging

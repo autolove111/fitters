@@ -1,4 +1,4 @@
-"""Public request contracts and config validators for built-in capabilities."""
+"""内置能力的公开请求契约和配置验证器。"""
 
 from __future__ import annotations
 
@@ -14,10 +14,10 @@ from aidlearning.agents.research.request_config import (
 _RUNTIME_ONLY_KEYS = {
     "_persist_user_message",
     "followup_question_context",
-    # "answer_now" is a universal escape hatch: the orchestrator re-routes
-    # any capability to chat when this is present. It is never declared on
-    # any per-capability ``RequestConfig`` schema, so we strip it before
-    # pydantic validation and re-attach it on the runtime-only side.
+    # "answer_now" 是通用逃逸机制：编排器在检测到此字段时会将
+    # 任何能力重路由到 chat。它从不在任何按能力的 ``RequestConfig``
+    # schema 中声明，因此我们在 pydantic 验证前将其剥离，
+    # 然后在运行时侧重新附加。
     "answer_now_context",
 }
 
@@ -37,12 +37,11 @@ class DeepQuestionRequestConfig(BaseModel):
     topic: str = ""
     num_questions: int = Field(default=1, ge=1, le=50)
     difficulty: str = ""
-    # Allowed-types whitelist. Empty list means "any type — let the
-    # planner pick per question". Frontend sends the user's multi-select.
+    # 允许的题型白名单。空列表表示"任意类型 — 让规划器按题选择"。
+    # 前端发送用户的多选结果。
     question_types: list[str] = Field(default_factory=list)
-    # Optional per-type quantity targets. When non-empty, sum must equal
-    # ``num_questions`` (frontend keeps them in sync). Empty dict means
-    # "no per-type targets — distribute freely across allowed types".
+    # 可选的每种题型数量目标。非空时，总和必须等于 ``num_questions``
+    # （前端负责同步）。空字典表示"无每类型目标 — 在允许的类型间自由分配"。
     per_type_counts: dict[str, int] = Field(default_factory=dict)
     paper_path: str = ""
     max_questions: int = Field(default=10, ge=1, le=100)

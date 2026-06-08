@@ -1,22 +1,20 @@
-"""Time-based decay scoring for memory entries.
+"""记忆条目的基于时间的衰减评分。
 
-Each memory entry carries three metadata fields that feed into the decay
-formula:
+每个记忆条目携带三个元数据字段用于衰减公式：
 
-- ``created_at``   — when the entry was first written (Unix timestamp)
-- ``last_accessed`` — when the entry was last retrieved by a search
-- ``access_count``  — total retrieval hits
+- ``created_at``   — 条目首次写入的时间（Unix 时间戳）
+- ``last_accessed`` — 条目上次被检索的时间
+- ``access_count``  — 总检索命中次数
 
-The decay score is computed on-the-fly (never persisted) so it always
-reflects the current time.  The formula is a weighted blend of four
-signals:
+衰减分数是实时计算的（从不持久化），因此始终反映当前时间。
+公式是四个信号的加权混合：
 
-    base_decay   0.5  — exponential fade from creation time
-    recency      0.2  — boost from last retrieval
-    frequency    0.1  — log-scale access count
-    importance   0.2  — LLM-assessed importance [0, 1]
+    base_decay   0.5  — 从创建时间的指数衰减
+    recency      0.2  — 上次检索的加成
+    frequency    0.1  — 对数尺度的访问次数
+    importance   0.2  — LLM 评估的重要性 [0, 1]
 
-All four components are in [0, 1] and the weights sum to 1.0.
+四个分量均在 [0, 1] 范围内，权重之和为 1.0。
 """
 
 from __future__ import annotations
@@ -24,12 +22,12 @@ from __future__ import annotations
 import math
 import time
 
-# ── Defaults ───────────────────────────────────────────────────────────
+# ── 默认值 ───────────────────────────────────────────────────────────
 
 _DEFAULT_HALF_LIFE_DAYS = 90.0
 _DEFAULT_ACCESS_BOOST = 0.1
 
-# Weights
+# 权重
 _W_BASE = 0.5
 _W_RECENCY = 0.2
 _W_FREQUENCY = 0.1
@@ -46,47 +44,45 @@ def compute_decay_score(
     access_boost: float = _DEFAULT_ACCESS_BOOST,
     now: float | None = None,
 ) -> float:
-    """Return a decay multiplier in [0.0, 1.0].
+    """返回 [0.0, 1.0] 范围内的衰减乘数。
 
-    Parameters
+    参数
     ----------
     created_at : float
-        Unix timestamp when the entry was first written.
+        条目首次写入时的 Unix 时间戳。
     last_accessed : float
-        Unix timestamp of the last retrieval hit.
+        上次检索命中的 Unix 时间戳。
     access_count : int
-        Total number of times this entry has been retrieved.
+        此条目被检索的总次数。
     importance : float
-        LLM-assessed importance in [0, 1].  Defaults to 0.5 (neutral).
+        LLM 评估的重要性，范围 [0, 1]。默认 0.5（中性）。
     half_life_days : float
-        Days until an untouched entry decays to 0.5.  Default 90 (~3 months).
+        未被触碰的条目衰减到 0.5 所需的天数。默认 90（约 3 个月）。
     access_boost : float
-        Scaling factor for the frequency bonus.  Higher = more weight on
-        frequently accessed entries.
+        频率加成的缩放因子。值越高 = 频繁访问的条目权重越大。
     now : float | None
-        Override for the current time (useful in tests).  Defaults to
-        ``time.time()``.
+        当前时间的覆盖（用于测试）。默认为 ``time.time()``。
     """
     if now is None:
         now = time.time()
 
     _sec_per_day = 86400.0
 
-    # ── Base decay: exponential from creation ──────────────────────────
+    # ── 基础衰减：从创建时间的指数衰减 ──────────────────────────
     age_days = max(0.0, (now - created_at) / _sec_per_day)
     base_decay = math.pow(2.0, -age_days / half_life_days)
 
-    # ── Recency: boost from last access ───────────────────────────────
+    # ── 新近度：上次访问的加成 ───────────────────────────────
     recency_days = max(0.0, (now - last_accessed) / _sec_per_day)
     recency = math.pow(2.0, -recency_days / (half_life_days * 2.0))
 
-    # ── Frequency: log-scale access count ─────────────────────────────
+    # ── 频率：对数尺度访问次数 ─────────────────────────────
     frequency = 1.0 - (1.0 / (1.0 + access_boost * max(0, access_count)))
 
-    # ── Importance: direct from caller ────────────────────────────────
+    # ── 重要性：直接来自调用方 ────────────────────────────────
     imp = max(0.0, min(1.0, importance))
 
-    # ── Weighted blend ────────────────────────────────────────────────
+    # ── 加权混合 ────────────────────────────────────────────────
     score = (
         _W_BASE * base_decay
         + _W_RECENCY * recency
@@ -106,7 +102,7 @@ def is_stale(
     half_life_days: float = _DEFAULT_HALF_LIFE_DAYS,
     now: float | None = None,
 ) -> bool:
-    """Return True if the entry's decay score falls below *threshold*."""
+    """如果条目的衰减分数低于 *threshold* 则返回 True。"""
     score = compute_decay_score(
         created_at,
         last_accessed,

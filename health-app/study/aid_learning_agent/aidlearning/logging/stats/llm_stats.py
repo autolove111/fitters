@@ -1,24 +1,24 @@
 """
-LLM Stats Tracker
+LLM 统计跟踪器
 =================
 
-Simple utility for tracking LLM token usage and costs across all modules.
-Outputs summary via the unified logging system.
+用于跟踪所有模块 LLM token 使用量和成本的简单工具。
+通过统一日志系统输出摘要。
 
-Usage:
+用法：
     from aidlearning.logging import LLMStats
 
     stats = LLMStats("Solver")
 
-    # After each LLM call:
+    # 每次 LLM 调用后：
     stats.add_call(
         model="gpt-4o-mini",
         prompt_tokens=100,
         completion_tokens=50
     )
 
-    # At the end:
-    stats.log_summary()  # Uses logging system
+    # 最后：
+    stats.log_summary()  # 使用日志系统
 """
 
 from dataclasses import dataclass, field
@@ -26,7 +26,7 @@ from datetime import datetime
 import logging
 from typing import Any, Optional
 
-# Model pricing per 1K tokens (USD)
+# 每 1K token 的模型定价（美元）
 MODEL_PRICING = {
     "gpt-4o": {"input": 0.0025, "output": 0.010},
     "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
@@ -41,7 +41,7 @@ MODEL_PRICING = {
 
 
 def get_pricing(model: str) -> dict[str, float]:
-    """Get pricing for a model (fuzzy match)."""
+    """获取模型定价（模糊匹配）。"""
     model_lower = model.lower()
     for key, pricing in MODEL_PRICING.items():
         if key in model_lower or model_lower in key:
@@ -50,13 +50,13 @@ def get_pricing(model: str) -> dict[str, float]:
 
 
 def estimate_tokens(text: str) -> int:
-    """Rough estimate of tokens (1.3 tokens per word)."""
+    """粗略估计 token 数量（每词约 1.3 个 token）。"""
     return int(len(text.split()) * 1.3)
 
 
 @dataclass
 class LLMCall:
-    """Single LLM call record."""
+    """单次 LLM 调用记录。"""
 
     model: str
     prompt_tokens: int
@@ -67,16 +67,16 @@ class LLMCall:
 
 class LLMStats:
     """
-    LLM usage statistics tracker.
-    Tracks token usage and costs, outputs summary to terminal.
+    LLM 使用统计跟踪器。
+    跟踪 token 使用量和成本，向终端输出摘要。
     """
 
     def __init__(self, module_name: str = "Module"):
         """
-        Initialize stats tracker.
+        初始化统计跟踪器。
 
         Args:
-            module_name: Name of the module (for display)
+            module_name: 模块名称（用于显示）
         """
         self.module_name = module_name
         self.calls: list[LLMCall] = []
@@ -90,23 +90,23 @@ class LLMStats:
         model: str,
         prompt_tokens: Optional[int] = None,
         completion_tokens: Optional[int] = None,
-        # Alternative: estimate from text
+        # 替代方案：从文本估算
         system_prompt: Optional[str] = None,
         user_prompt: Optional[str] = None,
         response: Optional[str] = None,
     ):
         """
-        Add an LLM call to the stats.
+        将 LLM 调用添加到统计中。
 
         Args:
-            model: Model name
-            prompt_tokens: Number of prompt tokens (if known)
-            completion_tokens: Number of completion tokens (if known)
-            system_prompt: System prompt text (for estimation)
-            user_prompt: User prompt text (for estimation)
-            response: Response text (for estimation)
+            model: 模型名称
+            prompt_tokens: 提示 token 数量（如果已知）
+            completion_tokens: 补全 token 数量（如果已知）
+            system_prompt: 系统提示文本（用于估算）
+            user_prompt: 用户提示文本（用于估算）
+            response: 响应文本（用于估算）
         """
-        # Estimate tokens if not provided
+        # 如果未提供则估算 token 数量
         if prompt_tokens is None and (system_prompt or user_prompt):
             prompt_text = (system_prompt or "") + "\n" + (user_prompt or "")
             prompt_tokens = estimate_tokens(prompt_text)
@@ -117,29 +117,29 @@ class LLMStats:
         prompt_tokens = prompt_tokens or 0
         completion_tokens = completion_tokens or 0
 
-        # Calculate cost
+        # 计算成本
         pricing = get_pricing(model)
         cost = (prompt_tokens / 1000.0) * pricing["input"] + (completion_tokens / 1000.0) * pricing[
             "output"
         ]
 
-        # Record call
+        # 记录调用
         call = LLMCall(
             model=model, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, cost=cost
         )
         self.calls.append(call)
 
-        # Update totals
+        # 更新总计
         self.total_prompt_tokens += prompt_tokens
         self.total_completion_tokens += completion_tokens
         self.total_cost += cost
 
-        # Track primary model
+        # 跟踪主模型
         if self.model_used is None:
             self.model_used = model
 
     def get_summary(self) -> dict[str, Any]:
-        """Get summary as dictionary."""
+        """获取摘要字典。"""
         return {
             "module": self.module_name,
             "model": self.model_used or "Unknown",
@@ -152,10 +152,10 @@ class LLMStats:
 
     def log_summary(self, logger: Optional[logging.Logger] = None):
         """
-        Log summary using the unified logging system.
+        使用统一日志系统记录摘要。
 
         Args:
-            logger: Optional Logger instance. If None, creates one using module_name.
+            logger: 可选的 Logger 实例。如果为 None，使用 module_name 创建一个。
         """
         if len(self.calls) == 0:
             return
@@ -178,14 +178,14 @@ class LLMStats:
 
     def print_summary(self):
         """
-        Print summary to terminal.
+        将摘要打印到终端。
 
-        Deprecated: Use log_summary() instead for consistent logging.
+        已弃用：请使用 log_summary() 以获得一致的日志记录。
         """
         self.log_summary()
 
     def reset(self):
-        """Reset all statistics."""
+        """重置所有统计信息。"""
         self.calls.clear()
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0

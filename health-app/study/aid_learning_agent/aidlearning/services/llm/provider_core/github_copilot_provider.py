@@ -1,4 +1,4 @@
-"""GitHub Copilot provider with graceful fallback to existing local auth."""
+"""GitHub Copilot 提供商，支持优雅回退到现有本地认证。"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _EXPIRY_SKEW_SECONDS = 60
 
 
 class GitHubCopilotProvider(OpenAICompatProvider):
-    """Provider that first tries existing Copilot auth, then oauth-cli-kit tokens."""
+    """优先尝试现有 Copilot 认证，然后回退到 oauth-cli-kit 令牌的提供商。"""
 
     def __init__(self, default_model: str = "github-copilot/gpt-4.1"):
         self._copilot_access_token: str | None = None

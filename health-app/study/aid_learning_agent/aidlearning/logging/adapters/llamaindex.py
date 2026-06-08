@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Scoped LlamaIndex stdlib logging configuration."""
+"""作用域内的 LlamaIndex 标准库日志配置。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, Iterator
 
 
 class LlamaIndexLogForwarder(logging.Handler):
-    """Forward selected LlamaIndex records into a AidLearning logger."""
+    """将选定的 LlamaIndex 记录转发到 AidLearning 日志记录器。"""
 
     def __init__(self, target: logging.Logger) -> None:
         super().__init__(logging.DEBUG)
@@ -28,7 +28,7 @@ def LlamaIndexLogContext(
     scene: str = "llamaindex",
     min_level: str = "INFO",
 ) -> Iterator[None]:
-    """Forward noisy LlamaIndex records to a named stdlib logger while in scope."""
+    """在作用域内将冗余的 LlamaIndex 记录转发到命名的标准库日志记录器。"""
     target_name = logger_name or f"aidlearning.{scene}"
     target = logging.getLogger(target_name)
     min_level_int = getattr(logging, min_level.upper(), logging.INFO)

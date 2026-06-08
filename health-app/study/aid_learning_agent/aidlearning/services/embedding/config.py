@@ -1,4 +1,4 @@
-"""Normalized embedding configuration resolved from the model catalog."""
+"""从模型目录解析的标准化 Embedding 配置。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from aidlearning.services.config import resolve_embedding_runtime_config
 
 @dataclass
 class EmbeddingConfig:
-    """Embedding runtime configuration."""
+    """Embedding 运行时配置。"""
 
     model: str
     api_key: str
@@ -28,7 +28,7 @@ class EmbeddingConfig:
 
 
 def get_embedding_config() -> EmbeddingConfig:
-    """Load embedding config from provider runtime resolver."""
+    """从 Provider 运行时解析器加载 Embedding 配置。"""
     resolved = resolve_embedding_runtime_config()
 
     if not resolved.model:

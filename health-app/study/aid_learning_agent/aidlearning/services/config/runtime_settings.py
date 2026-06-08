@@ -115,11 +115,10 @@ def _string(value: Any) -> str:
 
 
 class RuntimeSettingsService:
-    """JSON-backed runtime settings rooted in data/user/settings.
+    """基于 JSON 的运行时设置，根目录为 data/user/settings。
 
-    Process environment values are explicit deployment overrides and are applied
-    centrally here rather than scattered through the application. Project-root
-    ``.env`` files are intentionally ignored.
+    进程环境变量值是显式的部署覆盖，在此处集中应用而非散布在应用各处。
+    有意忽略项目根目录的 ``.env`` 文件。
     """
 
     _instances: dict[str, "RuntimeSettingsService"] = {}
@@ -206,7 +205,7 @@ class RuntimeSettingsService:
         self.load_integrations(include_process_overrides=False)
 
     def render_environment(self) -> dict[str, str]:
-        """Render non-model settings into process env names for subprocesses."""
+        """将非模型设置渲染为子进程的环境变量名。"""
         system = self.load_system()
         auth = self.load_auth()
         integrations = self.load_integrations()
@@ -381,12 +380,11 @@ def get_runtime_settings_service() -> RuntimeSettingsService:
 
 
 def ensure_runtime_settings_files() -> None:
-    """Create missing JSON settings files using migration/default rules.
+    """使用迁移/默认规则创建缺失的 JSON 设置文件。
 
-    Startup callers use this as the single "settings bootstrap" hook:
-    missing runtime files are created with safe defaults. Process
-    environment variables remain deployment overrides and are intentionally
-    not persisted into the JSON files.
+    启动调用方将此作为唯一的"设置引导"钩子：
+    缺失的运行时文件将使用安全默认值创建。进程环境变量
+    保持为部署覆盖，有意不持久化到 JSON 文件中。
     """
     get_runtime_settings_service().ensure_defaults()
     from .model_catalog import get_model_catalog_service
