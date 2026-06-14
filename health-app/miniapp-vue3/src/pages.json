@@ -49,6 +49,20 @@
       }
     },
     {
+      "path": "pages/workout/ai-plan",
+      "style": {
+        "navigationBarTitleText": "AI Personalized Plan",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/workout/ai-trend",
+      "style": {
+        "navigationBarTitleText": "30天私人顾问报告",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/weightloss/weightloss",
       "style": {
         "navigationBarTitleText": "Weight Loss",

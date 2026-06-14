@@ -17,6 +17,11 @@ enum GoalPeriod {
   DAILY
 }
 
+enum MembershipTier {
+  FREE
+  PRO
+}
+
 model User {
   id           Int             @id @default(autoincrement())
   account      String          @unique @db.VarChar(64)
@@ -29,8 +34,58 @@ model User {
   sleeps       SleepRecord[]
   diets        DietRecord[]
   workRecords  WorkRecord[]
+  fitnessProfile UserFitnessProfile?
+  subscription UserSubscription?
+  aiPlanHistories AiPlanHistory[]
 
   @@map("users")
+}
+
+model UserFitnessProfile {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @unique @map("user_id")
+  age                  Int?
+  heightCm             Int?     @map("height_cm")
+  weightKg             Decimal? @map("weight_kg") @db.Decimal(6, 2)
+  goal                 String   @default("general_fitness") @db.VarChar(64)
+  fitnessLevel         String   @default("beginner") @map("fitness_level") @db.VarChar(32)
+  injuries             String?  @db.VarChar(255)
+  equipment            Json?    @db.JsonB
+  preferredWorkoutTime String?  @map("preferred_workout_time") @db.VarChar(32)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_fitness_profiles")
+}
+
+model UserSubscription {
+  id                 Int            @id @default(autoincrement())
+  userId             Int            @unique @map("user_id")
+  tier               MembershipTier @default(FREE)
+  dailyAiQuota       Int            @default(3) @map("daily_ai_quota")
+  usedAiQuota        Int            @default(0) @map("used_ai_quota")
+  quotaDate          DateTime       @default(now()) @map("quota_date") @db.Date
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_subscriptions")
+}
+
+model AiPlanHistory {
+  id             Int            @id @default(autoincrement())
+  userId         Int            @map("user_id")
+  membershipTier MembershipTier @default(FREE) @map("membership_tier")
+  planType       String         @default("personalized_workout") @map("plan_type") @db.VarChar(64)
+  request        Json           @db.JsonB
+  response       Json           @db.JsonB
+  citations      Json?          @db.JsonB
+  createdAt      DateTime       @default(now()) @map("created_at")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt], map: "idx_ai_plan_histories_user_created")
+  @@map("ai_plan_histories")
 }
 
 model WorkoutRecord {

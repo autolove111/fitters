@@ -1,20 +1,18 @@
 <template>
   <view class="container">
-    <!-- 综合健康指数卡片 -->
     <view class="score-card">
       <view class="score-left">
         <text class="score-label">今日健康指数</text>
-        <text class="score-number">{{ dailyReport.score }}</text>
-        <text class="score-unit">分</text>
+        <view class="score-line">
+          <text class="score-number">{{ dailyReport.score }}</text>
+          <text class="score-unit">分</text>
+        </view>
       </view>
       <view class="score-ring">
-        <view class="ring-bg"></view>
-        <view class="ring-fill" :style="{ height: dailyReport.score + '%' }"></view>
         <text class="ring-text">{{ dailyReport.score }}%</text>
       </view>
     </view>
 
-    <!-- 今日三项指标 -->
     <view class="stats-grid">
       <view class="stat-card" @click="openHistory('workout')">
         <view class="stat-header">
@@ -23,9 +21,10 @@
         </view>
         <text class="stat-value">{{ todayStats.workoutMinutes }} / {{ todayStats.workoutTarget }} 分钟</text>
         <view class="progress-bar">
-          <view class="progress-fill" :style="{ width: workoutPercent + '%', backgroundColor: '#409eff' }"></view>
+          <view class="progress-fill blue" :style="{ width: workoutPercent + '%' }"></view>
         </view>
       </view>
+
       <view class="stat-card" @click="openHistory('sleep')">
         <view class="stat-header">
           <text class="stat-icon">😴</text>
@@ -33,19 +32,21 @@
         </view>
         <text class="stat-value">{{ todayStats.sleepHours }} / {{ todayStats.sleepTarget }} 小时</text>
         <view class="progress-bar">
-          <view class="progress-fill" :style="{ width: sleepPercent + '%', backgroundColor: '#67c23a' }"></view>
+          <view class="progress-fill green" :style="{ width: sleepPercent + '%' }"></view>
         </view>
       </view>
+
       <view class="stat-card" @click="openHistory('diet')">
         <view class="stat-header">
-          <text class="stat-icon">🍚</text>
+          <text class="stat-icon">🍽️</text>
           <text class="stat-title">今日饮食</text>
         </view>
         <text class="stat-value">{{ todayStats.dietCalories }} / {{ todayStats.dietTarget }} 千卡</text>
         <view class="progress-bar">
-          <view class="progress-fill" :style="{ width: dietPercent + '%', backgroundColor: '#e6a23c' }"></view>
+          <view class="progress-fill amber" :style="{ width: dietPercent + '%' }"></view>
         </view>
       </view>
+
       <view class="stat-card" @click="openHistory('steps')">
         <view class="stat-header">
           <text class="stat-icon">👟</text>
@@ -53,37 +54,244 @@
         </view>
         <text class="stat-value">{{ todayStats.stepsCount }} / {{ todayStats.stepsTarget }} 步</text>
         <view class="progress-bar">
-          <view class="progress-fill" :style="{ width: stepsPercent + '%', backgroundColor: '#f56c6c' }"></view>
+          <view class="progress-fill coral" :style="{ width: stepsPercent + '%' }"></view>
         </view>
       </view>
     </view>
 
-    <!-- 智能建议 -->
-    <!-- <view class="advice-card">
-      <text class="advice-icon">💡</text>
-      <text class="advice-text">{{ advice }}</text>
-    </view> -->
+    <view class="ai-plan-card">
+      <view class="ai-hero">
+        <view class="ai-mark">AI</view>
+        <view class="ai-copy">
+          <text class="ai-title">AI 私人健身顾问</text>
+          <text class="ai-subtitle">根据你的运动、睡眠和饮食记录，安排今天更适合你的训练</text>
+        </view>
+        <button class="pro-link" @click="openProIntro">升级到 Pro</button>
+      </view>
 
-    <!-- 生成今日训练计划按钮+展示区 -->
-    <view class="plan-section">
-      <button class="generate-plan-btn" @click="generateTrainingPlan" :disabled="generatingPlan">
-        <text v-if="!generatingPlan">🤖 生成今日训练计划</text>
-        <text v-else>生成中...</text>
+      <view class="tier-switch">
+        <view class="tier-option" :class="{ active: membership.tier === 'FREE' }" @click="switchTier('FREE')">
+          <text class="tier-kicker">Free</text>
+          <text class="tier-name">今日建议</text>
+          <text class="tier-meta">7天记录 · 简单计划</text>
+        </view>
+        <view class="tier-option pro" :class="{ active: membership.tier === 'PRO' }" @click="openProIntro">
+          <text class="tier-kicker">Pro</text>
+          <text class="tier-name">私人顾问</text>
+          <text class="tier-meta">30天趋势 · 图表分析 · 权威依据</text>
+        </view>
+      </view>
+
+      <view v-if="membership.tier !== 'PRO'" class="upgrade-strip" @click="openProIntro">
+        <view class="upgrade-icon">✦</view>
+        <view class="upgrade-copy">
+          <text class="upgrade-title">升级到 Pro，解锁 AI 私人健身顾问</text>
+          <text class="upgrade-text">看懂 30 天变化，生成图表分析，并给出更像真人教练的建议</text>
+        </view>
+        <text class="upgrade-action">了解</text>
+      </view>
+
+      <view class="ai-metrics">
+        <view class="ai-metric">
+          <text class="metric-value">{{ currentTierInfo.historyWindow }}</text>
+          <text class="metric-label">看多长时间</text>
+        </view>
+        <view class="ai-metric">
+          <text class="metric-value">{{ currentTierInfo.citationLimit }}</text>
+          <text class="metric-label">参考来源</text>
+        </view>
+        <view class="ai-metric">
+          <text class="metric-value">{{ remainingQuotaText }}</text>
+          <text class="metric-label">今日次数</text>
+        </view>
+      </view>
+
+      <button class="generate-ai-btn" @click="generateTrainingPlan" :disabled="generatingPlan">
+        <text v-if="!generatingPlan">生成 AI 今日训练计划</text>
+        <text v-else>AI 正在分析...</text>
       </button>
-      <view v-if="trainingPlan" class="plan-content">
-        <text class="plan-title">📋 今日训练计划</text>
-        <text class="plan-text">{{ trainingPlan }}</text>
+
+      <view v-if="planResult" class="plan-result">
+        <view class="result-header">
+          <text class="result-badge">{{ planResult.membershipTier || membership.tier }}</text>
+          <text class="result-title">{{ localizeAiPlanText(planResult.title || '今日训练计划') }}</text>
+        </view>
+        <view class="rag-mode-card" :class="{ pro: planResult.knowledgeBaseMode === 'PERSONAL_RAG' }">
+          <text class="rag-mode-title">{{ planResult.knowledgeBaseMode === 'PERSONAL_RAG' ? '专属RAG知识库' : '通用RAG知识库' }}</text>
+          <text class="rag-mode-text">{{ planResult.knowledgeBaseLabel }}</text>
+        </view>
+        <text class="result-summary">{{ localizeAiPlanText(planResult.summary) }}</text>
+
+        <view v-if="planResult.personalInsights && planResult.personalInsights.length" class="result-block">
+          <text class="block-title">个人数据洞察</text>
+          <text v-for="(item, index) in planResult.personalInsights" :key="'insight-' + index" class="block-line">{{ localizeAiPlanText(item) }}</text>
+        </view>
+
+        <view v-if="planResult.riskFlags && planResult.riskFlags.length" class="risk-panel">
+          <text class="block-title">风险控制</text>
+          <text v-for="(item, index) in planResult.riskFlags" :key="'risk-' + index" class="block-line">{{ localizeAiPlanText(item) }}</text>
+        </view>
+
+        <view v-if="planResult.items && planResult.items.length" class="workout-steps">
+          <view v-for="(item, index) in planResult.items" :key="'step-' + index" class="step-card">
+            <text class="step-index">{{ index + 1 }}</text>
+            <view class="step-main">
+              <text class="step-title">{{ localizePlanStage(item.stage) }} · {{ localizePlanActivity(item.activity) }}</text>
+              <text class="step-meta">{{ item.minutes }} 分钟 / {{ localizePlanIntensity(item.intensity) }}</text>
+              <text v-if="item.notes" class="step-note">{{ localizeAiPlanText(item.notes) }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view v-if="planResult.citations && planResult.citations.length" class="citation-row">
+          <text v-for="(item, index) in planResult.citations" :key="'citation-' + index" class="citation-chip">{{ item.source }}</text>
+        </view>
+
+        <view v-if="planResult.trendAnalysis" class="coach-panel">
+          <view class="coach-head">
+            <text class="coach-title">Pro 私人顾问分析</text>
+            <view class="coach-actions">
+              <text class="coach-tag">{{ trendWindowText(planResult.trendAnalysis) }}</text>
+              <button class="trend-detail-btn" @click="openTrendDetail">查看30天详情</button>
+            </view>
+          </view>
+          <text class="coach-summary">{{ localizeAiPlanText(planResult.trendAnalysis.coachSummary) }}</text>
+          <view class="coach-metrics">
+            <view
+              v-for="(item, index) in planResult.trendAnalysis.metrics"
+              :key="'coach-metric-' + index"
+              class="coach-metric"
+              :class="item.tone"
+            >
+              <text class="coach-metric-value">{{ item.value }}</text>
+              <text class="coach-metric-label">{{ item.label }}</text>
+            </view>
+          </view>
+          <view class="trend-chart">
+            <view v-for="(item, index) in trendPreviewItems(planResult.trendAnalysis.chart)" :key="'trend-' + index" class="trend-day">
+              <view class="trend-bars">
+                <view class="trend-bar workout" :style="{ height: workoutBarHeight(item.workoutMinutes) + '%' }"></view>
+                <view class="trend-bar sleep" :style="{ height: sleepBarHeight(item.sleepHours) + '%' }"></view>
+              </view>
+              <text v-if="isTrendPreviewLabel(index, planResult.trendAnalysis.chart)" class="trend-label">{{ item.label }}</text>
+            </view>
+          </view>
+          <view class="chart-legend">
+            <text class="legend-item workout-dot">运动</text>
+            <text class="legend-item sleep-dot">睡眠</text>
+          </view>
+        </view>
+
+        <view v-if="planResult.customizationBlocks && planResult.customizationBlocks.length" class="customization-panel">
+          <text class="block-title">Pro 专属定制内容</text>
+          <view
+            v-for="(item, index) in planResult.customizationBlocks"
+            :key="'custom-' + index"
+            class="customization-card"
+          >
+            <text class="customization-title">{{ item.title }}</text>
+            <text class="customization-text">{{ item.text }}</text>
+          </view>
+        </view>
+
+        <view v-if="planResult.personalKnowledge && planResult.personalKnowledge.length" class="personal-rag-list">
+          <text class="block-title">专属RAG命中的个人知识</text>
+          <view v-for="(item, index) in planResult.personalKnowledge" :key="'personal-rag-' + index" class="personal-rag-card">
+            <text class="personal-rag-source">{{ item.source }}</text>
+            <text class="personal-rag-title">{{ item.title }}</text>
+          </view>
+        </view>
+
+        <view v-if="planResult.citations && planResult.citations.length" class="source-list">
+          <text class="block-title">本次参考的权威来源</text>
+          <view
+            v-for="(item, index) in planResult.citations"
+            :key="'source-' + index"
+            class="source-card"
+            @click="openAuthoritySource(item.url)"
+          >
+            <view>
+              <text class="source-name">{{ item.source }}</text>
+              <text class="source-title">{{ item.title }}</text>
+            </view>
+            <text class="source-open">查看</text>
+          </view>
+        </view>
+
+        <text v-if="planResult.upgradeHint" class="result-upgrade" @click="openProIntro">{{ localizeAiPlanText(planResult.upgradeHint) }}</text>
       </view>
     </view>
 
-    <!-- 快捷操作 -->
     <view class="action-buttons">
-      <button class="action-btn primary" @click="navigateTo('workout/add')">➕ 运动</button>
+      <button class="action-btn primary" @click="navigateTo('workout/add')">＋ 运动</button>
       <button class="action-btn success" @click="navigateTo('sleep/add')">😴 睡眠</button>
       <button class="action-btn warning" @click="navigateTo('diet/add')">🍽️ 饮食</button>
     </view>
 
-    <!-- 加载遮罩 -->
+    <view v-if="showProModal" class="pro-modal-mask" @click="closeProIntro">
+      <view class="pro-modal" @click.stop>
+        <view class="pro-modal-head">
+          <view class="pro-title-wrap">
+            <text class="pro-modal-title">升级到 Fitters Pro</text>
+            <text class="pro-modal-subtitle">把 AI 变成你的私人健身顾问，每天帮你看数据、避风险、安排训练</text>
+          </view>
+          <button class="modal-close" @click="closeProIntro">×</button>
+        </view>
+        <view class="vs-layout">
+          <view class="vs-col free">
+            <text class="vs-kicker">Free</text>
+            <text class="vs-title">通用RAG知识库</text>
+            <text class="vs-desc">像搜索公开健身资料：适合先体验，但不真正理解你。</text>
+            <view class="vs-list">
+              <text>通用人群训练建议</text>
+              <text>只参考少量公共资料</text>
+              <text>输出偏模板化</text>
+              <text>不建立个人知识库</text>
+            </view>
+          </view>
+          <view class="vs-badge">VS</view>
+          <view class="vs-col pro">
+            <text class="vs-kicker">Pro</text>
+            <text class="vs-title">专属RAG知识库</text>
+            <text class="vs-desc">在通用库之上，加入你的画像、30天记录、伤痛和器械偏好。</text>
+            <view class="vs-list">
+              <text>包含通用权威知识库</text>
+              <text>新增个人画像RAG</text>
+              <text>新增30天趋势RAG</text>
+              <text>输出专属定制内容</text>
+            </view>
+          </view>
+        </view>
+        <view class="pro-selling-points">
+          <view class="selling-card highlight">
+            <text class="selling-number">通用库+</text>
+            <text class="selling-label">权威资料全包含</text>
+          </view>
+          <view class="selling-card">
+            <text class="selling-number">个人库</text>
+            <text class="selling-label">画像/历史/风险</text>
+          </view>
+          <view class="selling-card">
+            <text class="selling-number">定制输出</text>
+            <text class="selling-label">个性化私人定制</text>
+          </view>
+        </view>
+        <view class="authority-panel">
+          <text class="authority-title">Pro 的专属RAG包含这些通用权威来源</text>
+          <view
+            v-for="item in authoritySources"
+            :key="item.url"
+            class="authority-row"
+            @click="openAuthoritySource(item.url)"
+          >
+            <text class="authority-name">{{ item.source }}</text>
+            <text class="authority-text">{{ item.title }}</text>
+          </view>
+        </view>
+        <button class="activate-pro-btn" @click="activatePro">立即体验 Pro</button>
+      </view>
+    </view>
+
     <view v-if="loading" class="loading-mask">
       <view class="loading-content">加载中...</view>
     </view>
@@ -91,19 +299,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '@/store/user'
-import { statsApi } from '@/utils/api'
+import { fitnessProfileApi, membershipApi, statsApi } from '@/utils/api'
+import {
+  getPlanTierPresentation,
+  localizeAiPlanText,
+  localizePlanActivity,
+  localizePlanIntensity,
+  localizePlanStage
+} from '@/utils/aiPlanFormatter.mjs'
 
 const userStore = useUserStore()
 const { isLoggedIn } = userStore
 
-// 界面状态
 const loading = ref(false)
 const generatingPlan = ref(false)
-const trainingPlan = ref('')
+const showProModal = ref(false)
+const planResult = ref(null)
+const membership = ref({ tier: 'FREE', dailyAiQuota: 3, remainingAiQuota: 3 })
+const fitnessProfile = ref({
+  goal: 'fat_loss',
+  fitnessLevel: 'beginner',
+  injuries: 'knee discomfort',
+  equipment: ['yoga mat', 'resistance band'],
+  preferredWorkoutTime: 'evening'
+})
 
-// 今日数据（将从后端接口填充）
 const todayStats = ref({
   workoutMinutes: 0,
   workoutTarget: 30,
@@ -115,352 +337,182 @@ const todayStats = ref({
   stepsTarget: 10000
 })
 const dailyReport = ref({ score: 0 })
-const advice = ref('')
+const authoritySources = [
+  {
+    source: 'WHO',
+    title: '成年人身体活动建议',
+    url: 'https://www.who.int/publications/i/item/9789240015128'
+  },
+  {
+    source: 'CDC',
+    title: '有氧 + 力量训练建议',
+    url: 'https://www.cdc.gov/physical-activity-basics/guidelines/adults.html'
+  },
+  {
+    source: 'ACSM',
+    title: '运动强度与筛查指南',
+    url: 'https://acsm.org/education-resources/trending-topics-resources/physical-activity-guidelines/'
+  },
+  {
+    source: 'Mayo Clinic',
+    title: '如何判断运动强度',
+    url: 'https://www.mayoclinic.org/healthy-lifestyle/fitness/in-depth/exercise-intensity/art-20046887'
+  }
+]
 
-// 历史统计相关
-const historyStats = ref({
-  totalWorkout: 0,
-  avgWorkout: 0,
-  avgSleep: 0,
-  avgDiet: 0,
-  workoutGoalDays: 0,
-  sleepGoalDays: 0,
-  totalSteps: 0,
-  avgSteps: 0
+const workoutPercent = computed(() => percent(todayStats.value.workoutMinutes, todayStats.value.workoutTarget))
+const sleepPercent = computed(() => percent(todayStats.value.sleepHours, todayStats.value.sleepTarget))
+const dietPercent = computed(() => percent(todayStats.value.dietCalories, todayStats.value.dietTarget))
+const stepsPercent = computed(() => percent(todayStats.value.stepsCount, todayStats.value.stepsTarget))
+const currentTierInfo = computed(() => getPlanTierPresentation(membership.value.tier))
+const remainingQuotaText = computed(() => {
+  const remaining = membership.value.remainingAiQuota ?? Math.max(0, (membership.value.dailyAiQuota || 0) - (membership.value.usedAiQuota || 0))
+  return `${remaining}/${membership.value.dailyAiQuota || 3}`
 })
-const weeklyTrend = ref([])
 
-// 百分比计算
-const workoutPercent = computed(() => Math.min(100, (todayStats.value.workoutMinutes / todayStats.value.workoutTarget) * 100))
-const sleepPercent = computed(() => Math.min(100, (todayStats.value.sleepHours / todayStats.value.sleepTarget) * 100))
-const dietPercent = computed(() => Math.min(100, (todayStats.value.dietCalories / todayStats.value.dietTarget) * 100))
-const stepsPercent = computed(() => Math.min(100, (todayStats.value.stepsCount / todayStats.value.stepsTarget) * 100))
-
-// 统计数据列表（用于历史卡片）
-const statsList = computed(() => [
-  { 
-    label: '总运动', 
-    value: `${historyStats.value.totalWorkout}分钟`, 
-    info: '过去30天内所有运动时长的总和，单位：分钟。帮助您了解整体运动量。' 
-  },
-  { 
-    label: '日均运动', 
-    value: `${historyStats.value.avgWorkout}分钟/天`, 
-    info: '过去30天平均每天的运动时长，反映您的日常运动习惯。' 
-  },
-  { 
-    label: '平均睡眠', 
-    value: `${historyStats.value.avgSleep}小时/天`, 
-    info: '过去30天平均每天的睡眠时长，单位：小时。有助于评估睡眠规律性。' 
-  },
-  { 
-    label: '日均摄入', 
-    value: `${historyStats.value.avgDiet}千卡`, 
-    info: '过去30天平均每天从饮食中摄入的热量，单位：千卡。用于监控能量平衡。' 
-  },
-  { 
-    label: '总步数', 
-    value: `${historyStats.value.totalSteps || 0}步`, 
-    info: '过去30天内所有步数的总和。帮助您了解每日活动量。' 
-  },
-  { 
-    label: '日均步数', 
-    value: `${historyStats.value.avgSteps || 0}步`, 
-    info: '过去30天平均每天的步数。用于判断日常步行水平。' 
-  },
-  { 
-    label: '运动达标天数', 
-    value: `${historyStats.value.workoutGoalDays}天`, 
-    info: '过去30天中，运动时长达到或超过目标（默认30分钟）的天数。反映运动计划的执行情况。' 
-  },
-  { 
-    label: '睡眠达标天数', 
-    value: `${historyStats.value.sleepGoalDays}天`, 
-    info: '过去30天中，睡眠时长达到或超过目标（默认8小时）的天数。帮助评估睡眠充足程度。' 
-  }
-])
-
-// 为统计项添加图标映射
-const getStatIcon = (label) => {
-  const iconMap = {
-    '总运动': '🏃‍♂️',
-    '日均运动': '📈',
-    '平均睡眠': '😴',
-    '日均摄入': '🍽️',
-    '总步数': '👟',
-    '日均步数': '🚶',
-    '运动达标天数': '🎯',
-    '睡眠达标天数': '⭐'
-  }
-  return iconMap[label] || '📊'
+function percent(value, target) {
+  return Math.min(100, Math.round(target > 0 ? (value / target) * 100 : 0))
 }
 
-// 显示统计项说明
-const showStatInfo = (infoText) => {
-  uni.showModal({
-    title: '数据说明',
-    content: infoText,
-    showCancel: false,
-    confirmText: '知道了'
+function workoutBarHeight(value) {
+  return Math.max(12, Math.min(100, Math.round((Number(value) || 0) / 60 * 100)))
+}
+
+function sleepBarHeight(value) {
+  return Math.max(12, Math.min(100, Math.round((Number(value) || 0) / 9 * 100)))
+}
+
+function trendPreviewItems(chart) {
+  return Array.isArray(chart) ? chart.slice(-10) : []
+}
+
+function isTrendPreviewLabel(index, chart) {
+  const previewLength = trendPreviewItems(chart).length
+  return index % 2 === 0 || index === previewLength - 1
+}
+
+function trendWindowText(analysis) {
+  const days = analysis?.windowDays || analysis?.chart?.length || 0
+  return days ? `${days}天趋势` : '趋势分析'
+}
+
+function openTrendDetail() {
+  const analysis = planResult.value?.trendAnalysis
+  if (!analysis) {
+    uni.showToast({ title: '请先生成 Pro 计划', icon: 'none' })
+    return
+  }
+  uni.setStorageSync('ai_trend_analysis', analysis)
+  uni.navigateTo({ url: '/pages/workout/ai-trend' })
+}
+
+function openAuthoritySource(url) {
+  if (!url) return
+  if (typeof window !== 'undefined' && window.open) {
+    window.open(url, '_blank')
+    return
+  }
+  uni.setClipboardData({
+    data: url,
+    success: () => uni.showToast({ title: '链接已复制', icon: 'none' })
   })
 }
 
-// ---------- 数据加载 ----------
 async function loadDashboard() {
   if (!isLoggedIn.value) return
   loading.value = true
   try {
-    // 并行请求今日运动、睡眠、饮食数据
-    const [todayData, sleepTodayData, dietTodayData] = await Promise.all([
+    const [todayData, sleepTodayData, dietTodayData, memberData, profileData] = await Promise.all([
       statsApi.today(),
       statsApi.sleepToday(),
-      statsApi.dietToday()
+      statsApi.dietToday(),
+      membershipApi.get(),
+      fitnessProfileApi.get()
     ])
 
-    // 1. 运动数据
     const workoutTarget = todayData.targetMinutes ?? 30
     const workoutMinutes = todayData.completedMinutes ?? 0
-    // 2. 睡眠数据
     const sleepTarget = sleepTodayData.targetHours ?? 8
-    // 计算总睡眠时长（多条记录累加 durationHours）
-    let sleepHours = 0
-    if (sleepTodayData.records && Array.isArray(sleepTodayData.records)) {
-      sleepHours = sleepTodayData.records.reduce((sum, r) => sum + (r.durationHours || 0), 0)
-    }
-    // 3. 饮食数据
+    const sleepHours = Array.isArray(sleepTodayData.records)
+      ? sleepTodayData.records.reduce((sum, item) => sum + (item.durationHours || 0), 0)
+      : 0
     const dietTarget = dietTodayData.targetCalories ?? 2000
     const dietCalories = dietTodayData.totalCalories ?? 0
     const stepsTarget = todayData.stepsTarget ?? 10000
     const stepsCount = todayData.steps ?? 0
 
-    todayStats.value = {
-      workoutMinutes,
-      workoutTarget,
-      sleepHours,
-      sleepTarget,
-      dietCalories,
-      dietTarget,
-      stepsCount,
-      stepsTarget
-    }
-
-    // 计算今日健康指数（基于完成百分比）
-    const safeDivide = (a, b) => (b && b > 0 ? (a / b) * 100 : 0)
-    const workoutScore = Math.min(100, safeDivide(workoutMinutes, workoutTarget))
-    const sleepScore = Math.min(100, safeDivide(sleepHours, sleepTarget))
-    // 饮食得分：越接近目标越高，使用偏差率计算（100 - 偏差百分比）
-    const dietDiffPercent = dietTarget > 0 ? Math.abs(dietCalories - dietTarget) / dietTarget * 100 : 100
-    const dietScore = Math.max(0, 100 - dietDiffPercent)
-    const stepsScore = Math.min(100, safeDivide(stepsCount, stepsTarget))
-    const totalScore = Math.round((workoutScore + sleepScore + dietScore + stepsScore) / 4)
-    dailyReport.value.score = isNaN(totalScore) ? 0 : totalScore
-
-    // 生成建议
-    generateReportAndAdvice()
-
-    // 加载历史数据
-    await loadHistoryStats()
-  } catch (e) {
-    console.error('加载仪表盘数据失败', e)
-    uni.showToast({ title: e.message || '加载失败，请检查网络', icon: 'none' })
+    todayStats.value = { workoutMinutes, workoutTarget, sleepHours, sleepTarget, dietCalories, dietTarget, stepsCount, stepsTarget }
+    membership.value = { ...membership.value, ...memberData }
+    fitnessProfile.value = { ...fitnessProfile.value, ...profileData }
+    updateHealthScore()
+  } catch (error) {
+    uni.showToast({ title: error.message || '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
 }
 
-// 生成智能健康建议
-function generateReportAndAdvice() {
-  const w = todayStats.value.workoutMinutes
-  const wTarget = todayStats.value.workoutTarget
-  const s = todayStats.value.sleepHours
-  const sTarget = todayStats.value.sleepTarget
-  const d = todayStats.value.dietCalories
-  const dTarget = todayStats.value.dietTarget
-  
-  const adviceList = []
-  
-  // 1. 睡眠分析
-  if (s === 0) {
-    adviceList.push('⚠️ 今日无睡眠记录，睡眠对健康至关重要，请保证充足休息。')
-  } else if (s < 6) {
-    adviceList.push('😴 睡眠严重不足（<6小时），长期缺觉会影响免疫力和记忆力，建议今晚提前1小时入睡。')
-  } else if (s < 7) {
-    adviceList.push('😌 睡眠偏少（6-7小时），建议适当增加睡眠时间，理想目标是8小时。')
-  } else if (s >= 9) {
-    adviceList.push('🛌 睡眠时间过长（>9小时），可能影响精力，建议保持规律作息。')
-  } else if (s >= sTarget - 0.5 && s <= sTarget + 0.5) {
-    adviceList.push('🎯 睡眠时长理想，继续保持！')
-  }
-  
-  // 2. 运动分析
-  if (w === 0) {
-    adviceList.push('🏃 今日未运动，建议进行30分钟中等强度活动，如快走、慢跑。')
-  } else if (w < wTarget * 0.5) {
-    adviceList.push('📉 运动量不足，未达到目标的一半，建议增加运动频率或时长。')
-  } else if (w < wTarget) {
-    adviceList.push('💪 运动量接近目标，再坚持一下就能达标！')
-  } else if (w >= wTarget && w < wTarget * 1.2) {
-    adviceList.push('✅ 运动达标！继续保持这个好习惯。')
-  } else if (w >= wTarget * 1.5) {
-    adviceList.push('🏋️ 运动量较大，注意适当休息，避免过度训练导致受伤。')
-  }
-  
-  // 3. 饮食分析
-  const dietRatio = d / dTarget
-  if (d === 0) {
-    adviceList.push('🍽️ 今日无饮食记录，合理饮食是健康的基础，请记录三餐。')
-  } else if (dietRatio < 0.6) {
-    adviceList.push('⚠️ 热量摄入严重不足（低于目标60%），可能导致营养不良。')
-  } else if (dietRatio < 0.9) {
-    adviceList.push('🥗 热量摄入略低，可适当增加健康食物，确保能量充足。')
-  } else if (dietRatio >= 1.1 && dietRatio <= 1.3) {
-    adviceList.push('🍚 热量摄入略高，建议下一餐选择清淡食物。')
-  } else if (dietRatio > 1.3) {
-    adviceList.push('🔥 热量摄入超标较多，建议增加运动消耗，控制高热量食物。')
-  } else if (dietRatio >= 0.95 && dietRatio <= 1.05) {
-    adviceList.push('🎯 热量摄入精准达标，饮食控制得很好！')
-  }
-  
-  // 4. 综合交叉分析
-  if (w > wTarget * 1.2 && s < 7) {
-    adviceList.push('⚠️ 运动量大但睡眠不足，身体恢复会受影响，今晚请早睡。')
-  }
-  
-  if (s < 7 && d > dTarget) {
-    adviceList.push('⚠️ 睡眠不足加上热量超标，容易导致体重增加，建议调整作息和饮食。')
-  }
-  
-  if (w < wTarget * 0.5 && d > dTarget) {
-    adviceList.push('⚠️ 运动不足且热量超标，体重管理面临挑战，建议增加运动。')
-  }
-  
-  if (s >= 8 && w >= wTarget && dietRatio >= 0.9 && dietRatio <= 1.1) {
-    adviceList.unshift('🌟 三项指标全部达标！今日表现完美，继续保持！')
-  }
-  
-  // 5. 鼓励性建议
-  if (adviceList.length === 0) {
-    adviceList.push('👍 各项指标良好，继续保持健康生活方式！')
-  }
-  
-  // 合并建议，用换行分隔
-  advice.value = adviceList.join('\n')
+function updateHealthScore() {
+  const workoutScore = percent(todayStats.value.workoutMinutes, todayStats.value.workoutTarget)
+  const sleepScore = percent(todayStats.value.sleepHours, todayStats.value.sleepTarget)
+  const dietTarget = todayStats.value.dietTarget
+  const dietScore = dietTarget > 0 ? Math.max(0, 100 - Math.abs(todayStats.value.dietCalories - dietTarget) / dietTarget * 100) : 0
+  const stepsScore = percent(todayStats.value.stepsCount, todayStats.value.stepsTarget)
+  dailyReport.value.score = Math.round((workoutScore + sleepScore + dietScore + stepsScore) / 4)
 }
 
-// 加载历史统计数据
-async function loadHistoryStats() {
+async function switchTier(tier) {
+  if (tier === 'PRO') {
+    openProIntro()
+    return
+  }
   try {
-    const history = await statsApi.getHistory({ days: 30 })
-    if (!history || history.length === 0) {
-      resetHistoryStatsToZero()
-      return
-    }
-    processHistoryData(history)
+    membership.value = { ...membership.value, ...(await membershipApi.setMockTier('FREE')) }
+    planResult.value = null
   } catch (error) {
-    console.error('获取历史数据失败', error)
-    resetHistoryStatsToZero()
+    uni.showToast({ title: error.message || '切换失败', icon: 'none' })
   }
 }
 
-function resetHistoryStatsToZero() {
-  historyStats.value = {
-    totalWorkout: 0,
-    avgWorkout: 0,
-    avgSleep: 0,
-    avgDiet: 0,
-    workoutGoalDays: 0,
-    sleepGoalDays: 0
-  }
-  weeklyTrend.value = []
+function openProIntro() {
+  showProModal.value = true
 }
 
-function processHistoryData(history) {
-  // 计算汇总
-  const totalWorkout = history.reduce((sum, day) => sum + (day.workoutMinutes || 0), 0)
-  const avgWorkout = Math.round(totalWorkout / history.length)
-  const totalSleep = history.reduce((sum, day) => sum + (day.sleepHours || 0), 0)
-  const avgSleep = (totalSleep / history.length).toFixed(1)
-  const totalDiet = history.reduce((sum, day) => sum + (day.dietCalories || 0), 0)
-  const avgDiet = Math.round(totalDiet / history.length)
-  const totalSteps = history.reduce((sum, day) => sum + (day.steps || day.stepsCount || 0), 0)
-  const avgSteps = history.length ? Math.round(totalSteps / history.length) : 0
-
-  // 使用历史数据中的目标值（后端返回的 workoutTarget / sleepTarget / dietTarget）
-  const workoutTarget = history[0]?.workoutTarget ?? 30
-  const sleepTarget = history[0]?.sleepTarget ?? 8
-  const workoutGoalDays = history.filter(day => (day.workoutMinutes || 0) >= workoutTarget).length
-  const sleepGoalDays = history.filter(day => (day.sleepHours || 0) >= sleepTarget).length
-
-  historyStats.value = {
-    totalWorkout,
-    avgWorkout,
-    avgSleep,
-    avgDiet,
-    workoutGoalDays,
-    sleepGoalDays,
-    totalSteps,
-    avgSteps
-  }
-
-  // 计算最近7天运动趋势
-  const last7 = history.slice(-7).reverse()
-  const maxWorkout = Math.max(...last7.map(d => d.workoutMinutes || 0), 1)
-  weeklyTrend.value = last7.map(day => {
-    const minutes = day.workoutMinutes || 0
-    const height = (minutes / maxWorkout) * 60
-    const date = new Date(day.date)
-    const dayLabel = `${date.getMonth()+1}/${date.getDate()}`
-    return { height: Math.max(4, height), dayLabel, minutes }
-  })
+function closeProIntro() {
+  showProModal.value = false
 }
 
-// 生成训练计划（依赖今日数据和历史数据）
+async function activatePro() {
+  try {
+    membership.value = { ...membership.value, ...(await membershipApi.setMockTier('PRO')) }
+    showProModal.value = false
+    planResult.value = null
+    uni.showToast({ title: 'Pro 已开启', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: error.message || '开启失败', icon: 'none' })
+  }
+}
+
 async function generateTrainingPlan() {
   if (generatingPlan.value) return
   generatingPlan.value = true
-  trainingPlan.value = ''
-
+  planResult.value = null
   try {
-    const requestData = {
-      todayStats: {
-        workoutMinutes: todayStats.value.workoutMinutes,
-        workoutTarget: todayStats.value.workoutTarget,
-        sleepHours: todayStats.value.sleepHours,
-        sleepTarget: todayStats.value.sleepTarget,
-        dietCalories: todayStats.value.dietCalories,
-        dietTarget: todayStats.value.dietTarget,
-        healthScore: dailyReport.value.score
-      },
-      historyStats: {
-        avgWorkout: historyStats.value.avgWorkout,
-        avgSleep: historyStats.value.avgSleep,
-        avgDiet: historyStats.value.avgDiet,
-        workoutGoalDays: historyStats.value.workoutGoalDays,
-        sleepGoalDays: historyStats.value.sleepGoalDays
-      },
-      advice: advice.value
+    const profile = fitnessProfile.value
+    const result = await statsApi.generatePersonalizedPlan({
+      requestedDays: membership.value.tier === 'PRO' ? 30 : 7,
+      goal: profile.goal || 'fat_loss',
+      injuries: profile.injuries || '',
+      equipment: profile.equipment || [],
+      preferredTime: profile.preferredWorkoutTime || 'evening',
+      question: 'Generate a safe, personalized plan for today.'
+    })
+    planResult.value = result
+    if (result.membership) {
+      membership.value = { ...membership.value, ...result.membership }
     }
-    const res = await statsApi.generatePlan(requestData)
-    const lines = []
-    if (res.summary) lines.push(res.summary)
-    if (Array.isArray(res.items) && res.items.length) {
-      lines.push('')
-      res.items.forEach((item, index) => {
-        lines.push(`${index + 1}. ${item.stage}：${item.activity} ${item.minutes}分钟（${item.intensity}）`)
-        if (item.notes) lines.push(`   ${item.notes}`)
-      })
-    }
-    if (Array.isArray(res.tips) && res.tips.length) {
-      lines.push('', '小提示：')
-      res.tips.forEach((tip, index) => {
-        lines.push(`${index + 1}. ${tip}`)
-      })
-    }
-    trainingPlan.value = lines.join('\n') || '今日训练计划已生成，但暂无可展示内容。'
   } catch (error) {
-    console.error('调用后端接口失败', error)
-    trainingPlan.value = ''
-    uni.showToast({ title: error.message || '生成计划失败', icon: 'none' })
+    uni.showToast({ title: error.message || '生成失败', icon: 'none' })
   } finally {
     generatingPlan.value = false
   }
@@ -477,244 +529,937 @@ function navigateTo(page) {
 onMounted(() => {
   if (!isLoggedIn.value) {
     uni.reLaunch({ url: '/pages/index/index' })
-  } else {
-    loadDashboard()
-    if (uni && typeof uni.$on === 'function') {
-      uni.$on('historyRefresh', loadDashboard)
-    }
+    return
   }
+  loadDashboard()
 })
 </script>
 
 <style scoped>
 .container {
-  padding: 30rpx;
-  background-color: #f5f7fa;
   min-height: 100vh;
+  padding: 30rpx;
   padding-bottom: 100rpx;
+  background: #f5f7fa;
 }
 
-/* 健康指数卡片 */
 .score-card {
-  background: linear-gradient(135deg, #409eff 0%, #2c6ed1 100%);
-  border-radius: 32rpx;
-  padding: 40rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
-  margin-bottom: 30rpx;
-}
-.score-left {
-  flex: 1;
+  padding: 40rpx;
+  margin-bottom: 24rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #409eff 0%, #256fd8 100%);
+  border-radius: 24rpx;
+  box-shadow: 0 18rpx 40rpx rgba(45, 117, 216, 0.24);
 }
 .score-label {
+  display: block;
   font-size: 28rpx;
-  opacity: 0.9;
+  opacity: 0.92;
+}
+.score-line {
+  display: flex;
+  align-items: baseline;
 }
 .score-number {
-  font-size: 80rpx;
-  font-weight: bold;
-  line-height: 1.2;
-  margin-right: 10rpx;
+  font-size: 78rpx;
+  font-weight: 800;
+  line-height: 1;
 }
 .score-unit {
-  font-size: 32rpx;
+  margin-left: 8rpx;
+  font-size: 30rpx;
 }
 .score-ring {
-  width: 120rpx;
-  height: 120rpx;
+  width: 118rpx;
+  height: 118rpx;
   border-radius: 50%;
-  background-color: rgba(255,255,255,0.3);
-  position: relative;
-  overflow: hidden;
-}
-.ring-bg {
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255,255,255,0.2);
-}
-.ring-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: white;
-  transition: height 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
 }
 .ring-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #409eff;
+  color: #2b75dc;
+  font-size: 30rpx;
+  font-weight: 800;
 }
 
-/* 指标卡片 */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
-  margin-bottom: 30rpx;
+  gap: 18rpx;
+  margin-bottom: 26rpx;
 }
 .stat-card {
-  flex: 1;
-  min-width: 200rpx;
-  background: white;
-  border-radius: 24rpx;
+  background: #fff;
+  border-radius: 18rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+  box-shadow: 0 8rpx 24rpx rgba(19, 35, 54, 0.06);
 }
 .stat-header {
   display: flex;
   align-items: center;
-  margin-bottom: 16rpx;
-}
-.stat-icon {
-  font-size: 40rpx;
-  margin-right: 10rpx;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
 }
 .stat-title {
+  color: #536171;
   font-size: 28rpx;
-  color: #606266;
 }
 .stat-value {
-  font-size: 28rpx;
-  color: #303133;
-  margin-bottom: 20rpx;
   display: block;
+  color: #1f2933;
+  font-size: 28rpx;
+  margin-bottom: 18rpx;
 }
 .progress-bar {
-  background-color: #e0e0e0;
-  border-radius: 8rpx;
   height: 8rpx;
+  border-radius: 10rpx;
   overflow: hidden;
+  background: #e6ebf0;
 }
 .progress-fill {
   height: 100%;
-  width: 0%;
-  transition: width 0.3s;
 }
+.blue { background: #409eff; }
+.green { background: #59c23a; }
+.amber { background: #eda932; }
+.coral { background: #f56c6c; }
 
-/* 过去30天统计相关样式已删除 */
-
-/* 建议卡片 */
-.advice-card {
-  background: #ecf5ff;
-  border-radius: 24rpx;
-  padding: 24rpx;
+.ai-plan-card {
+  margin-bottom: 26rpx;
+  padding: 28rpx;
+  border-radius: 26rpx;
+  background: linear-gradient(180deg, #122f2b 0%, #1f7a5c 100%);
+  box-shadow: 0 18rpx 42rpx rgba(25, 108, 83, 0.25);
+}
+.ai-hero {
   display: flex;
   align-items: center;
-  margin-bottom: 30rpx;
+  gap: 18rpx;
+  margin-bottom: 24rpx;
 }
-.advice-icon {
-  font-size: 40rpx;
-  margin-right: 20rpx;
+.ai-mark {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d6f7a3;
+  color: #12382f;
+  font-size: 30rpx;
+  font-weight: 900;
 }
-.advice-text {
+.ai-copy {
   flex: 1;
-  font-size: 28rpx;
-  color: #2c3e50;
-  line-height: 1.4;
+  min-width: 0;
+}
+.ai-title {
+  display: block;
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 800;
+  margin-bottom: 8rpx;
+}
+.ai-subtitle {
+  display: block;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 24rpx;
+  line-height: 1.35;
+}
+.pro-link {
+  min-width: 136rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 22rpx;
+  color: #12382f;
+  background: #fff;
+  border: none;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 800;
 }
 
-/* 训练计划区域 */
-.plan-section {
-  margin-bottom: 30rpx;
+.tier-switch {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+  margin-bottom: 18rpx;
 }
-.generate-plan-btn {
-  background: linear-gradient(135deg, #67c23a, #529b2e);
-  color: white;
-  border: none;
-  border-radius: 48rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-  font-size: 32rpx;
+.tier-option {
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2rpx solid rgba(255, 255, 255, 0.16);
+}
+.tier-option.active {
+  background: #fff;
+  border-color: #d6f7a3;
+}
+.tier-option.pro {
+  background: rgba(214, 247, 163, 0.16);
+}
+.tier-option.pro.active {
+  background: linear-gradient(135deg, #fff 0%, #ecffd0 100%);
+}
+.tier-kicker,
+.tier-name,
+.tier-meta {
+  display: block;
+}
+.tier-kicker {
+  color: #d6f7a3;
+  font-size: 22rpx;
+  font-weight: 900;
+  letter-spacing: 1rpx;
+}
+.tier-option.active .tier-kicker,
+.tier-option.active .tier-name,
+.tier-option.active .tier-meta {
+  color: #12382f;
+}
+.tier-name {
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 800;
+  margin: 8rpx 0;
+}
+.tier-meta {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 23rpx;
+}
+
+.upgrade-strip {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx;
+  margin-bottom: 18rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1rpx solid rgba(214, 247, 163, 0.35);
+}
+.upgrade-icon {
+  width: 54rpx;
+  height: 54rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #12382f;
+  background: #d6f7a3;
+  font-size: 28rpx;
+}
+.upgrade-copy {
+  flex: 1;
+}
+.upgrade-title,
+.upgrade-text {
+  display: block;
+}
+.upgrade-title {
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+.upgrade-text {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 22rpx;
+  margin-top: 4rpx;
+}
+.upgrade-action {
+  color: #d6f7a3;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.ai-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
   margin-bottom: 20rpx;
 }
-.generate-plan-btn[disabled] {
-  opacity: 0.6;
+.ai-metric {
+  padding: 16rpx 10rpx;
+  border-radius: 16rpx;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.12);
 }
-.plan-content {
-  background: #f0f9ff;
-  border-radius: 24rpx;
-  padding: 30rpx;
-  border-left: 8rpx solid #409eff;
-}
-.plan-title {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: #303133;
+.metric-value {
   display: block;
-  margin-bottom: 16rpx;
+  color: #fff;
+  font-size: 23rpx;
+  font-weight: 800;
 }
-.plan-text {
-  font-size: 28rpx;
-  color: #606266;
-  line-height: 1.6;
-  white-space: pre-line;
+.metric-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 20rpx;
+  margin-top: 6rpx;
+}
+.generate-ai-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  color: #12382f;
+  background: #d6f7a3;
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.generate-ai-btn[disabled] {
+  opacity: 0.72;
 }
 
-/* 快捷按钮 */
+.plan-result {
+  margin-top: 22rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #fff;
+}
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 12rpx;
+}
+.result-badge {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #fff;
+  background: #1f7a5c;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.result-title {
+  flex: 1;
+  color: #1f2933;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+.result-summary {
+  display: block;
+  color: #43515f;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+.rag-mode-card {
+  padding: 16rpx 18rpx;
+  margin-bottom: 14rpx;
+  border-radius: 16rpx;
+  background: #f1f5f9;
+  border: 1rpx solid #e2e8f0;
+}
+.rag-mode-card.pro {
+  background: #efffde;
+  border-color: #d6f7a3;
+}
+.rag-mode-title,
+.rag-mode-text {
+  display: block;
+}
+.rag-mode-title {
+  color: #12382f;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.rag-mode-text {
+  color: #536171;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 4rpx;
+}
+.result-block,
+.risk-panel,
+.workout-steps {
+  margin-top: 18rpx;
+}
+.risk-panel {
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: #fff7ed;
+}
+.block-title {
+  display: block;
+  color: #1f2933;
+  font-size: 26rpx;
+  font-weight: 800;
+  margin-bottom: 10rpx;
+}
+.block-line {
+  display: block;
+  color: #536171;
+  font-size: 24rpx;
+  line-height: 1.45;
+  margin-bottom: 6rpx;
+}
+.step-card {
+  display: flex;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid #edf1f5;
+}
+.step-index {
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #1f7a5c;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.step-main {
+  flex: 1;
+}
+.step-title,
+.step-meta,
+.step-note {
+  display: block;
+}
+.step-title {
+  color: #1f2933;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+.step-meta {
+  color: #1f7a5c;
+  font-size: 23rpx;
+  margin-top: 4rpx;
+}
+.step-note {
+  color: #657280;
+  font-size: 23rpx;
+  line-height: 1.4;
+  margin-top: 6rpx;
+}
+.citation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+.citation-chip {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #1f7a5c;
+  background: #e9f7f1;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.coach-panel {
+  margin-top: 20rpx;
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(180deg, #f0ffe0 0%, #ffffff 100%);
+  border: 1rpx solid #d8f6b2;
+}
+.coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+.coach-title {
+  color: #12382f;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+.coach-actions {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-shrink: 0;
+}
+.coach-tag {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  color: #12382f;
+  background: #d6f7a3;
+  font-size: 20rpx;
+  font-weight: 900;
+}
+.trend-detail-btn {
+  height: 52rpx;
+  line-height: 52rpx;
+  margin: 0;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  color: #ffffff;
+  background: #1f7a5c;
+  font-size: 21rpx;
+  font-weight: 900;
+  box-shadow: 0 8rpx 18rpx rgba(31, 122, 92, 0.18);
+}
+.trend-detail-btn::after {
+  border: none;
+}
+.coach-summary {
+  display: block;
+  color: #425466;
+  font-size: 24rpx;
+  line-height: 1.45;
+}
+.coach-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+.coach-metric {
+  padding: 14rpx 8rpx;
+  border-radius: 14rpx;
+  text-align: center;
+  background: #eef7f3;
+}
+.coach-metric.warn {
+  background: #fff4df;
+}
+.coach-metric-value,
+.coach-metric-label {
+  display: block;
+}
+.coach-metric-value {
+  color: #12382f;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.coach-metric-label {
+  color: #657280;
+  font-size: 19rpx;
+  margin-top: 4rpx;
+}
+.trend-chart {
+  min-height: 178rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10rpx;
+  margin-top: 22rpx;
+  padding: 18rpx 16rpx 10rpx;
+  border-radius: 16rpx;
+  background:
+    linear-gradient(180deg, rgba(31, 122, 92, 0.06), rgba(31, 122, 92, 0)),
+    #f7faf8;
+  overflow: hidden;
+}
+.trend-day {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 150rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+.trend-bars {
+  height: 122rpx;
+  display: flex;
+  align-items: flex-end;
+  gap: 6rpx;
+}
+.trend-bar {
+  width: 10rpx;
+  min-height: 12rpx;
+  border-radius: 999rpx 999rpx 0 0;
+}
+.trend-bar.workout {
+  background: #1f7a5c;
+}
+.trend-bar.sleep {
+  background: #5ba7ff;
+}
+.trend-label {
+  min-height: 24rpx;
+  color: #7a8794;
+  font-size: 18rpx;
+  margin-top: 6rpx;
+}
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 28rpx;
+  margin-top: 12rpx;
+}
+.legend-item {
+  color: #536171;
+  font-size: 21rpx;
+}
+.workout-dot::before,
+.sleep-dot::before {
+  content: '';
+  display: inline-block;
+  width: 14rpx;
+  height: 14rpx;
+  margin-right: 8rpx;
+  border-radius: 50%;
+}
+.workout-dot::before {
+  background: #1f7a5c;
+}
+.sleep-dot::before {
+  background: #5ba7ff;
+}
+.source-list {
+  margin-top: 20rpx;
+}
+.source-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 16rpx 0;
+  border-top: 1rpx solid #edf1f5;
+}
+.source-name,
+.source-title {
+  display: block;
+}
+.source-name {
+  color: #1f7a5c;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.source-title {
+  color: #536171;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 4rpx;
+}
+.source-open {
+  align-self: center;
+  color: #1f7a5c;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+.customization-panel,
+.personal-rag-list {
+  margin-top: 20rpx;
+}
+.customization-card,
+.personal-rag-card {
+  padding: 16rpx;
+  margin-top: 10rpx;
+  border-radius: 16rpx;
+  background: #f7faf8;
+  border: 1rpx solid #edf1f5;
+}
+.customization-title,
+.customization-text,
+.personal-rag-source,
+.personal-rag-title {
+  display: block;
+}
+.customization-title,
+.personal-rag-source {
+  color: #1f7a5c;
+  font-size: 23rpx;
+  font-weight: 900;
+}
+.customization-text,
+.personal-rag-title {
+  color: #536171;
+  font-size: 22rpx;
+  line-height: 1.4;
+  margin-top: 6rpx;
+}
+.result-upgrade {
+  display: block;
+  margin-top: 18rpx;
+  color: #1f7a5c;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
 .action-buttons {
   display: flex;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
+  gap: 18rpx;
+  margin-bottom: 28rpx;
 }
 .action-btn {
   flex: 1;
   height: 88rpx;
   line-height: 88rpx;
-  border-radius: 48rpx;
-  font-size: 32rpx;
   border: none;
-  color: white;
+  border-radius: 44rpx;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
 }
-.action-btn.primary {
-  background: linear-gradient(135deg, #409eff, #2c6ed1);
-}
-.action-btn.success {
-  background-color: #67c23a;
-}
-.action-btn.warning {
-  background-color: #e6a23c;
-}
+.primary { background: linear-gradient(135deg, #409eff, #2c6ed1); }
+.success { background: #59c23a; }
+.warning { background: #eda932; }
 
-/* 底部导航 */
-.bottom-nav {
-  display: flex;
-  gap: 20rpx;
-}
-.nav-btn {
-  flex: 1;
-  background-color: #f0f2f5;
-  color: #606266;
-  border: 1px solid #dcdfe6;
-  border-radius: 48rpx;
-  height: 70rpx;
-  line-height: 70rpx;
-  font-size: 28rpx;
-}
-
-/* 加载遮罩 */
+.pro-modal-mask,
 .loading-mask {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 1000;
+  background: rgba(10, 22, 30, 0.48);
+}
+.pro-modal {
+  width: 86vw;
+  max-width: 680rpx;
+  padding: 30rpx;
+  border-radius: 28rpx;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(180, 238, 111, 0.36), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #f2faf4 100%);
+  border: 1rpx solid rgba(31, 122, 92, 0.12);
+  box-shadow: 0 30rpx 80rpx rgba(16, 48, 40, 0.24);
+}
+.pro-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 22rpx;
+}
+.pro-title-wrap {
+  flex: 1;
+}
+.pro-modal-title {
+  display: block;
+  color: #0d3b31;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+.pro-modal-subtitle {
+  display: block;
+  color: #5b6f68;
+  font-size: 24rpx;
+  line-height: 1.4;
+  margin-top: 8rpx;
+}
+.modal-close {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0;
+  color: #31564c;
+  background: rgba(13, 59, 49, 0.08);
+  border-radius: 50%;
+  font-size: 34rpx;
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+  margin-bottom: 24rpx;
+}
+.vs-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-bottom: 18rpx;
+}
+.vs-col {
+  min-height: 280rpx;
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 249, 244, 0.92)),
+    #f4faf6;
+  border: 1rpx solid rgba(31, 122, 92, 0.1);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
+}
+.vs-col.pro {
+  color: #fff;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(185, 245, 119, 0.3), transparent 34%),
+    linear-gradient(145deg, #0b3b31 0%, #11614d 54%, #20946b 100%);
+  border-color: rgba(198, 248, 143, 0.28);
+  box-shadow: 0 18rpx 40rpx rgba(17, 97, 77, 0.3);
+}
+.vs-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58rpx;
+  height: 58rpx;
+  line-height: 58rpx;
+  margin-left: -29rpx;
+  margin-top: -29rpx;
+  text-align: center;
+  border-radius: 50%;
+  color: #0d3b31;
+  background: linear-gradient(135deg, #e8ffd0 0%, #b7ed65 100%);
+  font-size: 22rpx;
+  font-weight: 900;
+  border: 4rpx solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10rpx 24rpx rgba(36, 132, 91, 0.28);
+  z-index: 2;
+}
+.vs-kicker,
+.vs-title,
+.vs-desc,
+.vs-list text {
+  display: block;
+}
+.vs-kicker {
+  color: #0f7f60;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.vs-title {
+  color: #0d3b31;
+  font-size: 30rpx;
+  font-weight: 900;
+  margin-top: 6rpx;
+}
+.vs-desc {
+  color: #5b6f68;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 10rpx;
+}
+.vs-list {
+  margin-top: 14rpx;
+}
+.vs-list text {
+  color: #405a52;
+  font-size: 21rpx;
+  line-height: 1.5;
+}
+.vs-list text::before {
+  content: '•';
+  margin-right: 8rpx;
+}
+.vs-col.pro .vs-kicker,
+.vs-col.pro .vs-title,
+.vs-col.pro .vs-desc,
+.vs-col.pro .vs-list text {
+  color: #fff;
+}
+.vs-col.pro .vs-desc,
+.vs-col.pro .vs-list text {
+  opacity: 0.9;
+}
+.pro-selling-points {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 18rpx;
+}
+.selling-card {
+  padding: 18rpx 10rpx;
+  border-radius: 18rpx;
+  text-align: center;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f1 100%);
+  border: 1rpx solid rgba(31, 122, 92, 0.1);
+  box-shadow: 0 8rpx 22rpx rgba(31, 122, 92, 0.06);
+}
+.selling-card.highlight {
+  background: linear-gradient(135deg, #eaffce 0%, #c9f47f 100%);
+  border-color: rgba(70, 154, 81, 0.18);
+}
+.selling-number,
+.selling-label {
+  display: block;
+}
+.selling-number {
+  color: #0d3b31;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+.selling-label {
+  color: #60736d;
+  font-size: 21rpx;
+  margin-top: 6rpx;
+}
+.compare-col {
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background: #f6f8fa;
+}
+.compare-col.pro {
+  background: linear-gradient(135deg, #12382f 0%, #1f7a5c 100%);
+}
+.compare-title,
+.compare-line {
+  display: block;
+}
+.compare-title {
+  color: #1f2933;
+  font-size: 30rpx;
+  font-weight: 900;
+  margin-bottom: 12rpx;
+}
+.compare-line {
+  color: #536171;
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+.compare-line.muted {
+  color: #94a3b8;
+}
+.compare-col.pro .compare-title,
+.compare-col.pro .compare-line {
+  color: #fff;
+}
+.authority-panel {
+  padding: 18rpx;
+  margin-bottom: 22rpx;
+  border-radius: 18rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(239, 248, 243, 0.92)),
+    #f5fbf7;
+  border: 1rpx solid rgba(31, 122, 92, 0.1);
+}
+.authority-title {
+  display: block;
+  color: #0d3b31;
+  font-size: 25rpx;
+  font-weight: 900;
+  margin-bottom: 10rpx;
+}
+.authority-row {
+  display: flex;
+  gap: 12rpx;
+  padding: 10rpx 0;
+  border-top: 1rpx solid rgba(31, 122, 92, 0.12);
+}
+.authority-row:first-of-type {
+  border-top: none;
+}
+.authority-name {
+  width: 150rpx;
+  color: #0f7f60;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+.authority-text {
+  flex: 1;
+  color: #5b6f68;
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+.activate-pro-btn {
+  height: 82rpx;
+  line-height: 82rpx;
+  color: #0d3b31;
+  background: linear-gradient(135deg, #dcff9c 0%, #a9e855 45%, #6fd37b 100%);
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  font-weight: 900;
+  box-shadow: 0 14rpx 30rpx rgba(99, 193, 89, 0.28);
+}
+.activate-pro-btn::after {
+  border: none;
 }
 .loading-content {
-  background: white;
   padding: 30rpx 60rpx;
-  border-radius: 16rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  color: #1f2933;
   font-size: 28rpx;
 }
 </style>

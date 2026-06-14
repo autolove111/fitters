@@ -8,6 +8,7 @@ import { sleepRouter } from "./modules/sleep/router.js";
 import { dietRouter } from "./modules/diet/router.js";
 import { foodRouter } from "./modules/food/router.js";
 import { mealRouter } from "./modules/meal/router.js";
+import { membershipRouter } from "./modules/membership/router.js";
 import { usersRouter } from "./modules/users/router.js";
 import { plansRouter } from "./modules/plans/router.js";
 import { workRouter } from "./modules/work/router.js";
@@ -32,6 +33,7 @@ export function createApp() {
   app.use("/api/diets", dietRouter);
   app.use("/api/foods", foodRouter);
   app.use("/api/meals", mealRouter);
+  app.use("/api/membership", membershipRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/work", workRouter);
   app.use(errorHandler);
