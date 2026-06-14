@@ -120,6 +120,45 @@
           <text class="rag-mode-title">{{ planResult.knowledgeBaseMode === 'PERSONAL_RAG' ? '专属RAG知识库' : '通用RAG知识库' }}</text>
           <text class="rag-mode-text">{{ planResult.knowledgeBaseLabel }}</text>
         </view>
+        <view v-if="planResult.ragMetadata" class="rag-proof-card">
+          <view class="rag-proof-head" @click="toggleRagDetails">
+            <view>
+              <text class="rag-proof-title">生成依据</text>
+              <text class="rag-proof-copy">
+                {{ planResult.ragMetadata.generationMode === 'LLM' ? 'AI 私人顾问已结合权威资料生成' : '当前使用兜底规则，训练建议仍可查看' }}
+              </text>
+            </view>
+            <text class="rag-proof-badge" :class="{ fallback: planResult.ragMetadata.generationMode !== 'LLM' }">
+              {{ planResult.ragMetadata.generationMode === 'LLM' ? 'AI生成' : '兜底生成' }}
+            </text>
+          </view>
+          <view v-if="showRagDetails" class="rag-detail-grid">
+            <view class="rag-detail-item">
+              <text class="rag-detail-key">LLM</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.llmModel }}</text>
+            </view>
+            <view class="rag-detail-item">
+              <text class="rag-detail-key">Embedding</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.embeddingModel }}</text>
+            </view>
+            <view class="rag-detail-item">
+              <text class="rag-detail-key">召回</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.retrievedChunks }} 条</text>
+            </view>
+            <view class="rag-detail-item">
+              <text class="rag-detail-key">重排序</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.rerankedChunks }} 条</text>
+            </view>
+            <view class="rag-detail-item">
+              <text class="rag-detail-key">耗时</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.latencyMs }}ms</text>
+            </view>
+            <view v-if="planResult.ragMetadata.fallbackReason" class="rag-detail-item warn">
+              <text class="rag-detail-key">原因</text>
+              <text class="rag-detail-value">{{ planResult.ragMetadata.fallbackReason }}</text>
+            </view>
+          </view>
+        </view>
         <text class="result-summary">{{ localizeAiPlanText(planResult.summary) }}</text>
 
         <view v-if="planResult.personalInsights && planResult.personalInsights.length" class="result-block">
@@ -143,8 +182,8 @@
           </view>
         </view>
 
-        <view v-if="planResult.citations && planResult.citations.length" class="citation-row">
-          <text v-for="(item, index) in planResult.citations" :key="'citation-' + index" class="citation-chip">{{ item.source }}</text>
+        <view v-if="realCitations.length" class="citation-row">
+          <text v-for="(item, index) in realCitations" :key="'citation-' + index" class="citation-chip">{{ item.source }}</text>
         </view>
 
         <view v-if="planResult.trendAnalysis" class="coach-panel">
@@ -173,7 +212,9 @@
                 <view class="trend-bar workout" :style="{ height: workoutBarHeight(item.workoutMinutes) + '%' }"></view>
                 <view class="trend-bar sleep" :style="{ height: sleepBarHeight(item.sleepHours) + '%' }"></view>
               </view>
-              <text v-if="isTrendPreviewLabel(index, planResult.trendAnalysis.chart)" class="trend-label">{{ item.label }}</text>
+              <text class="trend-label" :class="{ hidden: !isTrendPreviewLabel(index, planResult.trendAnalysis.chart) }">
+                {{ shortTrendLabel(item.label) }}
+              </text>
             </view>
           </view>
           <view class="chart-legend">
@@ -202,10 +243,10 @@
           </view>
         </view>
 
-        <view v-if="planResult.citations && planResult.citations.length" class="source-list">
+        <view v-if="realCitations.length" class="source-list">
           <text class="block-title">本次参考的权威来源</text>
           <view
-            v-for="(item, index) in planResult.citations"
+            v-for="(item, index) in realCitations"
             :key="'source-' + index"
             class="source-card"
             @click="openAuthoritySource(item.url)"
@@ -213,8 +254,9 @@
             <view>
               <text class="source-name">{{ item.source }}</text>
               <text class="source-title">{{ item.title }}</text>
+              <text v-if="item.excerptChunk" class="source-excerpt">{{ item.excerptChunk }}</text>
             </view>
-            <text class="source-open">查看</text>
+            <text class="source-open">{{ item.rerankScore ? Math.round(item.rerankScore * 100) + '%' : '查看' }}</text>
           </view>
         </view>
 
@@ -304,6 +346,7 @@ import { useUserStore } from '@/store/user'
 import { fitnessProfileApi, membershipApi, statsApi } from '@/utils/api'
 import {
   getPlanTierPresentation,
+  getRealRagCitations,
   localizeAiPlanText,
   localizePlanActivity,
   localizePlanIntensity,
@@ -316,6 +359,7 @@ const { isLoggedIn } = userStore
 const loading = ref(false)
 const generatingPlan = ref(false)
 const showProModal = ref(false)
+const showRagDetails = ref(false)
 const planResult = ref(null)
 const membership = ref({ tier: 'FREE', dailyAiQuota: 3, remainingAiQuota: 3 })
 const fitnessProfile = ref({
@@ -365,6 +409,7 @@ const sleepPercent = computed(() => percent(todayStats.value.sleepHours, todaySt
 const dietPercent = computed(() => percent(todayStats.value.dietCalories, todayStats.value.dietTarget))
 const stepsPercent = computed(() => percent(todayStats.value.stepsCount, todayStats.value.stepsTarget))
 const currentTierInfo = computed(() => getPlanTierPresentation(membership.value.tier))
+const realCitations = computed(() => getRealRagCitations(planResult.value))
 const remainingQuotaText = computed(() => {
   const remaining = membership.value.remainingAiQuota ?? Math.max(0, (membership.value.dailyAiQuota || 0) - (membership.value.usedAiQuota || 0))
   return `${remaining}/${membership.value.dailyAiQuota || 3}`
@@ -391,9 +436,20 @@ function isTrendPreviewLabel(index, chart) {
   return index % 2 === 0 || index === previewLength - 1
 }
 
+function shortTrendLabel(label = '') {
+  const value = String(label || '')
+  const match = value.match(/^0?(\d{1,2})-0?(\d{1,2})$/)
+  if (match) return `${Number(match[1])}/${Number(match[2])}`
+  return value.replace('-', '/')
+}
+
 function trendWindowText(analysis) {
   const days = analysis?.windowDays || analysis?.chart?.length || 0
   return days ? `${days}天趋势` : '趋势分析'
+}
+
+function toggleRagDetails() {
+  showRagDetails.value = !showRagDetails.value
 }
 
 function openTrendDetail() {
@@ -872,6 +928,78 @@ onMounted(() => {
   line-height: 1.35;
   margin-top: 4rpx;
 }
+.rag-proof-card {
+  margin-bottom: 14rpx;
+  padding: 18rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #f7fff0 0%, #eefaf5 100%);
+  border: 1rpx solid #d8f6b2;
+}
+.rag-proof-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.rag-proof-title,
+.rag-proof-copy {
+  display: block;
+}
+.rag-proof-title {
+  color: #12382f;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+.rag-proof-copy {
+  color: #536171;
+  font-size: 22rpx;
+  line-height: 1.35;
+  margin-top: 4rpx;
+}
+.rag-proof-badge {
+  flex-shrink: 0;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #0d3b31;
+  background: #d6f7a3;
+  font-size: 21rpx;
+  font-weight: 900;
+}
+.rag-proof-badge.fallback {
+  color: #8a4b08;
+  background: #fff0cf;
+}
+.rag-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+.rag-detail-item {
+  min-width: 0;
+  padding: 12rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.76);
+}
+.rag-detail-item.warn {
+  grid-column: 1 / -1;
+  background: #fff7ed;
+}
+.rag-detail-key,
+.rag-detail-value {
+  display: block;
+}
+.rag-detail-key {
+  color: #6b7a86;
+  font-size: 19rpx;
+}
+.rag-detail-value {
+  color: #12382f;
+  font-size: 22rpx;
+  font-weight: 800;
+  margin-top: 4rpx;
+  word-break: break-word;
+}
 .result-block,
 .risk-panel,
 .workout-steps {
@@ -1037,7 +1165,7 @@ onMounted(() => {
 .trend-chart {
   min-height: 178rpx;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: space-between;
   gap: 10rpx;
   margin-top: 22rpx;
@@ -1052,15 +1180,16 @@ onMounted(() => {
   flex: 1 1 0;
   min-width: 0;
   height: 150rpx;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-rows: 122rpx 24rpx;
+  row-gap: 6rpx;
   align-items: center;
 }
 .trend-bars {
   height: 122rpx;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   gap: 6rpx;
 }
 .trend-bar {
@@ -1075,10 +1204,17 @@ onMounted(() => {
   background: #5ba7ff;
 }
 .trend-label {
-  min-height: 24rpx;
+  width: 100%;
+  height: 24rpx;
+  line-height: 24rpx;
   color: #7a8794;
   font-size: 18rpx;
-  margin-top: 6rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.trend-label.hidden {
+  visibility: hidden;
 }
 .chart-legend {
   display: flex;
@@ -1129,6 +1265,13 @@ onMounted(() => {
   font-size: 22rpx;
   line-height: 1.35;
   margin-top: 4rpx;
+}
+.source-excerpt {
+  display: block;
+  color: #7a8794;
+  font-size: 20rpx;
+  line-height: 1.35;
+  margin-top: 6rpx;
 }
 .source-open {
   align-self: center;

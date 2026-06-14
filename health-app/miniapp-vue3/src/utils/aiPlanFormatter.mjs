@@ -37,6 +37,14 @@ export function formatAiPlanForDisplay(plan) {
   return lines.join('\n')
 }
 
+export function getRealRagCitations(plan) {
+  const metadataCitations = plan?.ragMetadata?.citations
+  if (Array.isArray(metadataCitations) && metadataCitations.length) {
+    return metadataCitations
+  }
+  return Array.isArray(plan?.citations) ? plan.citations : []
+}
+
 const GOAL_LABELS = {
   fat_loss: '减脂',
   muscle_gain: '增肌',

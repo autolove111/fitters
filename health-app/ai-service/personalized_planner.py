@@ -4,6 +4,10 @@ from typing import Any
 
 from backend_client import BackendClient
 from fitness_rag import build_personalized_rag_documents, retrieve_fitness_guidance
+from rag import run_personalized_rag_plan
+from rag.embedding_client import EmbeddingError
+from rag.generator import GeneratorError
+from rag.retriever import RetrievalError
 
 
 def _avg(values: list[float]) -> float:
@@ -224,6 +228,71 @@ def build_fallback_personalized_plan(
     return plan
 
 
+def _fallback_rag_metadata(
+    reason: str,
+    citations: list[dict[str, Any]] | None = None,
+    latency_ms: int = 0,
+) -> dict[str, Any]:
+    return {
+        "generationMode": "FALLBACK",
+        "ragPipeline": "EMBEDDING_VECTOR_RAG",
+        "llmProvider": "dashscope-compatible",
+        "llmModel": "qwen3-14b",
+        "embeddingModel": "text-embedding-v4",
+        "embeddingDim": 1024,
+        "retrievedChunks": len(citations or []),
+        "rerankedChunks": len(citations or []),
+        "fallbackReason": reason,
+        "latencyMs": latency_ms,
+        "citations": citations or [],
+    }
+
+
+def _complete_success_plan(
+    rag_plan: dict[str, Any],
+    request_data: dict[str, Any],
+    stats: dict[str, Any],
+    history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    base = build_fallback_personalized_plan(request_data, stats, history)
+    membership_tier = ((request_data.get("membership") or {}).get("tier") or "FREE").upper()
+    base.update(rag_plan)
+    base["membershipTier"] = membership_tier
+    base["knowledgeBaseMode"] = "PERSONAL_RAG" if membership_tier == "PRO" else "GENERAL_RAG"
+    base["knowledgeBaseLabel"] = (
+        "Exclusive RAG knowledge base: shared guidance + personal profile + 30-day history"
+        if membership_tier == "PRO"
+        else "General RAG knowledge base: authoritative public fitness guidance"
+    )
+    base["upgradeHint"] = "" if membership_tier == "PRO" else (request_data.get("upgradeHint") or base.get("upgradeHint") or "")
+    if membership_tier == "PRO" and request_data.get("includeTrendAnalysis"):
+        base["personalKnowledge"] = build_personalized_rag_documents(request_data.get("profile") or {}, stats, history)
+        base["customizationBlocks"] = _customization_blocks(request_data.get("profile") or {}, history, base.get("riskFlags") or [])
+        base["trendAnalysis"] = _build_trend_analysis(history, request_data.get("profile") or {})
+    return base
+
+
+def build_rag_personalized_plan(
+    request_data: dict[str, Any],
+    stats: dict[str, Any],
+    history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    import time
+
+    start = time.time()
+    try:
+        rag_plan = run_personalized_rag_plan(request_data, stats, history)
+        return _complete_success_plan(rag_plan, request_data, stats, history)
+    except (EmbeddingError, GeneratorError, RetrievalError) as error:
+        fallback = build_fallback_personalized_plan(request_data, stats, history)
+        fallback["ragMetadata"] = _fallback_rag_metadata(
+            getattr(error, "reason", "RAG_ERROR"),
+            fallback.get("citations") or [],
+            int((time.time() - start) * 1000),
+        )
+        return fallback
+
+
 def build_personalized_workout_plan(request_data: dict[str, Any], authorization: str) -> dict[str, Any]:
     client = BackendClient(authorization)
     history_days = int(request_data.get("historyDays") or 7)
@@ -231,4 +300,4 @@ def build_personalized_workout_plan(request_data: dict[str, Any], authorization:
     history = client.get("/api/stats/history", params={"days": history_days})
     if not isinstance(history, list):
         history = []
-    return build_fallback_personalized_plan(request_data, stats if isinstance(stats, dict) else {}, history)
+    return build_rag_personalized_plan(request_data, stats if isinstance(stats, dict) else {}, history)

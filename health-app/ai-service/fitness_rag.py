@@ -1,5 +1,8 @@
 import re
 from dataclasses import dataclass
+from pathlib import Path
+
+from rag.sources import load_sources
 
 
 @dataclass(frozen=True)
@@ -99,20 +102,53 @@ def _tokens(text: str) -> set[str]:
     return set(re.findall(r"[a-zA-Z0-9]+", text.lower()))
 
 
+def _markdown_guidance_library() -> tuple[FitnessGuidance, ...]:
+    source_dir = Path(__file__).resolve().parent / "rag_sources"
+    sources = load_sources(source_dir)
+    if not sources:
+        return ()
+    return tuple(
+        FitnessGuidance(
+            source=item.source,
+            title=item.title,
+            url=item.url,
+            text=item.text,
+            keywords=tuple(item.topics),
+        )
+        for item in sources
+    )
+
+
+def _guidance_library() -> tuple[FitnessGuidance, ...]:
+    markdown_items = _markdown_guidance_library()
+    if not markdown_items:
+        return GUIDANCE_LIBRARY
+    seen = set()
+    merged: list[FitnessGuidance] = []
+    for item in (*markdown_items, *GUIDANCE_LIBRARY):
+        key = item.url or item.title
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    return tuple(merged)
+
+
 def retrieve_fitness_guidance(query: str, limit: int = 3) -> list[dict[str, str]]:
     query_tokens = _tokens(query)
     scored: list[tuple[int, FitnessGuidance]] = []
 
-    for item in GUIDANCE_LIBRARY:
+    library = _guidance_library()
+    for item in library:
         keyword_score = sum(3 for keyword in item.keywords if keyword.lower() in query_tokens)
         text_score = len(query_tokens.intersection(_tokens(item.text)))
         score = keyword_score + text_score
         if score > 0:
             scored.append((score, item))
 
-    if len(scored) < len(GUIDANCE_LIBRARY):
+    if len(scored) < len(library):
         matched = {item.url for _, item in scored}
-        scored.extend((0, item) for item in GUIDANCE_LIBRARY if item.url not in matched)
+        scored.extend((0, item) for item in library if item.url not in matched)
 
     scored.sort(key=lambda entry: entry[0], reverse=True)
     return [

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   formatAiPlanForDisplay,
   getPlanTierPresentation,
+  getRealRagCitations,
   localizeAiPlanText,
   localizePlanActivity,
   localizePlanIntensity,
@@ -29,6 +30,30 @@ test("formats personalized AI plan with risks, items, citations, and membership"
   assert.match(text, /Keep knee impact low/);
   assert.match(text, /Warm-up/);
   assert.match(text, /WHO/);
+});
+
+test("prefers real rag metadata citations over legacy fixed citations", () => {
+  const citations = getRealRagCitations({
+    citations: [{ source: "Legacy", title: "Fixed list" }],
+    ragMetadata: {
+      citations: [
+        {
+          chunkId: "who-1",
+          source: "WHO",
+          title: "Adult activity",
+          url: "https://example.com/who",
+          authorityLevel: 5,
+          rerankScore: 0.91,
+          excerptChunk: "Adults benefit from weekly aerobic and strength activity.",
+        },
+      ],
+    },
+  });
+
+  assert.equal(citations.length, 1);
+  assert.equal(citations[0].chunkId, "who-1");
+  assert.equal(citations[0].source, "WHO");
+  assert.equal(citations[0].authorityLevel, 5);
 });
 
 test("describes visible Free and Pro differences for the plan module", () => {
