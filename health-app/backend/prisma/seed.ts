@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { GoalPeriod, GoalType, PrismaClient } from "@prisma/client";
+import { GoalPeriod, GoalType, MembershipTier, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +22,37 @@ async function main() {
     where: { account: "demo" },
     update: {},
     create: { account: "demo", passwordHash, nickname: "Demo User" },
+  });
+
+  await prisma.userFitnessProfile.upsert({
+    where: { userId: user.id },
+    update: {
+      age: 22,
+      heightCm: 175,
+      weightKg: 72.5,
+      goal: "fat_loss",
+      fitnessLevel: "beginner",
+      injuries: "knee discomfort after long runs",
+      equipment: ["yoga mat", "resistance band"],
+      preferredWorkoutTime: "evening",
+    },
+    create: {
+      userId: user.id,
+      age: 22,
+      heightCm: 175,
+      weightKg: 72.5,
+      goal: "fat_loss",
+      fitnessLevel: "beginner",
+      injuries: "knee discomfort after long runs",
+      equipment: ["yoga mat", "resistance band"],
+      preferredWorkoutTime: "evening",
+    },
+  });
+
+  await prisma.userSubscription.upsert({
+    where: { userId: user.id },
+    update: { tier: MembershipTier.PRO, dailyAiQuota: 20, usedAiQuota: 0, quotaDate: daysAgo(0) },
+    create: { userId: user.id, tier: MembershipTier.PRO, dailyAiQuota: 20, quotaDate: daysAgo(0) },
   });
 
   await prisma.goal.upsert({
@@ -76,43 +107,45 @@ async function main() {
   });
 
   await prisma.workoutRecord.deleteMany({ where: { userId: user.id } });
+  const demoDays = 30;
+
   await prisma.workoutRecord.createMany({
-    data: Array.from({ length: 7 }, (_, index) => ({
+    data: Array.from({ length: demoDays }, (_, index) => ({
       userId: user.id,
-      type: index % 2 === 0 ? "running" : "cycling",
-      durationMinutes: 20 + index * 5,
-      calories: 120 + index * 30,
-      recordDate: daysAgo(6 - index),
+      type: index % 3 === 0 ? "strength" : index % 2 === 0 ? "running" : "cycling",
+      durationMinutes: [24, 32, 38, 0, 45, 28, 50][index % 7],
+      calories: [120, 180, 230, 0, 280, 160, 310][index % 7],
+      recordDate: daysAgo(demoDays - 1 - index),
       sourceType: "MANUAL",
       notes: "demo seed data",
     })),
   });
   await prisma.workoutRecord.createMany({
-    data: Array.from({ length: 7 }, (_, index) => ({
+    data: Array.from({ length: demoDays }, (_, index) => ({
       userId: user.id,
       type: "wechat_steps",
       durationMinutes: 0,
       calories: 0,
-      steps: 5000 + index * 650,
+      steps: [5200, 6800, 7400, 6100, 8800, 9300, 10000][index % 7],
       sourceType: "WECHAT_WERUN",
-      recordDate: daysAgo(6 - index),
+      recordDate: daysAgo(demoDays - 1 - index),
       notes: "demo wechat steps",
     })),
   });
 
   await prisma.sleepRecord.deleteMany({ where: { userId: user.id } });
   await prisma.sleepRecord.createMany({
-    data: Array.from({ length: 7 }, (_, index) => {
-      const days = 6 - index;
-      const durationHours = 6.8 + index * 0.15;
+    data: Array.from({ length: demoDays }, (_, index) => {
+      const days = demoDays - 1 - index;
+      const durationHours = [6.4, 7.1, 7.4, 6.8, 7.8, 8.0, 7.2][index % 7];
       return {
         userId: user.id,
         recordDate: daysAgo(days),
         durationHours,
-        deepHours: 1.6 + index * 0.08,
+        deepHours: [1.2, 1.5, 1.7, 1.4, 1.9, 2.0, 1.6][index % 7],
         sleepTime: atUtc(days + 1, 23, index % 2 === 0 ? 10 : 35),
         wakeTime: atUtc(days, 6, 30 + (index % 3) * 10),
-        quality: Math.min(100, 72 + index * 3),
+        quality: [68, 74, 78, 71, 84, 88, 80][index % 7],
         sourceType: "MANUAL",
         notes: "demo sleep data",
         metadata: { source: "seed" },
@@ -125,12 +158,12 @@ async function main() {
   });
 
   await prisma.dietRecord.createMany({
-    data: Array.from({ length: 7 }, (_, index) => ({
+    data: Array.from({ length: demoDays }, (_, index) => ({
       userId: user.id,
       recordType: "diet",
       type: index % 2 === 0 ? "balanced" : "high-protein",
-      calories: 1780 + index * 45,
-      recordDate: daysAgo(6 - index),
+      calories: [1820, 1960, 2070, 1880, 2140, 2010, 1930][index % 7],
+      recordDate: daysAgo(demoDays - 1 - index),
       notes: "demo diet summary data",
     })),
   });
@@ -180,8 +213,8 @@ async function main() {
     }),
   ]);
 
-  for (let index = 0; index < 7; index++) {
-    const mealDate = daysAgo(6 - index);
+  for (let index = 0; index < demoDays; index++) {
+    const mealDate = daysAgo(demoDays - 1 - index);
     const meal = await prisma.dietRecord.create({
       data: {
         userId: user.id,

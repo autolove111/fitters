@@ -3,8 +3,11 @@ backend/node_modules/
 backend/dist/
 
 # Python
+**/__pycache__/
 ai-service/__pycache__/
 ai-service/.venv/
+ai-service/data/
+ai-service/*.sqlite
 
 # IDE / OS
 .vscode/

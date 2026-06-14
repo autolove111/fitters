@@ -89,7 +89,18 @@ export const statsApi = {
   sleepToday: () => request('/stats/sleep/today'), 
   dietToday: () => request('/stats/diet/today'),  
   getHistory: (params = { days: 30 }) => request('/stats/history', { data: params }),
-  generatePlan: (userData) => request('/plans/today-workout', { method: 'POST', data: userData })
+  generatePlan: (userData) => request('/plans/today-workout', { method: 'POST', data: userData }),
+  generatePersonalizedPlan: (userData) => request('/plans/personalized-workout', { method: 'POST', data: userData })
+}
+
+export const fitnessProfileApi = {
+  get: () => request('/users/fitness-profile'),
+  save: (data) => request('/users/fitness-profile', { method: 'PUT', data })
+}
+
+export const membershipApi = {
+  get: () => request('/membership'),
+  setMockTier: (tier) => request('/membership/mock-tier', { method: 'PUT', data: { tier } })
 }
 
 export const goalApi = {

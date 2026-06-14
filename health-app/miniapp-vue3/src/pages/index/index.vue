@@ -407,6 +407,8 @@ function goStudy() {
   display: flex;
   align-items: center;
   gap: 20rpx;
+  flex: 1;
+  min-width: 0;
 }
 
 .avatar-ring {
@@ -453,6 +455,13 @@ function goStudy() {
 }
 
 .logout-btn {
+  margin: 0 0 0 auto !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 150rpx;
+  white-space: nowrap;
   background: rgba(59, 130, 246, 0.12);
   backdrop-filter: blur(12rpx);
   border: none;
