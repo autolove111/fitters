@@ -2,7 +2,7 @@
   <view class="study-container" :class="{ dark: isDark }">
     <view class="hero-card">
       <view class="hero-top-row">
-        <view>
+        <view class="hero-copy">
           <text class="hero-title">学习计划</text>
           <text class="hero-subtitle">为你智能推荐的当天任务与个人知识助手入口</text>
         </view>
@@ -211,6 +211,7 @@ onShow(() => {
   height: 180rpx;
   background: rgba(59, 130, 246, 0.12);
   border-radius: 50%;
+  pointer-events: none;
 }
 
 .hero-title {
@@ -229,6 +230,8 @@ onShow(() => {
 }
 
 .hero-tags {
+  position: relative;
+  z-index: 1;
   margin-top: 24rpx;
   display: flex;
   flex-wrap: wrap;
@@ -236,22 +239,38 @@ onShow(() => {
 }
 
 .hero-top-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
 }
 
+.hero-copy {
+  flex: 1;
+  min-width: 0;
+}
+
 .add-plan-btn {
+  position: relative;
+  z-index: 2;
+  margin: 0;
   min-width: 180rpx;
   height: 72rpx;
+  padding: 0 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(90deg, #38bdf8, #22c55e);
   border: none;
   border-radius: 999rpx;
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 700;
+  line-height: 1;
   box-shadow: 0 16rpx 24rpx rgba(56, 189, 248, 0.22);
+  flex-shrink: 0;
 }
 
 .hero-tag {
