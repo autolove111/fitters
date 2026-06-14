@@ -93,6 +93,10 @@ const testLLMConnection = async () => {
   return await request('/api/v1/system/test/llm', { method: 'POST' })
 }
 
+const testEmbeddingConnection = async () => {
+  return await request('/api/v1/system/test/embeddings', { method: 'POST' })
+}
+
 export const useSettingsStore = () => {
   return {
     state,
@@ -109,5 +113,6 @@ export const useSettingsStore = () => {
     updateEnabledTools,
     testService,
     testLLMConnection,
+    testEmbeddingConnection,
   }
 }

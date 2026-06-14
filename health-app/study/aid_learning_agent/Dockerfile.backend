@@ -1,4 +1,4 @@
-# DeepTutor Backend Only (no Next.js frontend)
+# AidLearning Backend Only (no Next.js frontend)
 # Frontend is served by miniapp-vue3 in the main health-app stack dd
 
 FROM python:3.11-slim AS builder
@@ -29,7 +29,7 @@ FROM python:3.11-slim AS production
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
-    DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES=1
+    AIDLEARNING_IGNORE_PROCESS_ENV_OVERRIDES=1
 
 WORKDIR /app
 
@@ -44,8 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY deeptutor/ ./deeptutor/
-COPY deeptutor_cli/ ./deeptutor_cli/
+COPY aidlearning/ ./aidlearning/
+COPY scripts/ ./scripts/
 COPY pyproject.toml ./
 
 RUN mkdir -p \
@@ -57,7 +57,6 @@ RUN mkdir -p \
     data/user/workspace/chat/deep_solve \
     data/user/workspace/chat/deep_question \
     data/user/workspace/chat/deep_research/reports \
-    data/user/workspace/chat/math_animator \
     data/user/workspace/chat/_detached_code_execution \
     data/user/logs \
     data/knowledge_bases
@@ -67,4 +66,4 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8001/ || exit 1
 
-CMD ["python", "-m", "uvicorn", "deeptutor.api.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "-m", "uvicorn", "aidlearning.api.main:app", "--host", "0.0.0.0", "--port", "8001"]

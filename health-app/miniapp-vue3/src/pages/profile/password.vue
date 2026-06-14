@@ -1,5 +1,5 @@
 <template>
-  <view class="password-page">
+  <view class="password-page" :class="{ dark: isDark }">
     <view class="password-card">
       <text class="card-title">修改密码</text>
 
@@ -19,7 +19,11 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useThemeStore } from '@/store/theme'
 import { userApi } from '@/utils/api'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const oldPassword = ref('')
 const newPassword = ref('')
@@ -58,38 +62,38 @@ const handleSubmit = async () => {
 <style scoped>
 .password-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   padding: 32rpx;
 }
 .password-card {
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card-bg);
   border-radius: 36rpx;
   padding: 40rpx 30rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.1);
 }
 .card-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   display: block;
   text-align: center;
   margin-bottom: 40rpx;
 }
 .input-label {
   font-size: 26rpx;
-  color: #475569;
+  color: var(--text-secondary);
   display: block;
   margin-bottom: 12rpx;
   margin-top: 24rpx;
 }
 .input-field {
   height: 88rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.2);
+  border: 1rpx solid var(--input-border);
   border-radius: 24rpx;
   padding: 0 24rpx;
   font-size: 30rpx;
-  background: rgba(243, 249, 255, 0.6);
+  background: var(--input-bg);
 }
 .submit-btn {
   width: 100%;

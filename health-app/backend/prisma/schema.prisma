@@ -27,6 +27,8 @@ model User {
   account      String          @unique @db.VarChar(64)
   passwordHash String          @map("password_hash") @db.VarChar(255)
   nickname     String?         @db.VarChar(64)
+  avatar       String?         @db.Text
+  theme        String          @default("light") @db.VarChar(16)
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
   workouts     WorkoutRecord[]
@@ -37,6 +39,9 @@ model User {
   fitnessProfile UserFitnessProfile?
   subscription UserSubscription?
   aiPlanHistories AiPlanHistory[]
+  waterRecords WaterRecord[]
+  weightRecords WeightRecord[]
+  studyPlans   StudyPlan[]
 
   @@map("users")
 }
@@ -145,7 +150,7 @@ model DietRecord {
   id             Int          @id @default(autoincrement())
   userId         Int?         @map("user_id")
   recordType     String       @default("diet") @map("record_type") @db.VarChar(32)
-  type           String       @db.VarChar(64)
+  type           String       @default("meal") @db.VarChar(64)
   calories       Int          @default(0)
   recordDate     DateTime     @map("record_date") @db.Date
   notes          String?      @db.VarChar(255)
@@ -182,6 +187,7 @@ model WorkRecord {
   endTime         DateTime? @map("end_time")
   durationMinutes Int?     @default(0) @map("duration_minutes")
   content         String?  @db.VarChar(255)
+  deadline        DateTime?
   completed       Boolean  @default(false)
   settings        Json?    @db.JsonB
   metadata        Json?    @db.JsonB
@@ -192,4 +198,45 @@ model WorkRecord {
   @@index([userId, recordType, recordDate], map: "idx_work_records_user_type_date")
   @@index([userId, startTime], map: "idx_work_records_user_start")
   @@map("work_records")
+}
+
+model WaterRecord {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  recordDate      DateTime @default(now()) @map("record_date") @db.Date
+  amountMl        Int      @map("amount_ml")
+  notes           String?  @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordDate], map: "idx_water_records_user_record_date")
+  @@map("water_records")
+}
+
+model WeightRecord {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  recordDate      DateTime @default(now()) @map("record_date") @db.Date
+  weightKg        Decimal  @map("weight_kg") @db.Decimal(6, 2)
+  notes           String?  @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordDate], map: "idx_weight_records_user_record_date")
+  @@map("weight_records")
+}
+
+model StudyPlan {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.VarChar(500)
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  status    String   @default("pending") @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_study_plans_user_id")
+  @@map("study_plans")
 }

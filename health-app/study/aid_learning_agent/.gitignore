@@ -9,8 +9,8 @@
 data/
 /multi-user/
 run_code_workspace/
-deeptutor/agents/question/reference_papers/
-deeptutor/services/rag/eg_only_for_analysis/
+aidlearning/agents/question/reference_papers/
+aidlearning/services/rag/eg_only_for_analysis/
 docs/
 .claude
 

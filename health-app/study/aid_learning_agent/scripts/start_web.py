@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Compatibility wrapper for ``deeptutor start``."""
+"""``aidlearning start`` 的兼容性包装器。"""
 
 from __future__ import annotations
 
@@ -11,16 +11,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from deeptutor.runtime.launcher import start  # noqa: E402
+from aidlearning.runtime.launcher import start  # noqa: E402
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Start DeepTutor Web.")
+    parser = argparse.ArgumentParser(description="启动 AidLearning Web。")
     parser.add_argument(
         "--home",
         type=Path,
         default=None,
-        help="Runtime workspace root. Defaults to the current directory.",
+        help="运行时工作区根目录。默认为当前目录。",
     )
     return parser
 

@@ -87,6 +87,14 @@
       "style": { "navigationBarTitleText": "添加运动记录" }
     },
     {
+      "path": "pages/workout/add-hub",
+      "style": { "navigationBarTitleText": "添加记录" }
+    },
+    {
+      "path": "pages/workout/add-water",
+      "style": { "navigationBarTitleText": "添加饮水" }
+    },
+    {
       "path": "pages/sleep/add",
       "style": { "navigationBarTitleText": "添加睡眠时长" }
     },
@@ -120,6 +128,20 @@
       }
     },
     {
+      "path": "pages/work/work-stats",
+      "style": {
+        "navigationBarTitleText": "工作统计",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/work/todo-list",
+      "style": {
+        "navigationBarTitleText": "任务管理",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/study/index",
       "style": {
         "navigationBarTitleText": "学习计划",
@@ -141,96 +163,96 @@
       }
     },
     {
-      "path": "pages/study/deeptutor/index/index",
+      "path": "pages/study/aidlearning/index/index",
       "style": {
         "navigationBarTitleText": "学习助手",
         "navigationBarBackgroundColor": "#ffffff"
       }
     },
     {
-      "path": "pages/study/deeptutor/login/login",
+      "path": "pages/study/aidlearning/login/login",
       "style": {
-        "navigationBarTitleText": "DeepTutor Login",
+        "navigationBarTitleText": "AidLearning Login",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/study/deeptutor/register/register",
+      "path": "pages/study/aidlearning/register/register",
       "style": {
-        "navigationBarTitleText": "DeepTutor Register",
+        "navigationBarTitleText": "AidLearning Register",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/study/deeptutor/chat/chat",
-      "style": { "navigationBarTitleText": "DeepTutor Chat" }
+      "path": "pages/study/aidlearning/chat/chat",
+      "style": { "navigationBarTitleText": "AidLearning Chat" }
     },
     {
-      "path": "pages/study/deeptutor/chat/session",
-      "style": { "navigationBarTitleText": "DeepTutor Session" }
+      "path": "pages/study/aidlearning/chat/session",
+      "style": { "navigationBarTitleText": "AidLearning Session" }
     },
     {
-      "path": "pages/study/deeptutor/knowledge/list",
+      "path": "pages/study/aidlearning/knowledge/list",
       "style": { "navigationBarTitleText": "Knowledge Base" }
     },
     {
-      "path": "pages/study/deeptutor/knowledge/detail",
+      "path": "pages/study/aidlearning/knowledge/detail",
       "style": { "navigationBarTitleText": "Knowledge Detail" }
     },
     {
-      "path": "pages/study/deeptutor/knowledge/create",
+      "path": "pages/study/aidlearning/knowledge/create",
       "style": { "navigationBarTitleText": "Create Knowledge" }
     },
     {
-      "path": "pages/study/deeptutor/memory/overview",
+      "path": "pages/study/aidlearning/memory/overview",
       "style": { "navigationBarTitleText": "Memory" }
     },
     {
-      "path": "pages/study/deeptutor/memory/doc",
+      "path": "pages/study/aidlearning/memory/doc",
       "style": { "navigationBarTitleText": "Memory Document" }
     },
     {
-      "path": "pages/study/deeptutor/skills/list",
+      "path": "pages/study/aidlearning/skills/list",
       "style": { "navigationBarTitleText": "Skills" }
     },
     {
-      "path": "pages/study/deeptutor/skills/detail",
+      "path": "pages/study/aidlearning/skills/detail",
       "style": { "navigationBarTitleText": "Skill Detail" }
     },
     {
-      "path": "pages/study/deeptutor/history/list",
+      "path": "pages/study/aidlearning/history/list",
       "style": { "navigationBarTitleText": "Chat History" }
     },
     {
-      "path": "pages/study/deeptutor/question/generate",
+      "path": "pages/study/aidlearning/question/generate",
       "style": { "navigationBarTitleText": "Question Generate" }
     },
     {
-      "path": "pages/study/deeptutor/question/mimic",
+      "path": "pages/study/aidlearning/question/mimic",
       "style": { "navigationBarTitleText": "Mock Exam" }
     },
     {
-      "path": "pages/study/deeptutor/settings/index",
+      "path": "pages/study/aidlearning/settings/index",
       "style": { "navigationBarTitleText": "Settings" }
     },
     {
-      "path": "pages/study/deeptutor/settings/status",
+      "path": "pages/study/aidlearning/settings/status",
       "style": { "navigationBarTitleText": "System Status" }
     },
     {
-      "path": "pages/study/deeptutor/settings/llm",
+      "path": "pages/study/aidlearning/settings/llm",
       "style": { "navigationBarTitleText": "Model Config" }
     },
     {
-      "path": "pages/study/deeptutor/settings/tools",
+      "path": "pages/study/aidlearning/settings/tools",
       "style": { "navigationBarTitleText": "Tools" }
     },
     {
-      "path": "pages/study/deeptutor/settings/appearance",
+      "path": "pages/study/aidlearning/settings/appearance",
       "style": { "navigationBarTitleText": "Appearance" }
     },
     {
-      "path": "pages/study/deeptutor/settings/users",
+      "path": "pages/study/aidlearning/settings/users",
       "style": { "navigationBarTitleText": "Users" }
     }
   ],

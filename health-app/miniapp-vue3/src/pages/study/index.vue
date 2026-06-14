@@ -1,5 +1,5 @@
 <template>
-  <view class="study-container">
+  <view class="study-container" :class="{ dark: isDark }">
     <view class="hero-card">
       <view class="hero-top-row">
         <view>
@@ -31,11 +31,11 @@
           <view class="plan-time-row">
             <view class="time-block">
               <text class="time-label">开始</text>
-              <text class="time-value">{{ plan.start }}</text>
+              <text class="time-value">{{ formatDisplayTime(plan.startTime) }}</text>
             </view>
             <view class="time-block">
               <text class="time-label">结束</text>
-              <text class="time-value">{{ plan.end }}</text>
+              <text class="time-value">{{ formatDisplayTime(plan.endTime) }}</text>
             </view>
           </view>
           <!-- <view class="plan-footer">
@@ -45,13 +45,13 @@
       </view>
     </scroll-view>
 
-    <view class="deeptutor-card">
-      <view class="deeptutor-icon">🤖</view>
-      <view class="deeptutor-content">
-        <text class="deeptutor-title">学习助手</text>
-        <text class="deeptutor-desc">进入学习助手，获得个性化学习建议与智能问答支持</text>
+    <view class="aidlearning-card">
+      <view class="aidlearning-icon">🤖</view>
+      <view class="aidlearning-content">
+        <text class="aidlearning-title">学习助手</text>
+        <text class="aidlearning-desc">进入学习助手，获得个性化学习建议与智能问答支持</text>
       </view>
-      <button class="deeptutor-btn" @tap="goDeeptutor">进入</button>
+      <button class="aidlearning-btn" @tap="goAidlearning">进入</button>
     </view>
 
     <view class="pomodoro-entry-card">
@@ -69,13 +69,28 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { studyApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
-const plans = ref([
-  { id: 1, content: '测试计划1', start: '2026-05-25 19:00', end: '2026-05-25 20:00' },
-  { id: 2, content: '测试计划2', start: '2026-05-26 09:00', end: '2026-05-26 10:00' }
-])
+const plans = ref([])
 const isLoading = ref(false)
 const loadError = ref('')
+
+// 格式化显示时间：ISO字符串 -> "6月7日 09:00"
+function formatDisplayTime(isoStr) {
+  if (!isoStr) return '--'
+  try {
+    const date = new Date(isoStr)
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${month}月${day}日 ${hours}:${minutes}`
+  } catch {
+    return isoStr
+  }
+}
 
 async function loadPlans() {
   isLoading.value = true
@@ -110,9 +125,9 @@ function openAssistant(plan) {
   uni.navigateTo({ url })
 }
 
-function goDeeptutor() {
+function goAidlearning() {
   uni.navigateTo({
-    url: '/pages/study/deeptutor/index/index',
+    url: '/pages/study/aidlearning/index/index',
     success: () => {
       console.log('跳转至学习助手页面成功')
     },
@@ -172,7 +187,7 @@ onShow(() => {
 .study-container {
   padding: 32rpx;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f9ff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 }
 
 .hero-card {
@@ -181,7 +196,7 @@ onShow(() => {
   border-radius: 40rpx;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(96, 165, 250, 0.18));
   backdrop-filter: blur(20rpx);
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 22rpx 50rpx rgba(59, 130, 246, 0.12);
   overflow: hidden;
   margin-bottom: 30rpx;
@@ -201,7 +216,7 @@ onShow(() => {
 .hero-title {
   font-size: 48rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
@@ -209,7 +224,7 @@ onShow(() => {
   display: block;
   margin-top: 12rpx;
   font-size: 26rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -241,7 +256,7 @@ onShow(() => {
 
 .hero-tag {
   background: rgba(59, 130, 246, 0.12);
-  color: #0f172a;
+  color: var(--text-primary);
   padding: 12rpx 18rpx;
   border-radius: 26rpx;
   font-size: 24rpx;
@@ -256,13 +271,13 @@ onShow(() => {
 .section-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .section-note {
   margin-top: 8rpx;
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .load-error {
@@ -293,9 +308,9 @@ onShow(() => {
   width: 560rpx;
   min-width: 560rpx;
   padding: 30rpx;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 242, 255, 0.98));
+  background: var(--card-bg);
   border-radius: 40rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.85);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 28rpx 50rpx rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
@@ -349,7 +364,7 @@ onShow(() => {
 .plan-content {
   font-size: 34rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.3;
   margin-bottom: 18rpx;
 }
@@ -365,21 +380,21 @@ onShow(() => {
   flex: 1;
   padding: 18rpx 18rpx 16rpx;
   border-radius: 28rpx;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1rpx solid rgba(148, 163, 184, 0.14);
+  background: var(--card-bg);
+  border: 1rpx solid var(--input-border);
 }
 
 .time-label {
   display: block;
   font-size: 22rpx;
-  color: #475569;
+  color: var(--text-secondary);
   margin-bottom: 8rpx;
 }
 
 .time-value {
   font-size: 24rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .plan-footer {
@@ -401,7 +416,7 @@ onShow(() => {
   box-shadow: 0 16rpx 26rpx rgba(14, 165, 233, 0.18);
 }
 
-.deeptutor-card {
+.aidlearning-card {
   display: flex;
   align-items: center;
   gap: 20rpx;
@@ -410,36 +425,36 @@ onShow(() => {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
   backdrop-filter: blur(20rpx);
   border-radius: 36rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
-.deeptutor-icon {
+.aidlearning-icon {
   font-size: 56rpx;
   line-height: 56rpx;
   flex-shrink: 0;
 }
 
-.deeptutor-content {
+.aidlearning-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
 
-.deeptutor-title {
+.aidlearning-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
-.deeptutor-desc {
+.aidlearning-desc {
   font-size: 24rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
-.deeptutor-btn {
+.aidlearning-btn {
   flex-shrink: 0;
   min-width: 120rpx;
   height: 64rpx;
@@ -461,7 +476,7 @@ onShow(() => {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(34, 197, 94, 0.12));
   backdrop-filter: blur(20rpx);
   border-radius: 36rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.7);
+  border: 1rpx solid var(--card-border);
   box-shadow: 0 20rpx 44rpx rgba(14, 165, 233, 0.14);
 }
 
@@ -481,12 +496,12 @@ onShow(() => {
 .pomodoro-entry-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .pomodoro-entry-desc {
   font-size: 24rpx;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 

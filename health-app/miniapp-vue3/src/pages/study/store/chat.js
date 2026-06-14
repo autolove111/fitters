@@ -17,27 +17,47 @@ const state = reactive({
 })
 
 let wsInitialized = false
+let messageAddedForTurn = false // 标记当前轮次是否已添加消息
 
 const initWS = () => {
   if (wsInitialized) return
 
   const ws = useWS()
 
+  // 先移除所有旧监听器，防止重复注册
+  ws.off('content')
+  ws.off('thinking')
+  ws.off('result')
+  ws.off('done')
+  ws.off('error')
+  ws.off('session')
+
   ws.on('content', (msg) => {
+    if (!state.isStreaming) return
     state.streamingContent += msg.content || ''
   })
 
   ws.on('thinking', (msg) => {
+    if (!state.isStreaming) return
     state.streamingThinking += msg.content || ''
   })
 
   ws.on('result', (msg) => {
     if (msg.session_id) state.currentSessionId = msg.session_id
-    state.pendingAssistantMessage = msg.message || null
+    if (msg.message && !messageAddedForTurn) {
+      state.pendingAssistantMessage = msg.message
+    }
   })
 
   ws.on('done', () => {
+    // 如果不在流式状态或已添加过消息，跳过
+    if (!state.isStreaming || messageAddedForTurn) return
+
+    // 标记已添加消息
+    messageAddedForTurn = true
     state.isStreaming = false
+
+    // 优先使用流式内容
     if (state.streamingContent) {
       state.messages.push({
         role: 'assistant',
@@ -47,6 +67,8 @@ const initWS = () => {
     } else if (state.pendingAssistantMessage) {
       state.messages.push(state.pendingAssistantMessage)
     }
+
+    // 清空所有临时状态
     state.streamingContent = ''
     state.streamingThinking = ''
     state.pendingAssistantMessage = null
@@ -55,6 +77,7 @@ const initWS = () => {
   ws.on('error', (msg) => {
     state.isStreaming = false
     state.pendingAssistantMessage = null
+    messageAddedForTurn = false
     if (msg.session_id) state.currentSessionId = msg.session_id
     uni.showToast({ title: msg.content || msg.message || '发生错误', icon: 'none' })
   })

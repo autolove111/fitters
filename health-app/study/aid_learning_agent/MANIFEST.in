@@ -1,2 +1,2 @@
-recursive-include deeptutor_web *
-recursive-include deeptutor_web/.next *
+recursive-include aidlearning_web *
+recursive-include aidlearning_web/.next *

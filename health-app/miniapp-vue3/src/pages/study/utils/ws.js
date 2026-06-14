@@ -1,6 +1,6 @@
 import { getApiBase } from './api'
 
-export class DeepTutorWS {
+export class AidLearningWS {
   constructor() {
     this.socketTask = null
     this.listeners = {}
@@ -118,7 +118,13 @@ export class DeepTutorWS {
 
   off(event, callback) {
     if (!this.listeners[event]) return
-    this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback)
+    if (callback) {
+      // 移除特定回调
+      this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback)
+    } else {
+      // 移除该事件的所有监听器
+      this.listeners[event] = []
+    }
   }
 
   _emit(event, data) {
@@ -177,6 +183,6 @@ export class DeepTutorWS {
 
 let instance = null
 export const useWS = () => {
-  if (!instance) instance = new DeepTutorWS()
+  if (!instance) instance = new AidLearningWS()
   return instance
 }

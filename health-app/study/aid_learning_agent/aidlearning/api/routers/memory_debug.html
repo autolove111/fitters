@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AidLearning Memory Monitor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; padding: 16px; }
+h1 { font-size: 20px; margin-bottom: 12px; color: #7cb3ff; }
+.status-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.badge { padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.badge-green { background: #1a3a1a; color: #4ade80; border: 1px solid #22543d; }
+.badge-blue { background: #1a2a3a; color: #60a5fa; border: 1px solid #1e3a5f; }
+.badge-gray { background: #2a2a2a; color: #888; border: 1px solid #444; }
+.badge-yellow { background: #3a3a1a; color: #fbbf24; border: 1px solid #5f5a1e; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 10px; padding: 16px; }
+.card h2 { font-size: 15px; color: #94a3b8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h2 .icon { font-size: 18px; }
+
+.msg { padding: 8px 12px; margin: 4px 0; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+.msg-user { background: #1e293b; border-left: 3px solid #3b82f6; }
+.msg-assistant { background: #1a2332; border-left: 3px solid #10b981; }
+.msg .role { font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
+.msg-user .role { color: #60a5fa; }
+.msg-assistant .role { color: #34d399; }
+.msg .time { font-size: 11px; color: #666; float: right; }
+.msg .content { color: #cbd5e1; word-break: break-all; }
+
+.stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2a2d3a; font-size: 13px; }
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: #94a3b8; }
+.stat-value { color: #e2e8f0; font-weight: 600; }
+
+.entry { padding: 8px 12px; margin: 4px 0; background: #1e2233; border-radius: 6px; font-size: 13px; }
+.entry .section { color: #f59e0b; font-weight: 600; font-size: 12px; }
+
+.empty { color: #555; font-style: italic; font-size: 13px; padding: 20px; text-align: center; }
+
+.buffer-info { background: #1a2332; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.buffer-info .sid { color: #60a5fa; font-size: 12px; font-family: monospace; }
+
+.session-item { padding: 8px 12px; margin: 4px 0; background: #1e2233; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
+.session-item:hover { border-color: #3b82f6; background: #1a2a3a; }
+.session-item.active { border-color: #60a5fa; background: #1a2a3a; }
+.session-item .title { color: #e2e8f0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-item .meta { color: #888; font-size: 11px; margin-left: 12px; white-space: nowrap; }
+
+.buffer-detail { background: #0f1117; border: 1px solid #2a2d3a; border-radius: 8px; padding: 12px; margin-top: 8px; }
+.buffer-detail h3 { font-size: 14px; color: #60a5fa; margin-bottom: 8px; }
+
+.refresh-btn { background: #1e3a5f; color: #60a5fa; border: 1px solid #3b82f6; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.refresh-btn:hover { background: #2563eb; color: white; }
+.auto-toggle { margin-left: 12px; font-size: 12px; color: #888; }
+.auto-toggle input { margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<h1>🧠 AidLearning Memory Monitor</h1>
+
+<div class="status-bar">
+  <span id="badge-st" class="badge badge-gray">Short-term: --</span>
+  <span id="badge-mt" class="badge badge-gray">Mid-term: --</span>
+  <span id="badge-lt" class="badge badge-gray">Long-term: --</span>
+  <span id="badge-l1" class="badge badge-gray">L1 Traces: --</span>
+  <button class="refresh-btn" onclick="refresh()">Refresh</button>
+  <label class="auto-toggle"><input type="checkbox" id="autoRefresh" checked onchange="toggleAuto()"> Auto (3s)</label>
+</div>
+
+<div class="grid">
+  <!-- Short-term + Session List -->
+  <div class="card">
+    <h2><span class="icon">⚡</span> Short-term Memory (Buffer)</h2>
+    <div id="short-term-content"></div>
+    <h3 style="font-size:13px;color:#94a3b8;margin:16px 0 8px;">📋 All Sessions (click to view buffer)</h3>
+    <div id="session-list"></div>
+  </div>
+
+  <!-- Session Detail / Buffer View -->
+  <div class="card">
+    <h2><span class="icon">🔍</span> Session Detail</h2>
+    <div id="session-detail">
+      <div class="empty">Click a session on the left to view its buffer state</div>
+    </div>
+  </div>
+
+  <!-- Mid-term -->
+  <div class="card">
+    <h2><span class="icon">💾</span> Mid-term Memory (SQLite)</h2>
+    <div id="mid-term-stats"></div>
+    <h3 style="font-size:13px;color:#94a3b8;margin:12px 0 8px;">Recent Messages</h3>
+    <div id="mid-term-messages"></div>
+  </div>
+
+  <!-- Long-term L2 -->
+  <div class="card">
+    <h2><span class="icon">📚</span> Long-term L2 (Per-surface)</h2>
+    <div id="l2-content"></div>
+  </div>
+
+  <!-- Long-term L3 -->
+  <div class="card">
+    <h2><span class="icon">👤</span> Long-term L3 (User Model)</h2>
+    <div id="l3-content"></div>
+  </div>
+</div>
+
+<script>
+const API = '/api/v1/memory/debug';
+let timer = null;
+let selectedSession = null;
+
+function toggleAuto() {
+  if (document.getElementById('autoRefresh').checked) {
+    timer = setInterval(refresh, 3000);
+  } else {
+    clearInterval(timer);
+    timer = null;
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch(API + '/state');
+    const d = await r.json();
+    render(d);
+    loadSessions();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function loadSessions() {
+  try {
+    const r = await fetch(API + '/sessions');
+    const d = await r.json();
+    renderSessions(d.sessions || []);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function renderSessions(sessions) {
+  const el = document.getElementById('session-list');
+  if (!sessions.length) {
+    el.innerHTML = '<div class="empty">No sessions</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => {
+    const isActive = selectedSession === s.id;
+    const summaryBadge = s.has_summary ? '📝' : '';
+    return `<div class="session-item ${isActive ? 'active' : ''}" onclick="selectSession('${esc(s.id)}')">
+      <span class="title">${summaryBadge} ${esc(s.title)}</span>
+      <span class="meta">${s.msg_count} msgs</span>
+    </div>`;
+  }).join('');
+}
+
+async function selectSession(sid) {
+  selectedSession = sid;
+  loadSessions(); // update active state
+
+  const el = document.getElementById('session-detail');
+  el.innerHTML = '<div class="empty">Loading...</div>';
+
+  try {
+    const r = await fetch(API + '/session/' + encodeURIComponent(sid));
+    const d = await r.json();
+    renderSessionDetail(d);
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Error loading session</div>';
+  }
+}
+
+function renderSessionDetail(d) {
+  const el = document.getElementById('session-detail');
+  if (d.error) {
+    el.innerHTML = `<div class="empty">${esc(d.error)}</div>`;
+    return;
+  }
+
+  const buf = d.buffer || {};
+
+  let html = `<div class="buffer-info">
+    <div class="sid">${esc(d.title)}</div>
+    <div class="stat-row"><span class="stat-label">Session ID</span><span class="stat-value" style="font-size:11px;font-family:monospace;">${esc(d.session_id)}</span></div>
+  </div>`;
+
+  // Buffer state
+  const pct = buf.token_budget ? Math.round((buf.current_tokens || 0) / buf.token_budget * 100) : 0;
+  const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#10b981';
+  html += `<div class="buffer-detail">
+    <h3>Buffer (loaded into memory)</h3>
+    <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-value">${buf.message_count || 0}</span></div>
+    <div class="stat-row"><span class="stat-label">Tokens</span><span class="stat-value">${buf.current_tokens || 0} / ${buf.token_budget || '?'} (${pct}%)</span></div>
+    <div style="background:#2a2d3a;border-radius:4px;height:8px;margin:4px 0;"><div style="background:${barColor};height:100%;border-radius:4px;width:${Math.min(pct, 100)}%;"></div></div>
+    <div class="stat-row"><span class="stat-label">Summary</span><span class="stat-value">${buf.summary_tokens || 0} tokens</span></div>
+    <div class="stat-row"><span class="stat-label">Compressed</span><span class="stat-value">${buf.compressed_count || 0} messages</span></div>
+  </div>`;
+
+  // Summary content
+  if (buf.summary) {
+    html += `<div class="buffer-detail">
+      <h3>Summary</h3>
+      <div style="color:#cbd5e1;font-size:12px;white-space:pre-wrap;max-height:150px;overflow:auto;">${esc(buf.summary)}</div>
+    </div>`;
+  }
+
+  // Messages in buffer
+  const msgs = buf.messages || [];
+  if (msgs.length) {
+    html += `<div class="buffer-detail"><h3>Messages in Buffer (${msgs.length})</h3></div>`;
+    for (const m of msgs) {
+      html += renderMsg(m.role, m.content, '');
+    }
+  } else {
+    html += '<div class="buffer-detail"><div class="empty">No messages in buffer</div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function render(d) {
+  const st = d.short_term || {};
+  const mt = d.mid_term || {};
+  const l2 = d.long_term_l2 || {};
+  const l3 = d.long_term_l3 || {};
+  const l1 = d.l1_traces || {};
+
+  setBadge('badge-st', `Short-term: ${st.active_buffers || 0} buffers`, st.active_buffers ? 'green' : 'gray');
+  setBadge('badge-mt', `Mid-term: ${mt.total_messages || 0} msgs / ${mt.fts5_indexed || 0} indexed`, mt.total_messages ? 'blue' : 'gray');
+
+  let ltCount = 0;
+  for (const k of [...Object.keys(l2), ...Object.keys(l3)]) {
+    const v = l2[k] || l3[k];
+    if (v && v.entries) ltCount += v.entries;
+  }
+  setBadge('badge-lt', `Long-term: ${ltCount} entries`, ltCount ? 'yellow' : 'gray');
+
+  let l1Total = 0;
+  for (const k of Object.keys(l1)) { if (l1[k] && l1[k].events) l1Total += l1[k].events; }
+  setBadge('badge-l1', `L1 Traces: ${l1Total} events`, l1Total ? 'green' : 'gray');
+
+  // Short-term
+  let stHtml = '';
+  const bufs = st.buffers || {};
+  const keys = Object.keys(bufs);
+  if (!keys.length) {
+    stHtml = '<div class="empty">No active buffers (no conversations in this process)</div>';
+  } else {
+    for (const sid of keys) {
+      const b = bufs[sid];
+      const pct = b.token_budget ? Math.round((b.current_tokens || 0) / b.token_budget * 100) : 0;
+      const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#10b981';
+      stHtml += `<div class="buffer-info">
+        <div class="sid">Session: ${esc(sid)}</div>
+        <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-value">${b.message_count}</span></div>
+        <div class="stat-row"><span class="stat-label">Tokens</span><span class="stat-value">${b.current_tokens || 0} / ${b.token_budget || '?'} (${pct}%)</span></div>
+        <div style="background:#2a2d3a;border-radius:4px;height:8px;margin:4px 0;"><div style="background:${barColor};height:100%;border-radius:4px;width:${Math.min(pct, 100)}%;"></div></div>
+        <div class="stat-row"><span class="stat-label">Summary</span><span class="stat-value">${b.summary_tokens || 0} tokens</span></div>
+        <div class="stat-row"><span class="stat-label">Compressed</span><span class="stat-value">${b.compressed_count || 0} messages</span></div>
+      </div>`;
+      if (b.recent_messages && b.recent_messages.length) {
+        for (const m of b.recent_messages) {
+          stHtml += renderMsg(m.role, m.content, m.tokens ? `${m.tokens}t` : '');
+        }
+      }
+    }
+  }
+  document.getElementById('short-term-content').innerHTML = stHtml;
+
+  // Mid-term stats
+  let mtStats = `
+    <div class="stat-row"><span class="stat-label">Total Messages</span><span class="stat-value">${mt.total_messages || 0}</span></div>
+    <div class="stat-row"><span class="stat-label">Sessions</span><span class="stat-value">${mt.total_sessions || 0}</span></div>
+    <div class="stat-row"><span class="stat-label">FTS5 Indexed</span><span class="stat-value">${mt.fts5_indexed || 0}</span></div>
+  `;
+  document.getElementById('mid-term-stats').innerHTML = mtStats;
+
+  let mtMsgs = '';
+  const msgs = mt.recent_messages || [];
+  if (!msgs.length) {
+    mtMsgs = '<div class="empty">No messages</div>';
+  } else {
+    for (const m of msgs) {
+      const title = m.session_title ? `[${m.session_title}]` : '';
+      const time = m.created_at ? new Date(m.created_at).toLocaleString('zh-CN') : '';
+      mtMsgs += renderMsg(m.role, m.content, time, title);
+    }
+  }
+  document.getElementById('mid-term-messages').innerHTML = mtMsgs;
+
+  // L2
+  let l2Html = '';
+  for (const target of Object.keys(l2)) {
+    const info = l2[target];
+    if (info && info.exists !== false) {
+      l2Html += `<div class="entry">
+        <div class="section">L2/${target}.md</div>
+        <div class="stat-row"><span class="stat-label">Entries</span><span class="stat-value">${info.entries || 0}</span></div>
+        <div class="stat-row"><span class="stat-label">Size</span><span class="stat-value">${info.chars || 0} chars</span></div>
+        ${info.sections ? `<div class="stat-row"><span class="stat-label">Sections</span><span class="stat-value">${info.sections.join(', ')}</span></div>` : ''}
+      </div>`;
+      if (info.content) {
+        l2Html += `<div class="entry"><div style="white-space:pre-wrap;max-height:200px;overflow:auto;font-size:12px;color:#cbd5e1;">${esc(info.content)}</div></div>`;
+      }
+    } else {
+      l2Html += `<div class="entry"><div class="section">L2/${target}.md</div><div class="empty">NOT CREATED</div></div>`;
+    }
+  }
+  document.getElementById('l2-content').innerHTML = l2Html || '<div class="empty">No L2 documents</div>';
+
+  // L3
+  let l3Html = '';
+  for (const slot of Object.keys(l3)) {
+    const info = l3[slot];
+    if (info && info.exists !== false) {
+      l3Html += `<div class="entry">
+        <div class="section">L3/${slot}.md</div>
+        <div class="stat-row"><span class="stat-label">Entries</span><span class="stat-value">${info.entries || 0}</span></div>
+        <div class="stat-row"><span class="stat-label">Size</span><span class="stat-value">${info.chars || 0} chars</span></div>
+      </div>`;
+      if (info.content) {
+        l3Html += `<div class="entry"><div style="white-space:pre-wrap;max-height:200px;overflow:auto;font-size:12px;color:#cbd5e1;">${esc(info.content)}</div></div>`;
+      }
+    } else {
+      l3Html += `<div class="entry"><div class="section">L3/${slot}.md</div><div class="empty">NOT CREATED</div></div>`;
+    }
+  }
+  document.getElementById('l3-content').innerHTML = l3Html || '<div class="empty">No L3 documents</div>';
+}
+
+function renderMsg(role, content, time, title) {
+  const cls = role === 'user' ? 'msg-user' : 'msg-assistant';
+  return `<div class="msg ${cls}">
+    <div class="role">${esc(role)} ${title ? `<span style="font-weight:400;color:#888">${esc(title)}</span>` : ''} ${time ? `<span class="time">${esc(time)}</span>` : ''}</div>
+    <div class="content">${esc(content)}</div>
+  </div>`;
+}
+
+function setBadge(id, text, color) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `badge badge-${color}`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Initial load
+refresh();
+toggleAuto();
+</script>
+</body>
+</html>

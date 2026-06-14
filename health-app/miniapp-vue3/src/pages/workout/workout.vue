@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :class="{ dark: isDark }">
     <view class="score-card">
       <view class="score-left">
         <text class="score-label">今日健康指数</text>
@@ -56,6 +56,25 @@
         <view class="progress-bar">
           <view class="progress-fill coral" :style="{ width: stepsPercent + '%' }"></view>
         </view>
+      </view>
+
+      <view class="stat-card" @click="openHistory('water')">
+        <view class="stat-header">
+          <text class="stat-icon">💧</text>
+          <text class="stat-title">今日饮水</text>
+        </view>
+        <text class="stat-value">{{ todayStats.waterMl }} / {{ todayStats.waterTarget }} 毫升</text>
+        <view class="progress-bar">
+          <view class="progress-fill water" :style="{ width: waterPercent + '%' }"></view>
+        </view>
+      </view>
+
+      <view class="stat-card" @click="openWeightModal">
+        <view class="stat-header">
+          <text class="stat-icon">⚖️</text>
+          <text class="stat-title">今日体重</text>
+        </view>
+        <text class="stat-value">{{ todayStats.weightKg || '--' }} 公斤</text>
       </view>
     </view>
 
@@ -265,6 +284,25 @@
     </view>
 
     <view class="action-buttons">
+      <button class="action-btn primary" @click="navigateTo('workout/add-hub')">➕ 添加记录</button>
+      <button class="action-btn weight" @click="openWeightModal">⚖️ 修改体重</button>
+    </view>
+
+    <view v-if="showWeightModal" class="modal-mask" @click="showWeightModal = false">
+      <view class="modal-card" @click.stop>
+        <text class="modal-title">记录体重</text>
+        <view class="number-input-wrapper">
+          <input class="modal-input" v-model="weightInput" type="digit" placeholder="请输入体重" />
+          <text class="unit-text">公斤</text>
+        </view>
+        <view class="modal-actions">
+          <button class="modal-btn cancel" @click="showWeightModal = false">取消</button>
+          <button class="modal-btn confirm" @click="submitWeight">确定</button>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="false" class="action-buttons">
       <button class="action-btn primary" @click="navigateTo('workout/add')">＋ 运动</button>
       <button class="action-btn success" @click="navigateTo('sleep/add')">😴 睡眠</button>
       <button class="action-btn warning" @click="navigateTo('diet/add')">🍽️ 饮食</button>
@@ -343,7 +381,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useUserStore } from '@/store/user'
-import { fitnessProfileApi, membershipApi, statsApi } from '@/utils/api'
+import { useThemeStore } from '@/store/theme'
+import { fitnessProfileApi, membershipApi, statsApi, waterApi, weightApi } from '@/utils/api'
 import {
   getPlanTierPresentation,
   getRealRagCitations,
@@ -355,11 +394,15 @@ import {
 
 const userStore = useUserStore()
 const { isLoggedIn } = userStore
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const loading = ref(false)
 const generatingPlan = ref(false)
 const showProModal = ref(false)
 const showRagDetails = ref(false)
+const showWeightModal = ref(false)
+const weightInput = ref('')
 const planResult = ref(null)
 const membership = ref({ tier: 'FREE', dailyAiQuota: 3, remainingAiQuota: 3 })
 const fitnessProfile = ref({
@@ -378,7 +421,10 @@ const todayStats = ref({
   dietCalories: 0,
   dietTarget: 2000,
   stepsCount: 0,
-  stepsTarget: 10000
+  stepsTarget: 10000,
+  waterMl: 0,
+  waterTarget: 2000,
+  weightKg: 0
 })
 const dailyReport = ref({ score: 0 })
 const authoritySources = [
@@ -408,6 +454,7 @@ const workoutPercent = computed(() => percent(todayStats.value.workoutMinutes, t
 const sleepPercent = computed(() => percent(todayStats.value.sleepHours, todayStats.value.sleepTarget))
 const dietPercent = computed(() => percent(todayStats.value.dietCalories, todayStats.value.dietTarget))
 const stepsPercent = computed(() => percent(todayStats.value.stepsCount, todayStats.value.stepsTarget))
+const waterPercent = computed(() => percent(todayStats.value.waterMl, todayStats.value.waterTarget))
 const currentTierInfo = computed(() => getPlanTierPresentation(membership.value.tier))
 const realCitations = computed(() => getRealRagCitations(planResult.value))
 const remainingQuotaText = computed(() => {
@@ -478,12 +525,14 @@ async function loadDashboard() {
   if (!isLoggedIn.value) return
   loading.value = true
   try {
-    const [todayData, sleepTodayData, dietTodayData, memberData, profileData] = await Promise.all([
+    const [todayData, sleepTodayData, dietTodayData, memberData, profileData, waterTodayData, weightTodayData] = await Promise.all([
       statsApi.today(),
       statsApi.sleepToday(),
       statsApi.dietToday(),
       membershipApi.get(),
-      fitnessProfileApi.get()
+      fitnessProfileApi.get(),
+      waterApi.today().catch(() => ({ totalMl: 0, targetMl: 2000 })),
+      weightApi.today().catch(() => null)
     ])
 
     const workoutTarget = todayData.targetMinutes ?? 30
@@ -496,8 +545,23 @@ async function loadDashboard() {
     const dietCalories = dietTodayData.totalCalories ?? 0
     const stepsTarget = todayData.stepsTarget ?? 10000
     const stepsCount = todayData.steps ?? 0
+    const waterTarget = waterTodayData?.targetMl ?? 2000
+    const waterMl = waterTodayData?.totalMl ?? 0
+    const weightKg = weightTodayData?.weightKg ?? 0
 
-    todayStats.value = { workoutMinutes, workoutTarget, sleepHours, sleepTarget, dietCalories, dietTarget, stepsCount, stepsTarget }
+    todayStats.value = {
+      workoutMinutes,
+      workoutTarget,
+      sleepHours,
+      sleepTarget,
+      dietCalories,
+      dietTarget,
+      stepsCount,
+      stepsTarget,
+      waterMl,
+      waterTarget,
+      weightKg
+    }
     membership.value = { ...membership.value, ...memberData }
     fitnessProfile.value = { ...fitnessProfile.value, ...profileData }
     updateHealthScore()
@@ -514,7 +578,8 @@ function updateHealthScore() {
   const dietTarget = todayStats.value.dietTarget
   const dietScore = dietTarget > 0 ? Math.max(0, 100 - Math.abs(todayStats.value.dietCalories - dietTarget) / dietTarget * 100) : 0
   const stepsScore = percent(todayStats.value.stepsCount, todayStats.value.stepsTarget)
-  dailyReport.value.score = Math.round((workoutScore + sleepScore + dietScore + stepsScore) / 4)
+  const waterScore = percent(todayStats.value.waterMl, todayStats.value.waterTarget)
+  dailyReport.value.score = Math.round((workoutScore + sleepScore + dietScore + stepsScore + waterScore) / 5)
 }
 
 async function switchTier(tier) {
@@ -576,6 +641,27 @@ async function generateTrainingPlan() {
 
 function openHistory(metric) {
   uni.navigateTo({ url: `/pages/workout/history?metric=${metric}` })
+}
+
+function openWeightModal() {
+  weightInput.value = todayStats.value.weightKg ? String(todayStats.value.weightKg) : ''
+  showWeightModal.value = true
+}
+
+async function submitWeight() {
+  const value = Number(weightInput.value)
+  if (!Number.isFinite(value) || value <= 0) {
+    uni.showToast({ title: '请输入有效体重', icon: 'none' })
+    return
+  }
+  try {
+    await weightApi.add({ weightKg: value })
+    todayStats.value = { ...todayStats.value, weightKg: value }
+    showWeightModal.value = false
+    uni.showToast({ title: '体重已更新', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: error.message || '保存失败', icon: 'none' })
+  }
 }
 
 function navigateTo(page) {
@@ -684,6 +770,7 @@ onMounted(() => {
 .green { background: #59c23a; }
 .amber { background: #eda932; }
 .coral { background: #f56c6c; }
+.water { background: #06b6d4; }
 
 .ai-plan-card {
   margin-bottom: 26rpx;
@@ -1336,6 +1423,87 @@ onMounted(() => {
 .primary { background: linear-gradient(135deg, #409eff, #2c6ed1); }
 .success { background: #59c23a; }
 .warning { background: #eda932; }
+.weight { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background: rgba(10, 22, 30, 0.48);
+}
+.modal-card {
+  width: 76vw;
+  max-width: 560rpx;
+  padding: 34rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 30rpx 80rpx rgba(16, 48, 40, 0.24);
+}
+.modal-title {
+  display: block;
+  color: #0d3b31;
+  font-size: 32rpx;
+  font-weight: 900;
+  margin-bottom: 24rpx;
+}
+.number-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f4faf6;
+  border: 1rpx solid rgba(31, 122, 92, 0.14);
+}
+.modal-input {
+  flex: 1;
+  min-width: 0;
+  height: 56rpx;
+  color: #12382f;
+  font-size: 30rpx;
+}
+.unit-text {
+  color: #60736d;
+  font-size: 24rpx;
+}
+.modal-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+.modal-btn {
+  flex: 1;
+  height: 76rpx;
+  line-height: 76rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+.modal-btn.cancel {
+  color: #536171;
+  background: #eef2f4;
+}
+.modal-btn.confirm {
+  color: #0d3b31;
+  background: linear-gradient(135deg, #dcff9c 0%, #a9e855 45%, #6fd37b 100%);
+}
+.container.dark {
+  background: #101820;
+}
+.container.dark .stat-card,
+.container.dark .plan-result,
+.container.dark .modal-card {
+  background: #17232c;
+}
+.container.dark .stat-title,
+.container.dark .stat-value,
+.container.dark .result-title,
+.container.dark .modal-title {
+  color: #f2f7f5;
+}
 
 .pro-modal-mask,
 .loading-mask {

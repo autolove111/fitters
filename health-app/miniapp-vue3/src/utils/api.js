@@ -140,9 +140,9 @@ export const workApi = {
   getAllExercises: () => request('/work/exercises', { method: 'GET' }),
   // 获取今日工作时长
   getTodayWorkDuration: () => request('/work/today-duration', { method: 'GET' }),
-  // 今日TODO
+  // TODO
   getTodayTodos: () => request('/work/todos/today', { method: 'GET' }),
-  addTodayTodo: (content) => request('/work/todos', { method: 'POST', data: { content } }),
+  addTodayTodo: (content, deadline) => request('/work/todos', { method: 'POST', data: { content, deadline } }),
   completeTodo: (todoId) => request(`/work/todos/${todoId}`, { method: 'DELETE' }),
   // 获取用户健康数据（职业专属指标）
   getHealthData: (occupation) => request(`/work/health-data?occupation=${occupation}`, { method: 'GET' }),
@@ -153,7 +153,84 @@ export const workApi = {
 // ========== 学习模块API ==========
 export const studyApi = {
   list: () => request('/study/plans'),
-  add: (data) => request('/study/plans', { method: 'POST', data })
+  add: (data) => request('/study/plans', { method: 'POST', data }),
+  delete: (id) => request(`/study/plans/${id}`, { method: 'DELETE' }),
+}
+
+// ========== 知识库API（走 deeptutor 后端）==========
+const DT_BASE = uni.getStorageSync('api_base') || 'http://localhost:8001'
+const getDtToken = () => uni.getStorageSync('dt_token') || ''
+
+export const knowledgeApi = {
+  list: () => {
+    return new Promise((resolve, reject) => {
+      uni.request({
+        url: `${DT_BASE}/api/v1/knowledge/list`,
+        method: 'GET',
+        header: { Authorization: `Bearer ${getDtToken()}` },
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data)
+          else reject(new Error(res.data?.detail || '请求失败'))
+        },
+        fail: reject
+      })
+    })
+  },
+  detail: (name) => {
+    return new Promise((resolve, reject) => {
+      uni.request({
+        url: `${DT_BASE}/api/v1/knowledge/${name}`,
+        method: 'GET',
+        header: { Authorization: `Bearer ${getDtToken()}` },
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data)
+          else reject(new Error(res.data?.detail || '请求失败'))
+        },
+        fail: reject
+      })
+    })
+  },
+  upload: (name, filePath) => {
+    return new Promise((resolve, reject) => {
+      uni.uploadFile({
+        url: `${DT_BASE}/api/v1/knowledge/${name}/upload`,
+        filePath,
+        name: 'files',
+        header: { Authorization: `Bearer ${getDtToken()}` },
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(typeof res.data === 'string' ? JSON.parse(res.data) : res.data)
+          } else {
+            let msg = '上传失败'
+            try { msg = JSON.parse(res.data)?.detail || msg } catch {}
+            reject(new Error(msg))
+          }
+        },
+        fail: (err) => reject(new Error(err.errMsg || '上传失败'))
+      })
+    })
+  },
+  create: (name, filePath) => {
+    return new Promise((resolve, reject) => {
+      uni.uploadFile({
+        url: `${DT_BASE}/api/v1/knowledge/create`,
+        filePath,
+        name: 'files',
+        formData: { name },
+        header: { Authorization: `Bearer ${getDtToken()}` },
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(typeof res.data === 'string' ? JSON.parse(res.data) : res.data)
+          } else {
+            let msg = '创建失败'
+            try { msg = JSON.parse(res.data)?.detail || msg } catch {}
+            reject(new Error(msg))
+          }
+        },
+        fail: (err) => reject(new Error(err.errMsg || '创建失败'))
+      })
+    })
+  },
 }
 
 export const assistantApi = {
@@ -163,10 +240,29 @@ export const assistantApi = {
 
 // ========== 用户模块 API ==========
 export const userApi = {
-  getAvatar: () => request('/user/avatar', { method: 'GET' }),
-  uploadAvatar: (filePath) => uploadFile('/user/avatar', filePath),
-  getProfile: () => request('/user/profile', { method: 'GET' }),
-  updateProfile: (data) => request('/user/profile', { method: 'PUT', data }),
-  changePassword: (data) => request('/user/password', { method: 'PUT', data }),
-  deleteAccount: () => request('/user/account', { method: 'DELETE' }),
+  getAvatar: () => request('/users/avatar', { method: 'GET' }),
+  uploadAvatar: (filePath) => uploadFile('/users/avatar', filePath),
+  getProfile: () => request('/users/profile', { method: 'GET' }),
+  updateProfile: (data) => request('/users/profile', { method: 'PUT', data }),
+  changePassword: (data) => request('/users/password', { method: 'PUT', data }),
+  deleteAccount: () => request('/users/account', { method: 'DELETE' }),
+}
+
+// ========== 主题模块 API ==========
+export const themeApi = {
+  getTheme: () => request('/users/theme', { method: 'GET' }),
+  updateTheme: (mode) => request('/users/theme', { method: 'PUT', data: { mode } }),
+}
+
+// ========== 饮水模块 API ==========
+export const waterApi = {
+  add: (data) => request('/waters', { method: 'POST', data }),
+  list: () => request('/waters'),
+  today: () => request('/waters/today', { method: 'GET' }),
+}
+
+// ========== 体重模块 API ==========
+export const weightApi = {
+  add: (data) => request('/weights', { method: 'POST', data }),
+  today: () => request('/weights/today', { method: 'GET' }),
 }

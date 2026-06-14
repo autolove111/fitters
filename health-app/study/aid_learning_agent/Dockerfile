@@ -1,13 +1,13 @@
 # ============================================
-# DeepTutor Multi-Stage Dockerfile
+# AidLearning Multi-Stage Dockerfile
 # ============================================
-# This Dockerfile builds a production-ready image for DeepTutor
+# This Dockerfile builds a production-ready image for AidLearning
 # containing both the FastAPI backend and Next.js frontend
 #
 # Build/run:
-#   docker build -t deeptutor:local .
+#   docker build -t aidlearning:local .
 #   docker run -p 127.0.0.1:3782:3782 -p 127.0.0.1:8001:8001 \
-#     -v deeptutor-data:/app/data deeptutor:local
+#     -v aidlearning-data:/app/data aidlearning:local
 #
 # Prerequisites:
 #   1. Runtime settings are created under data/user/settings on first start
@@ -37,7 +37,7 @@ COPY web/ ./
 
 # Provide the single source of truth for the app version so next.config.js
 # can read it during ``npm run build`` and inline it into the bundle.
-COPY deeptutor/__version__.py /app/deeptutor/__version__.py
+COPY aidlearning/__version__.py /app/aidlearning/__version__.py
 
 # Create .env.local with placeholders that will be replaced at runtime.
 RUN printf '%s\n' \
@@ -103,15 +103,15 @@ RUN pip install --upgrade pip && \
 FROM python:3.11-slim AS production
 
 # Labels
-LABEL maintainer="DeepTutor Team" \
-      description="DeepTutor: AI-Powered Personalized Learning Assistant"
+LABEL maintainer="AidLearning Team" \
+      description="AidLearning: AI-Powered Personalized Learning Assistant"
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     NODE_ENV=production \
-    DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES=1
+    AIDLEARNING_IGNORE_PROCESS_ENV_OVERRIDES=1
 
 WORKDIR /app
 
@@ -148,8 +148,7 @@ COPY --from=frontend-builder /app/web/.next/static/ ./web/.next/static/
 COPY --from=frontend-builder /app/web/public/ ./web/public/
 
 # Copy application source code
-COPY deeptutor/ ./deeptutor/
-COPY deeptutor_cli/ ./deeptutor_cli/
+COPY aidlearning/ ./aidlearning/
 COPY scripts/ ./scripts/
 COPY pyproject.toml ./
 COPY requirements/ ./requirements/
@@ -167,7 +166,6 @@ RUN mkdir -p \
     data/user/workspace/chat/deep_solve \
     data/user/workspace/chat/deep_question \
     data/user/workspace/chat/deep_research/reports \
-    data/user/workspace/chat/math_animator \
     data/user/workspace/chat/_detached_code_execution \
     data/user/logs \
     data/knowledge_bases
@@ -176,7 +174,7 @@ RUN mkdir -p \
 # Log output goes to stdout/stderr so docker logs can capture them
 RUN mkdir -p /etc/supervisor/conf.d
 
-RUN cat > /etc/supervisor/conf.d/deeptutor.conf <<'EOF'
+RUN cat > /etc/supervisor/conf.d/aidlearning.conf <<'EOF'
 [supervisord]
 nodaemon=true
 logfile=/dev/null
@@ -207,7 +205,7 @@ stderr_logfile_maxbytes=0
 environment=NODE_ENV="production"
 EOF
 
-RUN sed -i 's/\r$//' /etc/supervisor/conf.d/deeptutor.conf
+RUN sed -i 's/\r$//' /etc/supervisor/conf.d/aidlearning.conf
 
 # Create backend startup script
 RUN cat > /app/start-backend.sh <<'EOF'
@@ -221,7 +219,7 @@ echo "[Backend]  🚀 Starting FastAPI backend on port ${BACKEND_PORT}..."
 # Run uvicorn directly - the application's logging system already handles:
 # 1. Console output (visible in docker logs)
 # 2. File logging to data/user/logs/ai_tutor_*.log
-exec python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT}
+exec python -m uvicorn aidlearning.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT}
 EOF
 
 RUN sed -i 's/\r$//' /app/start-backend.sh && chmod +x /app/start-backend.sh
@@ -292,10 +290,10 @@ RUN cat > /app/entrypoint.sh <<'EOF'
 set -e
 
 echo "============================================"
-echo "🚀 Starting DeepTutor"
+echo "🚀 Starting AidLearning"
 echo "============================================"
 
-export DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES=1
+export AIDLEARNING_IGNORE_PROCESS_ENV_OVERRIDES=1
 
 # Docker is JSON-driven. Ignore runtime env names even if the host or a stale
 # Compose environment provides them; the entrypoint re-exports values from
@@ -328,14 +326,14 @@ echo "📁 Checking data directories..."
 echo "   Ensuring runtime settings and workspace layout..."
 python -c "
 from pathlib import Path
-from deeptutor.services.setup import init_user_directories
+from aidlearning.services.setup import init_user_directories
 init_user_directories(Path('/app'))
 " 2>/dev/null || echo "   ⚠️ Directory initialization skipped (will be created on first use)"
 
 echo "⚙️  Loading runtime JSON settings..."
 eval "$(python - <<'PY'
 import shlex
-from deeptutor.services.config import export_runtime_settings_to_env
+from aidlearning.services.config import export_runtime_settings_to_env
 
 for key, value in export_runtime_settings_to_env(overwrite=True).items():
     print(f"export {key}={shlex.quote(str(value))}")
@@ -359,7 +357,7 @@ echo "   - data/user/settings/agents.yaml"
 echo "============================================"
 
 # Start supervisord
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/deeptutor.conf
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/aidlearning.conf
 EOF
 
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
@@ -416,7 +414,7 @@ RUN pip install --no-cache-dir \
 
 # Override supervisord config for development (with reload)
 # Log output goes to stdout/stderr so docker logs can capture them
-RUN cat > /etc/supervisor/conf.d/deeptutor.conf <<'EOF'
+RUN cat > /etc/supervisor/conf.d/aidlearning.conf <<'EOF'
 [supervisord]
 nodaemon=true
 logfile=/dev/null
@@ -424,7 +422,7 @@ logfile_maxbytes=0
 pidfile=/var/run/supervisord.pid
 
 [program:backend]
-command=python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port %(ENV_BACKEND_PORT)s --reload
+command=python -m uvicorn aidlearning.api.main:app --host 0.0.0.0 --port %(ENV_BACKEND_PORT)s --reload
 directory=/app
 autostart=true
 autorestart=true
@@ -447,7 +445,7 @@ stderr_logfile_maxbytes=0
 environment=NODE_ENV="development"
 EOF
 
-RUN sed -i 's/\r$//' /etc/supervisor/conf.d/deeptutor.conf
+RUN sed -i 's/\r$//' /etc/supervisor/conf.d/aidlearning.conf
 
 # Development ports
 EXPOSE 8001 3782

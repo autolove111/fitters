@@ -1,4 +1,4 @@
-# Python project configuration for DeepTutor
+# Python project configuration for AidLearning
 # This file configures Black, Ruff, and other Python tools
 
 [build-system]
@@ -6,7 +6,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deeptutor"
+name = "aidlearning"
 dynamic = ["version"]
 description = "An agent-native intelligent learning companion with multi-agent collaboration and RAG"
 requires-python = ">=3.11"
@@ -30,7 +30,7 @@ dependencies = [
     "typer[all]>=0.9.0",
     "rich>=13.0.0",
     "prompt_toolkit>=3.0.36",
-    # Full app dependencies included by default for `pip install deeptutor`.
+    # Full app dependencies included by default for `pip install aidlearning`.
     "anthropic>=0.30.0",
     "dashscope>=1.14.0",
     "perplexityai>=0.1.0",
@@ -57,12 +57,12 @@ dependencies = [
 ]
 
 [project.scripts]
-deeptutor = "deeptutor_cli.main:main"
+aidlearning = "aidlearning_cli.main:main"
 
 [project.optional-dependencies]
 # Compatibility extra for source installs and older docs. These packages are
-# already included in the public `deeptutor` wheel; the local CLI-only project
-# under `packaging/deeptutor-cli` uses the same list without Web assets/server deps.
+# already included in the public `aidlearning` wheel; the local CLI-only project
+# under `packaging/aidlearning-cli` uses the same list without Web assets/server deps.
 cli = [
     # LLM provider SDKs
     "anthropic>=0.30.0",
@@ -84,9 +84,9 @@ cli = [
 ]
 
 # Compatibility extra for source installs and older docs. These packages are
-# already included in the public `deeptutor` wheel.
+# already included in the public `aidlearning` wheel.
 server = [
-    "deeptutor[cli]",
+    "aidlearning[cli]",
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.24.0",
     "websockets>=12.0",
@@ -100,7 +100,7 @@ server = [
 
 # TutorBot agent engine + channel SDKs. Mirrors requirements/tutorbot.txt.
 tutorbot = [
-    "deeptutor[server]",
+    "aidlearning[server]",
     "croniter>=6.0.0,<7.0.0",
     "tiktoken>=0.12.0,<1.0.0",
     "chardet>=3.0.2,<6.0.0",
@@ -130,7 +130,7 @@ matrix = [
 
 # Optional Matrix E2EE addon. Mirrors requirements/matrix-e2e.txt and requires libolm.
 matrix-e2e = [
-    "deeptutor[matrix]",
+    "aidlearning[matrix]",
     "matrix-nio[e2e]>=0.25.2,<1.0.0",
 ]
 
@@ -140,7 +140,7 @@ math-animator = ["manim>=0.19.0"]
 
 # Dev/test tooling. Mirrors requirements/dev.txt.
 dev = [
-    "deeptutor[server]",
+    "aidlearning[server]",
     "pytest>=7.0.0",
     "pytest-asyncio>=0.23.0",
     "pre-commit>=3.0.0",
@@ -157,29 +157,29 @@ dev = [
 
 # Everything: server + tutorbot + non-E2EE matrix + math-animator + dev tools.
 all = [
-    "deeptutor[tutorbot]",
-    "deeptutor[matrix]",
-    "deeptutor[math-animator]",
-    "deeptutor[dev]",
+    "aidlearning[tutorbot]",
+    "aidlearning[matrix]",
+    "aidlearning[math-animator]",
+    "aidlearning[dev]",
 ]
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = {attr = "deeptutor.__version__.__version__"}
+version = {attr = "aidlearning.__version__.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["deeptutor*", "deeptutor_cli*"]
+include = ["aidlearning*", "aidlearning_cli*"]
 
 [tool.setuptools.package-data]
-# Runtime data shipped inside the deeptutor package: prompt YAMLs (loaded by
-# PromptManager from PACKAGE_ROOT/deeptutor/.../prompts/*.yaml), markdown
+# Runtime data shipped inside the aidlearning package: prompt YAMLs (loaded by
+# PromptManager from PACKAGE_ROOT/aidlearning/.../prompts/*.yaml), markdown
 # templates (tutorbot SKILL.md, vision_solver prompts), and helper shell
-# scripts (tutorbot tmux skill). Without these, ``pip install deeptutor`` ships
+# scripts (tutorbot tmux skill). Without these, ``pip install aidlearning`` ships
 # a wheel missing every agent prompt and capability fails at first use.
-deeptutor = [
+aidlearning = [
     "**/*.yaml",
     "**/*.yml",
     "**/*.md",
@@ -188,8 +188,8 @@ deeptutor = [
     "**/*.j2",
     "**/*.jinja",
 ]
-deeptutor_cli = ["**/*.md"]
-deeptutor_web = ["**/*", ".next/**/*"]
+aidlearning_cli = ["**/*.md"]
+aidlearning_web = ["**/*", ".next/**/*"]
 
 # ============================================
 # Black code formatter configuration
@@ -319,7 +319,7 @@ line-ending = "auto"
 # Ruff import sorting (isort replacement)
 # ============================================
 [tool.ruff.lint.isort]
-known-first-party = ["deeptutor", "deeptutor_cli", "scripts"]
+known-first-party = ["aidlearning", "aidlearning_cli", "scripts"]
 force-sort-within-sections = true
 split-on-trailing-comma = true
 
@@ -380,7 +380,7 @@ module = "tests.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "deeptutor.tools.*"
+module = "aidlearning.tools.*"
 ignore_errors = true  # Some tools may have dynamic imports
 
 # ============================================

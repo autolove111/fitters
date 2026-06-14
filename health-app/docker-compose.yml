@@ -61,15 +61,15 @@ services:
       timeout: 5s
       retries: 10
 
-  deeptutor:
+  aidlearning:
     build:
       context: ./study/aid_learning_agent
       dockerfile: Dockerfile.backend
       target: production
-    container_name: health-deeptutor
+    container_name: health-aidlearning
     restart: unless-stopped
     ports:
-      - "${DEEPTUTOR_PORT:-8001}:8001"
+      - "${AIDLEARNING_PORT:-8001}:8001"
     volumes:
       - ./study/aid_learning_agent/data/user:/app/data/user
       - ./study/aid_learning_agent/data/memory:/app/data/memory

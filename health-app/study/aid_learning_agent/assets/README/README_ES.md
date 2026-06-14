@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="../../assets/logo.png" alt="DeepTutor" width="140" style="border-radius: 15px;">
+<img src="../../assets/logo.png" alt="AidLearning" width="140" style="border-radius: 15px;">
 
-# DeepTutor: Tutoría Personalizada Nativa para Agentes
+# AidLearning: Tutoría Personalizada Nativa para Agentes
 
-<a href="https://trendshift.io/repositories/17099" target="_blank"><img src="https://trendshift.io/api/badge/repositories/17099" alt="HKUDS%2FDeepTutor | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://trendshift.io/repositories/17099" target="_blank"><img src="https://trendshift.io/api/badge/repositories/17099" alt="HKUDS%2FAidLearning | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 <p align="center">
   <a href="../../README.md"><img alt="English" height="40" src="https://img.shields.io/badge/English-CDCFD4"></a>&nbsp;
@@ -23,14 +23,14 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)](../../LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/HKUDS/DeepTutor?style=flat-square&color=brightgreen)](https://github.com/HKUDS/DeepTutor/releases)
+[![GitHub release](https://img.shields.io/github/v/release/HKUDS/AidLearning?style=flat-square&color=brightgreen)](https://github.com/HKUDS/AidLearning/releases)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.26962-b31b1b?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2604.26962)
 
 [![Discord](https://img.shields.io/badge/Discord-Community-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/eRsjPgMU4t)
 [![Feishu](https://img.shields.io/badge/Feishu-Group-00D4AA?style=flat-square&logo=feishu&logoColor=white)](../../Communication.md)
-[![WeChat](https://img.shields.io/badge/WeChat-Group-07C160?style=flat-square&logo=wechat&logoColor=white)](https://github.com/HKUDS/DeepTutor/issues/78)
+[![WeChat](https://img.shields.io/badge/WeChat-Group-07C160?style=flat-square&logo=wechat&logoColor=white)](https://github.com/HKUDS/AidLearning/issues/78)
 
-[Características](#key-features) · [Primeros pasos](#get-started) · [Explorar](#explore-deeptutor) · [TutorBot](#tutorbot) · [CLI](#deeptutor-cli) · [Multiusuario](#multi-user) · [Comunidad](#community)
+[Características](#key-features) · [Primeros pasos](#get-started) · [Explorar](#explore-aidlearning) · [TutorBot](#tutorbot) · [CLI](#aidlearning-cli) · [Multiusuario](#multi-user) · [Comunidad](#community)
 
 </div>
 
@@ -38,82 +38,82 @@
 
 > 🤝 **¡Damos la bienvenida a todo tipo de contribuciones!** Consulta nuestra [Guía de contribución](../../CONTRIBUTING.md) para conocer la estrategia de ramas, los estándares de código y cómo empezar.
 >
-> 🗺️ **La hoja de ruta** está disponible públicamente en [`HKUDS/DeepTutor#498`](https://github.com/HKUDS/DeepTutor/issues/498) — comenta para votar elementos o proponer nuevos.
+> 🗺️ **La hoja de ruta** está disponible públicamente en [`HKUDS/AidLearning#498`](https://github.com/HKUDS/AidLearning/issues/498) — comenta para votar elementos o proponer nuevos.
 
 ### 📦 Lanzamientos
 
-> **[2026.5.21]** [v1.4.0-beta](https://github.com/HKUDS/DeepTutor/releases/tag/v1.4.0-beta) — Panel de trabajo Memory de tres capas (L1/L2/L3), todas las capacidades de chat reconstruidas sobre un único motor agente, RAG exclusivo con LlamaIndex y una superficie unificada de Settings + Capabilities.
+> **[2026.5.21]** [v1.4.0-beta](https://github.com/HKUDS/AidLearning/releases/tag/v1.4.0-beta) — Panel de trabajo Memory de tres capas (L1/L2/L3), todas las capacidades de chat reconstruidas sobre un único motor agente, RAG exclusivo con LlamaIndex y una superficie unificada de Settings + Capabilities.
 
-> **[2026.5.10]** [v1.3.10](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.10) — Corrección de CORS en Docker remoto, `DISABLE_SSL_VERIFY` para proveedores SDK, citas en bloques de código más seguras y complemento Matrix E2EE opcional.
+> **[2026.5.10]** [v1.3.10](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.10) — Corrección de CORS en Docker remoto, `DISABLE_SSL_VERIFY` para proveedores SDK, citas en bloques de código más seguras y complemento Matrix E2EE opcional.
 
-> **[2026.5.9]** [v1.3.9](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.9) — TutorBot con soporte de Zulip y NVIDIA NIM, enrutamiento de modelos de razonamiento más seguro, `deeptutor start`, tooltips en la barra lateral y paridad del almacén de sesiones.
+> **[2026.5.9]** [v1.3.9](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.9) — TutorBot con soporte de Zulip y NVIDIA NIM, enrutamiento de modelos de razonamiento más seguro, `aidlearning start`, tooltips en la barra lateral y paridad del almacén de sesiones.
 
-> **[2026.5.8]** [v1.3.8](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.8) — Despliegues multiusuario opcionales con espacios de trabajo aislados por usuario, concesión de permisos de administrador, rutas de autenticación y acceso en tiempo de ejecución con ámbito.
+> **[2026.5.8]** [v1.3.8](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.8) — Despliegues multiusuario opcionales con espacios de trabajo aislados por usuario, concesión de permisos de administrador, rutas de autenticación y acceso en tiempo de ejecución con ámbito.
 
 <details>
 <summary><b>Lanzamientos anteriores (más de 2 semanas)</b></summary>
 
-> **[2026.5.4]** [v1.3.7](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.7) — Correcciones de modelos de razonamiento/proveedores, historial de índice de Knowledge visible y edición más segura de plantillas y vaciado en Co-Writer.
+> **[2026.5.4]** [v1.3.7](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.7) — Correcciones de modelos de razonamiento/proveedores, historial de índice de Knowledge visible y edición más segura de plantillas y vaciado en Co-Writer.
 
-> **[2026.5.3]** [v1.3.6](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.6) — Selección de modelos basada en catálogo para chat y TutorBot, reindexado RAG más seguro, correcciones de límites de tokens en OpenAI Responses y validación del editor de Skills.
+> **[2026.5.3]** [v1.3.6](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.6) — Selección de modelos basada en catálogo para chat y TutorBot, reindexado RAG más seguro, correcciones de límites de tokens en OpenAI Responses y validación del editor de Skills.
 
-> **[2026.5.2]** [v1.3.5](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.5) — Configuración de inicio local más fluida, consultas RAG más seguras, autenticación de embeddings locales más clara y mejoras visuales del modo oscuro en Settings.
+> **[2026.5.2]** [v1.3.5](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.5) — Configuración de inicio local más fluida, consultas RAG más seguras, autenticación de embeddings locales más clara y mejoras visuales del modo oscuro en Settings.
 
-> **[2026.5.1]** [v1.3.4](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.4) — Persistencia del chat en páginas de libro y flujos de reconstrucción, referencias de chat a libro, manejo mejorado de idioma/razonamiento y extracción de documentos RAG más robusta.
+> **[2026.5.1]** [v1.3.4](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.4) — Persistencia del chat en páginas de libro y flujos de reconstrucción, referencias de chat a libro, manejo mejorado de idioma/razonamiento y extracción de documentos RAG más robusta.
 
-> **[2026.4.30]** [v1.3.3](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.3) — Soporte de embeddings NVIDIA NIM + Gemini, contexto unificado de Space para historial de chat/skills/memoria, instantáneas de sesión y resiliencia en reindexado RAG.
+> **[2026.4.30]** [v1.3.3](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.3) — Soporte de embeddings NVIDIA NIM + Gemini, contexto unificado de Space para historial de chat/skills/memoria, instantáneas de sesión y resiliencia en reindexado RAG.
 
-> **[2026.4.29]** [v1.3.2](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.2) — URLs de endpoints de embedding transparentes, resiliencia en reindexado RAG para vectores persistidos inválidos, limpieza de memoria para salida de modelos de razonamiento y corrección del tiempo de ejecución de Deep Solve.
+> **[2026.4.29]** [v1.3.2](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.2) — URLs de endpoints de embedding transparentes, resiliencia en reindexado RAG para vectores persistidos inválidos, limpieza de memoria para salida de modelos de razonamiento y corrección del tiempo de ejecución de Deep Solve.
 
-> **[2026.4.28]** [v1.3.1](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.1) — Estabilidad: enrutamiento RAG y validación de embeddings más seguros, persistencia Docker, entrada compatible con IME, robustez en Windows/GBK.
+> **[2026.4.28]** [v1.3.1](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.1) — Estabilidad: enrutamiento RAG y validación de embeddings más seguros, persistencia Docker, entrada compatible con IME, robustez en Windows/GBK.
 
-> **[2026.4.27]** [v1.3.0](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.0) — Índices de KB versionados con flujo de reindexado, espacio de trabajo de Knowledge reconstruido, autodescubrimiento de embeddings con nuevos adaptadores y centro Space.
+> **[2026.4.27]** [v1.3.0](https://github.com/HKUDS/AidLearning/releases/tag/v1.3.0) — Índices de KB versionados con flujo de reindexado, espacio de trabajo de Knowledge reconstruido, autodescubrimiento de embeddings con nuevos adaptadores y centro Space.
 
-> **[2026.4.25]** [v1.2.5](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.5) — Adjuntos de chat persistentes con cajón de vista previa, pipelines de capacidades con soporte de adjuntos y exportación Markdown de TutorBot.
+> **[2026.4.25]** [v1.2.5](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.5) — Adjuntos de chat persistentes con cajón de vista previa, pipelines de capacidades con soporte de adjuntos y exportación Markdown de TutorBot.
 
-> **[2026.4.25]** [v1.2.4](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.4) — Adjuntos de texto/código/SVG, Setup Tour de un comando, exportación Markdown del chat e interfaz compacta de gestión de KB.
+> **[2026.4.25]** [v1.2.4](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.4) — Adjuntos de texto/código/SVG, Setup Tour de un comando, exportación Markdown del chat e interfaz compacta de gestión de KB.
 
-> **[2026.4.24]** [v1.2.3](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.3) — Adjuntos de documentos (PDF/DOCX/XLSX/PPTX), visualización de bloques de razonamiento, editor de plantillas Soul y guardado en notebook desde Co-Writer.
+> **[2026.4.24]** [v1.2.3](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.3) — Adjuntos de documentos (PDF/DOCX/XLSX/PPTX), visualización de bloques de razonamiento, editor de plantillas Soul y guardado en notebook desde Co-Writer.
 
-> **[2026.4.22]** [v1.2.2](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.2) — Sistema de Skills creados por el usuario, rendimiento mejorado en la entrada del chat, inicio automático de TutorBot, interfaz de la Biblioteca de libros y pantalla completa en visualización.
+> **[2026.4.22]** [v1.2.2](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.2) — Sistema de Skills creados por el usuario, rendimiento mejorado en la entrada del chat, inicio automático de TutorBot, interfaz de la Biblioteca de libros y pantalla completa en visualización.
 
-> **[2026.4.21]** [v1.2.1](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.1) — Límites de tokens por etapa, Regenerar respuesta en todos los puntos de entrada y correcciones de compatibilidad con RAG y Gemma.
+> **[2026.4.21]** [v1.2.1](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.1) — Límites de tokens por etapa, Regenerar respuesta en todos los puntos de entrada y correcciones de compatibilidad con RAG y Gemma.
 
-> **[2026.4.20]** [v1.2.0](https://github.com/HKUDS/DeepTutor/releases/tag/v1.2.0) — Compilador de «libros vivos» Book Engine, Co-Writer multidocumento, visualizaciones HTML interactivas y mención @ en el banco de preguntas.
+> **[2026.4.20]** [v1.2.0](https://github.com/HKUDS/AidLearning/releases/tag/v1.2.0) — Compilador de «libros vivos» Book Engine, Co-Writer multidocumento, visualizaciones HTML interactivas y mención @ en el banco de preguntas.
 
-> **[2026.4.18]** [v1.1.2](https://github.com/HKUDS/DeepTutor/releases/tag/v1.1.2) — Pestaña Channels basada en esquema, consolidación del pipeline RAG en uno solo y prompts de chat externalizados.
+> **[2026.4.18]** [v1.1.2](https://github.com/HKUDS/AidLearning/releases/tag/v1.1.2) — Pestaña Channels basada en esquema, consolidación del pipeline RAG en uno solo y prompts de chat externalizados.
 
-> **[2026.4.17]** [v1.1.1](https://github.com/HKUDS/DeepTutor/releases/tag/v1.1.1) — «Responder ahora» universal, sincronización de desplazamiento en Co-Writer, panel de configuración unificado y botón Stop de streaming.
+> **[2026.4.17]** [v1.1.1](https://github.com/HKUDS/AidLearning/releases/tag/v1.1.1) — «Responder ahora» universal, sincronización de desplazamiento en Co-Writer, panel de configuración unificado y botón Stop de streaming.
 
-> **[2026.4.15]** [v1.1.0](https://github.com/HKUDS/DeepTutor/releases/tag/v1.1.0) — Revisión de bloques de matemáticas LaTeX, sonda de diagnóstico LLM y guía para Docker y LLM local.
+> **[2026.4.15]** [v1.1.0](https://github.com/HKUDS/AidLearning/releases/tag/v1.1.0) — Revisión de bloques de matemáticas LaTeX, sonda de diagnóstico LLM y guía para Docker y LLM local.
 
-> **[2026.4.14]** [v1.1.0-beta](https://github.com/HKUDS/DeepTutor/releases/tag/v1.1.0-beta) — Sesiones con URL favorita, tema Snow, heartbeat y reconexión automática de WebSocket y revisión del registro de embeddings.
+> **[2026.4.14]** [v1.1.0-beta](https://github.com/HKUDS/AidLearning/releases/tag/v1.1.0-beta) — Sesiones con URL favorita, tema Snow, heartbeat y reconexión automática de WebSocket y revisión del registro de embeddings.
 
-> **[2026.4.13]** [v1.0.3](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.3) — Cuaderno de preguntas con marcadores y categorías, Mermaid en Visualize, detección de incompatibilidad de embeddings, compatibilidad con Qwen/vLLM, soporte para LM Studio y llama.cpp y tema Glass.
+> **[2026.4.13]** [v1.0.3](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.3) — Cuaderno de preguntas con marcadores y categorías, Mermaid en Visualize, detección de incompatibilidad de embeddings, compatibilidad con Qwen/vLLM, soporte para LM Studio y llama.cpp y tema Glass.
 
-> **[2026.4.11]** [v1.0.2](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.2) — Consolidación de búsqueda con fallback de SearXNG, corrección del cambio de proveedor y correcciones de fugas de recursos en el frontend.
+> **[2026.4.11]** [v1.0.2](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.2) — Consolidación de búsqueda con fallback de SearXNG, corrección del cambio de proveedor y correcciones de fugas de recursos en el frontend.
 
-> **[2026.4.10]** [v1.0.1](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.1) — Capacidad Visualize (Chart.js/SVG), prevención de duplicados en quiz y soporte para o4-mini.
+> **[2026.4.10]** [v1.0.1](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.1) — Capacidad Visualize (Chart.js/SVG), prevención de duplicados en quiz y soporte para o4-mini.
 
-> **[2026.4.10]** [v1.0.0-beta.4](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.0-beta.4) — Seguimiento del progreso de embeddings con reintento por límite de tasa, correcciones de dependencias multiplataforma y corrección de validación MIME.
+> **[2026.4.10]** [v1.0.0-beta.4](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.0-beta.4) — Seguimiento del progreso de embeddings con reintento por límite de tasa, correcciones de dependencias multiplataforma y corrección de validación MIME.
 
-> **[2026.4.8]** [v1.0.0-beta.3](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.0-beta.3) — SDK nativo de OpenAI/Anthropic (eliminación de litellm), soporte del animador matemático en Windows, análisis robusto de JSON e i18n completo en chino.
+> **[2026.4.8]** [v1.0.0-beta.3](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.0-beta.3) — SDK nativo de OpenAI/Anthropic (eliminación de litellm), soporte del animador matemático en Windows, análisis robusto de JSON e i18n completo en chino.
 
-> **[2026.4.7]** [v1.0.0-beta.2](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.0-beta.2) — Recarga en caliente de configuración, salida anidada de MinerU, corrección de WebSocket y Python 3.11+ como mínimo.
+> **[2026.4.7]** [v1.0.0-beta.2](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.0-beta.2) — Recarga en caliente de configuración, salida anidada de MinerU, corrección de WebSocket y Python 3.11+ como mínimo.
 
-> **[2026.4.4]** [v1.0.0-beta.1](https://github.com/HKUDS/DeepTutor/releases/tag/v1.0.0-beta.1) — Reescritura de arquitectura nativa para agentes (~200k líneas): modelo de plugins Tools + Capabilities, CLI y SDK, TutorBot, Co-Writer, Aprendizaje Guiado y memoria persistente.
+> **[2026.4.4]** [v1.0.0-beta.1](https://github.com/HKUDS/AidLearning/releases/tag/v1.0.0-beta.1) — Reescritura de arquitectura nativa para agentes (~200k líneas): modelo de plugins Tools + Capabilities, CLI y SDK, TutorBot, Co-Writer, Aprendizaje Guiado y memoria persistente.
 
-> **[2026.1.23]** [v0.6.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.6.0) — Persistencia de sesiones, carga incremental de documentos, importación flexible de pipeline RAG y localización completa al chino.
+> **[2026.1.23]** [v0.6.0](https://github.com/HKUDS/AidLearning/releases/tag/v0.6.0) — Persistencia de sesiones, carga incremental de documentos, importación flexible de pipeline RAG y localización completa al chino.
 
-> **[2026.1.18]** [v0.5.2](https://github.com/HKUDS/DeepTutor/releases/tag/v0.5.2) — Soporte de Docling para RAG-Anything, optimización del sistema de logging y correcciones de errores.
+> **[2026.1.18]** [v0.5.2](https://github.com/HKUDS/AidLearning/releases/tag/v0.5.2) — Soporte de Docling para RAG-Anything, optimización del sistema de logging y correcciones de errores.
 
-> **[2026.1.15]** [v0.5.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.5.0) — Configuración unificada de servicios, selección de pipeline RAG por base de conocimiento, renovación de generación de preguntas y personalización de la barra lateral.
+> **[2026.1.15]** [v0.5.0](https://github.com/HKUDS/AidLearning/releases/tag/v0.5.0) — Configuración unificada de servicios, selección de pipeline RAG por base de conocimiento, renovación de generación de preguntas y personalización de la barra lateral.
 
-> **[2026.1.9]** [v0.4.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.4.0) — Soporte multi-proveedor para LLM y embeddings, nueva página de inicio, desacoplamiento del módulo RAG y refactorización de variables de entorno.
+> **[2026.1.9]** [v0.4.0](https://github.com/HKUDS/AidLearning/releases/tag/v0.4.0) — Soporte multi-proveedor para LLM y embeddings, nueva página de inicio, desacoplamiento del módulo RAG y refactorización de variables de entorno.
 
-> **[2026.1.5]** [v0.3.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.3.0) — Arquitectura unificada PromptManager, CI/CD con GitHub Actions e imágenes Docker preconstruidas en GHCR.
+> **[2026.1.5]** [v0.3.0](https://github.com/HKUDS/AidLearning/releases/tag/v0.3.0) — Arquitectura unificada PromptManager, CI/CD con GitHub Actions e imágenes Docker preconstruidas en GHCR.
 
-> **[2026.1.2]** [v0.2.0](https://github.com/HKUDS/DeepTutor/releases/tag/v0.2.0) — Despliegue Docker, actualización a Next.js 16 y React 19, refuerzo de seguridad en WebSocket y correcciones de vulnerabilidades críticas.
+> **[2026.1.2]** [v0.2.0](https://github.com/HKUDS/AidLearning/releases/tag/v0.2.0) — Despliegue Docker, actualización a Next.js 16 y React 19, refuerzo de seguridad en WebSocket y correcciones de vulnerabilidades críticas.
 
 </details>
 
@@ -121,15 +121,15 @@
 
 > **[2026.4.19]** 🎉 ¡Hemos alcanzado 20k estrellas en 111 días! Gracias por el increíble apoyo — estamos comprometidos con la iteración continua hacia una tutoría verdaderamente personalizada e inteligente para todos.
 
-> **[2026.4.10]** 📄 ¡Nuestro artículo ya está en arXiv! Lee el [preprint](https://arxiv.org/abs/2604.26962) para conocer más sobre el diseño e ideas detrás de DeepTutor.
+> **[2026.4.10]** 📄 ¡Nuestro artículo ya está en arXiv! Lee el [preprint](https://arxiv.org/abs/2604.26962) para conocer más sobre el diseño e ideas detrás de AidLearning.
 
-> **[2026.4.4]** ¡Mucho tiempo sin vernos! ✨ DeepTutor v1.0.0 ya está aquí — una evolución nativa para agentes con una reescritura completa de arquitectura, TutorBot y cambio de modo flexible bajo la licencia Apache-2.0. ¡Comienza un nuevo capítulo y nuestra historia continúa!
+> **[2026.4.4]** ¡Mucho tiempo sin vernos! ✨ AidLearning v1.0.0 ya está aquí — una evolución nativa para agentes con una reescritura completa de arquitectura, TutorBot y cambio de modo flexible bajo la licencia Apache-2.0. ¡Comienza un nuevo capítulo y nuestra historia continúa!
 
 > **[2026.2.6]** 🚀 ¡Hemos alcanzado 10k estrellas en solo 39 días! ¡Un enorme agradecimiento a nuestra increíble comunidad por el apoyo!
 
-> **[2026.1.1]** ¡Feliz Año Nuevo! Únete a nuestro [Discord](https://discord.gg/eRsjPgMU4t), [WeChat](https://github.com/HKUDS/DeepTutor/issues/78) o [Discusiones](https://github.com/HKUDS/DeepTutor/discussions) — ¡construyamos juntos el futuro de DeepTutor!
+> **[2026.1.1]** ¡Feliz Año Nuevo! Únete a nuestro [Discord](https://discord.gg/eRsjPgMU4t), [WeChat](https://github.com/HKUDS/AidLearning/issues/78) o [Discusiones](https://github.com/HKUDS/AidLearning/discussions) — ¡construyamos juntos el futuro de AidLearning!
 
-> **[2025.12.29]** ¡DeepTutor se lanza oficialmente!
+> **[2025.12.29]** ¡AidLearning se lanza oficialmente!
 
 
 <a id="key-features"></a>
@@ -144,15 +144,15 @@
 **Tu biblioteca**
 
 - Knowledge Bases — colecciones versionadas listas para RAG, de extremo a extremo sobre LlamaIndex. Cada (re)indexación es rastreada, comparable y reversible.
-- Space — una biblioteca personal de revisión que agrupa historial de chat, notebooks, banco de preguntas y skills creados por el usuario (`SKILL.md`) que cambian la personalidad de DeepTutor.
-- Memoria de tres capas — trazas L1 de solo adición, hechos L2 curados por superficie con citas y síntesis L3 entre superficies. Un panel de trabajo inspeccionable y un grafo de memoria te permiten auditar *por qué* DeepTutor sabe lo que sabe.
+- Space — una biblioteca personal de revisión que agrupa historial de chat, notebooks, banco de preguntas y skills creados por el usuario (`SKILL.md`) que cambian la personalidad de AidLearning.
+- Memoria de tres capas — trazas L1 de solo adición, hechos L2 curados por superficie con citas y síntesis L3 entre superficies. Un panel de trabajo inspeccionable y un grafo de memoria te permiten auditar *por qué* AidLearning sabe lo que sabe.
 
 **Extensibilidad y control**
 
 - Herramientas componibles — RAG, búsqueda web, ejecución de código, razonamiento, lluvia de ideas, búsqueda de artículos, análisis de GeoGebra y ayudantes de chat (`ask_user`, `web_fetch`, `write_note`, `list_notebook`, `github_query`). Los servidores MCP se conectan junto a las herramientas integradas.
 - TutorBots personales — tutores persistentes y autónomos, cada uno con su propio espacio de trabajo, soul, skills y canales (Telegram, Discord, Slack, Matrix, Zulip, …). Construidos sobre [nanobot](https://github.com/HKUDS/nanobot).
 - Settings unificados — un panel de borrador / Apply para apariencia, modelos, embeddings, búsqueda, capacidades, memoria, servidores MCP y herramientas, con seguimiento compartido del costo por llamada.
-- CLI nativa para agentes — cada capacidad, KB, sesión y TutorBot está a un comando de distancia; salida enriquecida para humanos, JSON estructurado para agentes. Entrega el [`SKILL.md`](../../SKILL.md) a cualquier LLM con acceso a herramientas y podrá operar DeepTutor de forma autónoma.
+- CLI nativa para agentes — cada capacidad, KB, sesión y TutorBot está a un comando de distancia; salida enriquecida para humanos, JSON estructurado para agentes. Entrega el [`SKILL.md`](../../SKILL.md) a cualquier LLM con acceso a herramientas y podrá operar AidLearning de forma autónoma.
 - Autenticación opcional — desactivada por defecto; actívala para despliegues multiusuario con bcrypt + JWT, un panel de administración y un sidecar opcional de PocketBase / OAuth.
 
 ---
@@ -160,63 +160,63 @@
 <a id="get-started"></a>
 ## 🚀 Primeros pasos
 
-DeepTutor ahora tiene cuatro rutas de instalación paralelas. Todas utilizan el mismo esquema de configuración en tiempo de ejecución:
+AidLearning ahora tiene cuatro rutas de instalación paralelas. Todas utilizan el mismo esquema de configuración en tiempo de ejecución:
 
-- Los ajustes se guardan en `data/user/settings/` bajo tu espacio de trabajo actual, o bajo `DEEPTUTOR_HOME` / `deeptutor start --home` cuando eliges uno explícitamente.
+- Los ajustes se guardan en `data/user/settings/` bajo tu espacio de trabajo actual, o bajo `AIDLEARNING_HOME` / `aidlearning start --home` cuando eliges uno explícitamente.
 - `model_catalog.json` almacena perfiles de proveedores de modelos, URLs base, claves API, modelos activos, configuración de embeddings y configuración de búsqueda.
 - `system.json` almacena puertos de inicio, base pública de la API, CORS, TLS y opciones de adjuntos.
 - `auth.json` almacena el interruptor de autenticación opcional y el hash de credenciales de arranque.
 - `integrations.json` almacena sidecars opcionales como PocketBase.
 - El `.env` en la raíz del proyecto ya no se usa como archivo de configuración de la aplicación.
 
-Para la aplicación local completa, el orden recomendado es **elegir un espacio de trabajo → instalar → `deeptutor init` → `deeptutor start`**. `deeptutor start` puede completar los archivos predeterminados faltantes como red de seguridad, pero la configuración normal del primer inicio debe realizarse mediante `deeptutor init` para que los puertos y la configuración de modelos sean explícitos antes de que arranque la aplicación web.
+Para la aplicación local completa, el orden recomendado es **elegir un espacio de trabajo → instalar → `aidlearning init` → `aidlearning start`**. `aidlearning start` puede completar los archivos predeterminados faltantes como red de seguridad, pero la configuración normal del primer inicio debe realizarse mediante `aidlearning init` para que los puertos y la configuración de modelos sean explícitos antes de que arranque la aplicación web.
 
-### Opción 1 — Instalar DeepTutor
+### Opción 1 — Instalar AidLearning
 
 Úsala cuando quieras la aplicación web local completa y la CLI sin clonar el repositorio.
 
 ```bash
-mkdir -p my-deeptutor
-cd my-deeptutor
-pip install -U deeptutor
-deeptutor init
-deeptutor start
+mkdir -p my-aidlearning
+cd my-aidlearning
+pip install -U aidlearning
+aidlearning init
+aidlearning start
 ```
 
-> 🧪 **¿Probando la beta v1.4.0?** PyPI normaliza `1.4.0-beta` a `1.4.0b0`, así que `pip install -U deeptutor` permanecerá en la versión estable más reciente. Activa la versión preliminar con:
+> 🧪 **¿Probando la beta v1.4.0?** PyPI normaliza `1.4.0-beta` a `1.4.0b0`, así que `pip install -U aidlearning` permanecerá en la versión estable más reciente. Activa la versión preliminar con:
 >
 > ```bash
-> pip install --pre -U deeptutor      # última versión preliminar
-> pip install -U deeptutor==1.4.0b0   # fijar exactamente a v1.4.0-beta
+> pip install --pre -U aidlearning      # última versión preliminar
+> pip install -U aidlearning==1.4.0b0   # fijar exactamente a v1.4.0-beta
 > ```
 
-`deeptutor init` escribe la configuración en `data/user/settings/` en el directorio donde lo ejecutas. Solicita:
+`aidlearning init` escribe la configuración en `data/user/settings/` en el directorio donde lo ejecutas. Solicita:
 
 - Puerto del backend, por defecto `8001`
 - Puerto del frontend, por defecto `3782`
 - Proveedor LLM, URL base, clave API y nombre del modelo
 - Proveedor de embeddings opcional para Knowledge Base / RAG
 
-Después de `deeptutor start`, abre la URL del frontend que se imprime en el terminal. Con los puertos predeterminados, esa URL es [http://127.0.0.1:3782](http://127.0.0.1:3782). Si cambiaste `frontend_port` durante `deeptutor init` o editaste `data/user/settings/system.json` posteriormente, usa el puerto configurado.
+Después de `aidlearning start`, abre la URL del frontend que se imprime en el terminal. Con los puertos predeterminados, esa URL es [http://127.0.0.1:3782](http://127.0.0.1:3782). Si cambiaste `frontend_port` durante `aidlearning init` o editaste `data/user/settings/system.json` posteriormente, usa el puerto configurado.
 
-Mantén abierto el terminal de `deeptutor start`. Presiona `Ctrl+C` en ese terminal para detener el backend y el frontend.
+Mantén abierto el terminal de `aidlearning start`. Presiona `Ctrl+C` en ese terminal para detener el backend y el frontend.
 
 Notas:
 
-- `deeptutor start` inicia el backend FastAPI y el frontend Next.js empaquetado juntos.
+- `aidlearning start` inicia el backend FastAPI y el frontend Next.js empaquetado juntos.
 - La aplicación web empaquetada no requiere `git clone` ni `npm install`, pero sí necesita un tiempo de ejecución local de Node.js 20+ para ejecutar el servidor standalone de Next.js.
-- Si omites deliberadamente `deeptutor init` para una prueba rápida, la aplicación arranca con puertos seguros por defecto y configuración de modelos vacía; configura los modelos después en **Settings → Models**.
+- Si omites deliberadamente `aidlearning init` para una prueba rápida, la aplicación arranca con puertos seguros por defecto y configuración de modelos vacía; configura los modelos después en **Settings → Models**.
 
 ### Opción 2 — Instalar desde el código fuente
 
-Úsala cuando estés desarrollando DeepTutor o quieras ejecutarlo directamente desde un checkout.
+Úsala cuando estés desarrollando AidLearning o quieras ejecutarlo directamente desde un checkout.
 Usa Python 3.11+ y Node.js 22 LTS para la mejor coincidencia con CI y Docker.
 
 **1. Clonar el repositorio**
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/AidLearning.git
+cd AidLearning
 ```
 
 **2. Crear un entorno Python**
@@ -240,8 +240,8 @@ python -m pip install --upgrade pip
 Conda / Miniconda:
 
 ```bash
-conda create -n deeptutor python=3.11
-conda activate deeptutor
+conda create -n aidlearning python=3.11
+conda activate aidlearning
 python -m pip install --upgrade pip
 ```
 
@@ -259,17 +259,17 @@ Si cambias intencionalmente las dependencias del frontend, usa `npm install --le
 **4. Configurar e iniciar**
 
 ```bash
-deeptutor init
-deeptutor start
+aidlearning init
+aidlearning start
 ```
 
-Las instalaciones desde código fuente usan el directorio local `web/` para el frontend y lo inician en modo de desarrollo Next.js. Mantén abierto el terminal de `deeptutor start` mientras usas la aplicación.
+Las instalaciones desde código fuente usan el directorio local `web/` para el frontend y lo inician en modo de desarrollo Next.js. Mantén abierto el terminal de `aidlearning start` mientras usas la aplicación.
 
-Si `deeptutor start` reporta un frontend existente que no responde, detén el PID indicado en el mensaje. Si no hay ningún proceso Next.js en ejecución, elimina los archivos de bloqueo obsoletos y vuelve a iniciar:
+Si `aidlearning start` reporta un frontend existente que no responde, detén el PID indicado en el mensaje. Si no hay ningún proceso Next.js en ejecución, elimina los archivos de bloqueo obsoletos y vuelve a iniciar:
 
 ```bash
 rm -f web/.next/dev/lock web/.next/lock
-deeptutor start
+aidlearning start
 ```
 
 Extras útiles para desarrolladores:
@@ -286,19 +286,19 @@ pip install -e ".[math-animator]"   # complemento Manim; requiere LaTeX/ffmpeg/l
 
 Úsala cuando quieras la aplicación web completa en un contenedor. Las imágenes se publican en GitHub Container Registry:
 
-- `ghcr.io/hkuds/deeptutor:latest` — versión estable
-- `ghcr.io/hkuds/deeptutor:pre` — versión preliminar, cuando esté disponible
+- `ghcr.io/hkuds/aidlearning:latest` — versión estable
+- `ghcr.io/hkuds/aidlearning:pre` — versión preliminar, cuando esté disponible
 
 ```bash
-docker pull ghcr.io/hkuds/deeptutor:latest
-docker run --rm --name deeptutor \
+docker pull ghcr.io/hkuds/aidlearning:latest
+docker run --rm --name aidlearning \
   -p 127.0.0.1:3782:3782 \
   -p 127.0.0.1:8001:8001 \
-  -v deeptutor-data:/app/data \
-  ghcr.io/hkuds/deeptutor:latest
+  -v aidlearning-data:/app/data \
+  ghcr.io/hkuds/aidlearning:latest
 ```
 
-Luego abre [http://127.0.0.1:3782](http://127.0.0.1:3782). La configuración, claves API, logs, archivos del espacio de trabajo, memoria y bases de conocimiento se almacenan en el volumen `deeptutor-data` bajo `/app/data`.
+Luego abre [http://127.0.0.1:3782](http://127.0.0.1:3782). La configuración, claves API, logs, archivos del espacio de trabajo, memoria y bases de conocimiento se almacenan en el volumen `aidlearning-data` bajo `/app/data`.
 
 El contenedor crea `/app/data/user/settings/*.json` automáticamente en el primer inicio. Puedes configurar los proveedores de modelos directamente en la página de Settings web sin preparar archivos JSON locales manualmente.
 
@@ -311,15 +311,15 @@ Dentro de un contenedor Docker, `localhost` hace referencia al propio contenedor
 Opción A — puerta de enlace del host, recomendada para ejecuciones Docker normales:
 
 ```bash
-docker run --rm --name deeptutor \
+docker run --rm --name aidlearning \
   -p 127.0.0.1:3782:3782 \
   -p 127.0.0.1:8001:8001 \
   --add-host=host.docker.internal:host-gateway \
-  -v deeptutor-data:/app/data \
-  ghcr.io/hkuds/deeptutor:latest
+  -v aidlearning-data:/app/data \
+  ghcr.io/hkuds/aidlearning:latest
 ```
 
-Luego en **DeepTutor Settings → Models**, establece la URL base del proveedor en `host.docker.internal`:
+Luego en **AidLearning Settings → Models**, establece la URL base del proveedor en `host.docker.internal`:
 
 - Endpoint LLM de Ollama: `http://host.docker.internal:11434/v1`
 - Endpoint de embeddings de Ollama: `http://host.docker.internal:11434/api/embed`
@@ -332,8 +332,8 @@ Opción B — red del host, solo Linux:
 
 ```bash
 docker run --network=host \
-  -v deeptutor-data:/app/data \
-  ghcr.io/hkuds/deeptutor:latest
+  -v aidlearning-data:/app/data \
+  ghcr.io/hkuds/aidlearning:latest
 ```
 
 No se necesita mapeo `-p` en el modo de red del host. El contenedor comparte directamente la red del host, así que abre [http://127.0.0.1:3782](http://127.0.0.1:3782) por defecto, o el `frontend_port` configurado en `/app/data/user/settings/system.json`.
@@ -341,30 +341,30 @@ No se necesita mapeo `-p` en el modo de red del host. El contenedor comparte dir
 Para ejecutar en segundo plano, añade `-d` y sigue los logs por nombre:
 
 ```bash
-docker run -d --name deeptutor \
+docker run -d --name aidlearning \
   -p 127.0.0.1:3782:3782 \
   -p 127.0.0.1:8001:8001 \
-  -v deeptutor-data:/app/data \
-  ghcr.io/hkuds/deeptutor:latest
-docker logs -f deeptutor
+  -v aidlearning-data:/app/data \
+  ghcr.io/hkuds/aidlearning:latest
+docker logs -f aidlearning
 ```
 
-Para detener una ejecución Docker en primer plano, presiona `Ctrl+C`. Si usaste el contenedor desacoplado con nombre, ejecuta `docker stop deeptutor`. Antes de iniciar otro contenedor con el mismo nombre, elimina el detenido con `docker rm deeptutor`; el volumen `deeptutor-data` conserva tu configuración y espacio de trabajo.
+Para detener una ejecución Docker en primer plano, presiona `Ctrl+C`. Si usaste el contenedor desacoplado con nombre, ejecuta `docker stop aidlearning`. Antes de iniciar otro contenedor con el mismo nombre, elimina el detenido con `docker rm aidlearning`; el volumen `aidlearning-data` conserva tu configuración y espacio de trabajo.
 
 ### Opción 4 — Solo CLI
 
 Úsala cuando no necesites la interfaz web. El paquete solo-CLI se instala desde un checkout de código fuente local en lugar de PyPI.
 
 ```bash
-git clone https://github.com/HKUDS/DeepTutor.git
-cd DeepTutor
+git clone https://github.com/HKUDS/AidLearning.git
+cd AidLearning
 
 python3 -m venv .venv-cli
 source .venv-cli/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e ./packaging/deeptutor-cli
-deeptutor init --cli
-deeptutor chat
+python -m pip install -e ./packaging/aidlearning-cli
+aidlearning init --cli
+aidlearning chat
 ```
 
 Windows PowerShell:
@@ -373,32 +373,32 @@ Windows PowerShell:
 py -3.11 -m venv .venv-cli
 .\.venv-cli\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -e ./packaging/deeptutor-cli
-deeptutor init --cli
-deeptutor chat
+python -m pip install -e ./packaging/aidlearning-cli
+aidlearning init --cli
+aidlearning chat
 ```
 
-`deeptutor init --cli` usa el mismo esquema `data/user/settings/` que la aplicación completa, pero cambia el comportamiento del asistente:
+`aidlearning init --cli` usa el mismo esquema `data/user/settings/` que la aplicación completa, pero cambia el comportamiento del asistente:
 
 - Omite las solicitudes de puertos de backend/frontend porque el uso solo-CLI no inicia la aplicación web.
 - Aún escribe los archivos `system.json`, `auth.json`, `integrations.json`, `model_catalog.json`, `main.yaml` y `agents.yaml` predeterminados.
 - Aún solicita el proveedor y modelo LLM activo.
-- Pregunta si configurar embeddings, pero la respuesta predeterminada es `No`; elige `Sí` si planeas usar `deeptutor kb ...` o herramientas RAG.
+- Pregunta si configurar embeddings, pero la respuesta predeterminada es `No`; elige `Sí` si planeas usar `aidlearning kb ...` o herramientas RAG.
 
 Comandos CLI comunes:
 
 ```bash
-deeptutor chat
-deeptutor chat --capability deep_solve --tool rag --kb my-kb
-deeptutor run chat "Explica la transformada de Fourier"
-deeptutor run deep_solve "Resuelve x^2 = 4" --tool rag --kb my-kb
-deeptutor kb create my-kb --doc textbook.pdf
-deeptutor kb list
-deeptutor memory show
-deeptutor config show
+aidlearning chat
+aidlearning chat --capability deep_solve --tool rag --kb my-kb
+aidlearning run chat "Explica la transformada de Fourier"
+aidlearning run deep_solve "Resuelve x^2 = 4" --tool rag --kb my-kb
+aidlearning kb create my-kb --doc textbook.pdf
+aidlearning kb list
+aidlearning memory show
+aidlearning config show
 ```
 
-La instalación local de `deeptutor-cli` no incluye activos web ni dependencias del servidor. Conserva el checkout del código fuente ya que la instalación editable apunta a él.
+La instalación local de `aidlearning-cli` no incluye activos web ni dependencias del servidor. Conserva el checkout del código fuente ya que la instalación editable apunta a él.
 
 ### Referencia de configuración
 
@@ -416,14 +416,14 @@ La página de Settings web es el editor recomendado, pero los archivos son JSON/
 
 La configuración mínima de modelos puede realizarse en el navegador: abre **Settings → Models**, añade un perfil LLM, establece la URL base / clave API / nombre del modelo y guarda.
 
-<a id="explore-deeptutor"></a>
-## 📖 Explorar DeepTutor
+<a id="explore-aidlearning"></a>
+## 📖 Explorar AidLearning
 
 <div align="center">
-<img src="../../assets/figs/deeptutor-architecture.png" alt="DeepTutor Architecture" width="800">
+<img src="../../assets/figs/aidlearning-architecture.png" alt="AidLearning Architecture" width="800">
 </div>
 
-La refactorización de v1.4.0-beta reorganiza DeepTutor alrededor de **cinco superficies principales** — Chat, Co-Writer, Book, Knowledge, Space — más una **Memory de tres capas** que subyace a todas ellas y un panel de trabajo unificado de **Settings** que expone cada ajuste. Las capacidades (Solve / Quiz / Research / Visualize) y las herramientas (RAG, web, código, razonamiento, lluvia de ideas, búsqueda de artículos, `ask_user`, `web_fetch`, `write_note`, `list_notebook`, `github_query`) se componen libremente sobre ellas.
+La refactorización de v1.4.0-beta reorganiza AidLearning alrededor de **cinco superficies principales** — Chat, Co-Writer, Book, Knowledge, Space — más una **Memory de tres capas** que subyace a todas ellas y un panel de trabajo unificado de **Settings** que expone cada ajuste. Las capacidades (Solve / Quiz / Research / Visualize) y las herramientas (RAG, web, código, razonamiento, lluvia de ideas, búsqueda de artículos, `ask_user`, `web_fetch`, `write_note`, `list_notebook`, `github_query`) se componen libremente sobre ellas.
 
 ### 💬 Chat — Espacio de trabajo inteligente unificado
 
@@ -461,7 +461,7 @@ Selecciona cualquier texto y elige **Reescribir**, **Expandir** o **Acortar** �
 <img src="../../assets/figs/dt-book.png" alt="Book Engine" width="800">
 </div>
 
-Dale a DeepTutor un tema, apúntalo a tu base de conocimiento y produce un libro estructurado e interactivo — no una exportación estática, sino un documento vivo que puedes leer, hacerte preguntas sobre él y discutir en contexto.
+Dale a AidLearning un tema, apúntalo a tu base de conocimiento y produce un libro estructurado e interactivo — no una exportación estática, sino un documento vivo que puedes leer, hacerte preguntas sobre él y discutir en contexto.
 
 Detrás de escena, un pipeline multiagente maneja el trabajo pesado: proponer un esquema, recuperar fuentes relevantes de tu KB, sintetizar un árbol de capítulos, planificar cada página y compilar cada bloque. Tú mantienes el control — revisa la propuesta, reordena capítulos y chatea junto a cualquier página.
 
@@ -501,7 +501,7 @@ Space es la contraparte de **lectura / revisión** de las superficies activas. D
 <img src="../../assets/figs/dt-memory.png" alt="Memory Workbench" width="800">
 </div>
 
-La memoria de DeepTutor es ahora un **pipeline de tres capas** con un panel de trabajo inspeccionable en `/memory`. El modelo de dos archivos v1 `SUMMARY.md` / `PROFILE.md` ha desaparecido; todo se migra al nuevo esquema en el primer inicio.
+La memoria de AidLearning es ahora un **pipeline de tres capas** con un panel de trabajo inspeccionable en `/memory`. El modelo de dos archivos v1 `SUMMARY.md` / `PROFILE.md` ha desaparecido; todo se migra al nuevo esquema en el primer inicio.
 
 | Capa | Rol | Almacenamiento |
 |:---|:---|:---|
@@ -551,66 +551,66 @@ TutorBot no es un chatbot — es un **agente persistente de múltiples instancia
 - **Plantillas Soul** — Define la personalidad, el tono y la filosofía de enseñanza de tu tutor mediante archivos Soul editables.
 - **Espacio de trabajo independiente** — Cada bot tiene su propio directorio con memoria, sesiones, skills y configuración separados.
 - **Latido proactivo** — Los bots no solo responden — toman la iniciativa. El sistema de Heartbeat integrado permite revisiones de estudio recurrentes, recordatorios de repaso y tareas programadas.
-- **Acceso completo a herramientas** — Cada bot accede al conjunto de herramientas completo de DeepTutor: recuperación RAG, ejecución de código, búsqueda web, búsqueda de artículos académicos, razonamiento profundo y lluvia de ideas.
+- **Acceso completo a herramientas** — Cada bot accede al conjunto de herramientas completo de AidLearning: recuperación RAG, ejecución de código, búsqueda web, búsqueda de artículos académicos, razonamiento profundo y lluvia de ideas.
 - **Aprendizaje de Skills** — Enseña a tu bot nuevas habilidades añadiendo archivos de skills a su espacio de trabajo.
 - **Presencia multicanal** — Conecta bots a Telegram, Discord, Slack, Feishu, WeChat Work, DingTalk, Matrix, QQ, WhatsApp, Email y más.
 - **Equipos y subagentes** — Genera subagentes en segundo plano u orquesta equipos de múltiples agentes dentro de un solo bot.
 
 ```bash
-deeptutor bot create math-tutor --persona "Profesor de matemáticas socrático que usa preguntas de sondeo"
-deeptutor bot create writing-coach --persona "Mentor de escritura paciente y orientado a los detalles"
-deeptutor bot list                  # Ver todos tus tutores activos
+aidlearning bot create math-tutor --persona "Profesor de matemáticas socrático que usa preguntas de sondeo"
+aidlearning bot create writing-coach --persona "Mentor de escritura paciente y orientado a los detalles"
+aidlearning bot list                  # Ver todos tus tutores activos
 ```
 
 ---
 
-<a id="deeptutor-cli"></a>
-### ⌨️ DeepTutor CLI — Interfaz nativa para agentes
+<a id="aidlearning-cli"></a>
+### ⌨️ AidLearning CLI — Interfaz nativa para agentes
 
 <div align="center">
-<img src="../../assets/figs/cli-architecture.png" alt="DeepTutor CLI Architecture" width="800">
+<img src="../../assets/figs/cli-architecture.png" alt="AidLearning CLI Architecture" width="800">
 </div>
 
-DeepTutor es completamente nativo para CLI. Cada capacidad, base de conocimiento, sesión, memoria y TutorBot está a un comando de distancia — sin necesidad de navegador. La CLI sirve tanto a humanos (con renderizado enriquecido en terminal) como a agentes de IA (con salida JSON estructurada).
+AidLearning es completamente nativo para CLI. Cada capacidad, base de conocimiento, sesión, memoria y TutorBot está a un comando de distancia — sin necesidad de navegador. La CLI sirve tanto a humanos (con renderizado enriquecido en terminal) como a agentes de IA (con salida JSON estructurada).
 
 **Ejecución en un solo paso** — Ejecuta cualquier capacidad directamente desde el terminal:
 
 ```bash
-deeptutor run chat "Explica la transformada de Fourier" -t rag --kb textbook
-deeptutor run deep_solve "Demuestra que √2 es irracional" -t reason
-deeptutor run deep_question "Álgebra lineal" --config num_questions=5
-deeptutor run deep_research "Mecanismos de atención en transformers"
-deeptutor run visualize "Dibuja la arquitectura de un transformer"
+aidlearning run chat "Explica la transformada de Fourier" -t rag --kb textbook
+aidlearning run deep_solve "Demuestra que √2 es irracional" -t reason
+aidlearning run deep_question "Álgebra lineal" --config num_questions=5
+aidlearning run deep_research "Mecanismos de atención en transformers"
+aidlearning run visualize "Dibuja la arquitectura de un transformer"
 ```
 
 **REPL interactivo** — Una sesión de chat persistente con cambio de modo en vivo:
 
 ```bash
-deeptutor chat --capability deep_solve --kb my-kb
+aidlearning chat --capability deep_solve --kb my-kb
 # Dentro del REPL: /cap, /tool, /kb, /history, /notebook, /config para cambiar al instante
 ```
 
 **Ciclo de vida de la base de conocimiento**:
 
 ```bash
-deeptutor kb create my-kb --doc textbook.pdf       # Crear desde documento
-deeptutor kb add my-kb --docs-dir ./papers/         # Añadir carpeta de artículos
-deeptutor kb search my-kb "descenso de gradiente"   # Buscar directamente
-deeptutor kb set-default my-kb                      # Establecer como KB predeterminada
+aidlearning kb create my-kb --doc textbook.pdf       # Crear desde documento
+aidlearning kb add my-kb --docs-dir ./papers/         # Añadir carpeta de artículos
+aidlearning kb search my-kb "descenso de gradiente"   # Buscar directamente
+aidlearning kb set-default my-kb                      # Establecer como KB predeterminada
 ```
 
 **Modo de salida dual**:
 
 ```bash
-deeptutor run chat "Resume el capítulo 3" -f rich    # Salida formateada y coloreada
-deeptutor run chat "Resume el capítulo 3" -f json    # Eventos JSON delimitados por líneas
+aidlearning run chat "Resume el capítulo 3" -f rich    # Salida formateada y coloreada
+aidlearning run chat "Resume el capítulo 3" -f json    # Eventos JSON delimitados por líneas
 ```
 
 **Continuidad de sesión**:
 
 ```bash
-deeptutor session list                              # Listar todas las sesiones
-deeptutor session open <id>                         # Reanudar en REPL
+aidlearning session list                              # Listar todas las sesiones
+aidlearning session open <id>                         # Reanudar en REPL
 ```
 
 <details>
@@ -620,75 +620,75 @@ deeptutor session open <id>                         # Reanudar en REPL
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor run <capability> <message>` | Ejecutar cualquier capacidad en un solo turno (`chat`, `deep_solve`, `deep_question`, `deep_research`, `math_animator`, `visualize`) |
-| `deeptutor chat` | REPL interactivo con `--capability`, `--tool`, `--kb`, `--language` opcionales |
-| `deeptutor serve` | Iniciar el servidor de API de DeepTutor |
+| `aidlearning run <capability> <message>` | Ejecutar cualquier capacidad en un solo turno (`chat`, `deep_solve`, `deep_question`, `deep_research`, `math_animator`, `visualize`) |
+| `aidlearning chat` | REPL interactivo con `--capability`, `--tool`, `--kb`, `--language` opcionales |
+| `aidlearning serve` | Iniciar el servidor de API de AidLearning |
 
-**`deeptutor bot`**
-
-| Comando | Descripción |
-|:---|:---|
-| `deeptutor bot list` | Listar todas las instancias de TutorBot |
-| `deeptutor bot create <id>` | Crear e iniciar un nuevo bot (`--name`, `--persona`, `--model`) |
-| `deeptutor bot start <id>` | Iniciar un bot |
-| `deeptutor bot stop <id>` | Detener un bot |
-
-**`deeptutor kb`**
+**`aidlearning bot`**
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor kb list` | Listar todas las bases de conocimiento |
-| `deeptutor kb info <name>` | Mostrar detalles de la base de conocimiento |
-| `deeptutor kb create <name>` | Crear desde documentos (`--doc`, `--docs-dir`) |
-| `deeptutor kb add <name>` | Añadir documentos incrementalmente |
-| `deeptutor kb search <name> <query>` | Buscar en una base de conocimiento |
-| `deeptutor kb set-default <name>` | Establecer como KB predeterminada |
-| `deeptutor kb delete <name>` | Eliminar una base de conocimiento (`--force`) |
+| `aidlearning bot list` | Listar todas las instancias de TutorBot |
+| `aidlearning bot create <id>` | Crear e iniciar un nuevo bot (`--name`, `--persona`, `--model`) |
+| `aidlearning bot start <id>` | Iniciar un bot |
+| `aidlearning bot stop <id>` | Detener un bot |
 
-**`deeptutor memory`**
+**`aidlearning kb`**
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor memory show [file]` | Ver memoria (`summary`, `profile` o `all`) |
-| `deeptutor memory clear [file]` | Borrar memoria (`--force`) |
+| `aidlearning kb list` | Listar todas las bases de conocimiento |
+| `aidlearning kb info <name>` | Mostrar detalles de la base de conocimiento |
+| `aidlearning kb create <name>` | Crear desde documentos (`--doc`, `--docs-dir`) |
+| `aidlearning kb add <name>` | Añadir documentos incrementalmente |
+| `aidlearning kb search <name> <query>` | Buscar en una base de conocimiento |
+| `aidlearning kb set-default <name>` | Establecer como KB predeterminada |
+| `aidlearning kb delete <name>` | Eliminar una base de conocimiento (`--force`) |
 
-**`deeptutor session`**
-
-| Comando | Descripción |
-|:---|:---|
-| `deeptutor session list` | Listar sesiones (`--limit`) |
-| `deeptutor session show <id>` | Ver mensajes de la sesión |
-| `deeptutor session open <id>` | Reanudar sesión en REPL |
-| `deeptutor session rename <id>` | Renombrar una sesión (`--title`) |
-| `deeptutor session delete <id>` | Eliminar una sesión |
-
-**`deeptutor notebook`**
+**`aidlearning memory`**
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor notebook list` | Listar notebooks |
-| `deeptutor notebook create <name>` | Crear un notebook (`--description`) |
-| `deeptutor notebook show <id>` | Ver registros del notebook |
-| `deeptutor notebook add-md <id> <path>` | Importar markdown como registro |
-| `deeptutor notebook replace-md <id> <rec> <path>` | Reemplazar un registro markdown |
-| `deeptutor notebook remove-record <id> <rec>` | Eliminar un registro |
+| `aidlearning memory show [file]` | Ver memoria (`summary`, `profile` o `all`) |
+| `aidlearning memory clear [file]` | Borrar memoria (`--force`) |
 
-**`deeptutor book`**
+**`aidlearning session`**
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor book list` | Listar todos los libros en el espacio de trabajo |
-| `deeptutor book health <book_id>` | Verificar la deriva del KB y la salud del libro |
-| `deeptutor book refresh-fingerprints <book_id>` | Actualizar huellas digitales del KB y borrar páginas obsoletas |
+| `aidlearning session list` | Listar sesiones (`--limit`) |
+| `aidlearning session show <id>` | Ver mensajes de la sesión |
+| `aidlearning session open <id>` | Reanudar sesión en REPL |
+| `aidlearning session rename <id>` | Renombrar una sesión (`--title`) |
+| `aidlearning session delete <id>` | Eliminar una sesión |
 
-**`deeptutor config` / `plugin` / `provider`**
+**`aidlearning notebook`**
 
 | Comando | Descripción |
 |:---|:---|
-| `deeptutor config show` | Imprimir resumen de la configuración actual |
-| `deeptutor plugin list` | Listar herramientas y capacidades registradas |
-| `deeptutor plugin info <name>` | Mostrar detalles de herramienta o capacidad |
-| `deeptutor provider login <provider>` | Autenticación del proveedor |
+| `aidlearning notebook list` | Listar notebooks |
+| `aidlearning notebook create <name>` | Crear un notebook (`--description`) |
+| `aidlearning notebook show <id>` | Ver registros del notebook |
+| `aidlearning notebook add-md <id> <path>` | Importar markdown como registro |
+| `aidlearning notebook replace-md <id> <rec> <path>` | Reemplazar un registro markdown |
+| `aidlearning notebook remove-record <id> <rec>` | Eliminar un registro |
+
+**`aidlearning book`**
+
+| Comando | Descripción |
+|:---|:---|
+| `aidlearning book list` | Listar todos los libros en el espacio de trabajo |
+| `aidlearning book health <book_id>` | Verificar la deriva del KB y la salud del libro |
+| `aidlearning book refresh-fingerprints <book_id>` | Actualizar huellas digitales del KB y borrar páginas obsoletas |
+
+**`aidlearning config` / `plugin` / `provider`**
+
+| Comando | Descripción |
+|:---|:---|
+| `aidlearning config show` | Imprimir resumen de la configuración actual |
+| `aidlearning plugin list` | Listar herramientas y capacidades registradas |
+| `aidlearning plugin info <name>` | Mostrar detalles de herramienta o capacidad |
+| `aidlearning provider login <provider>` | Autenticación del proveedor |
 
 </details>
 
@@ -701,7 +701,7 @@ deeptutor session open <id>                         # Reanudar en REPL
 <img src="../../assets/figs/dt-multi-user.png" alt="Multi-User" width="800">
 </div>
 
-Activa la autenticación y DeepTutor se convierte en un despliegue multitenant con **espacios de trabajo aislados por usuario** y **recursos curados por el administrador**. La primera persona en registrarse se convierte en el administrador y configura modelos, claves API y bases de conocimiento en nombre de todos los demás.
+Activa la autenticación y AidLearning se convierte en un despliegue multitenant con **espacios de trabajo aislados por usuario** y **recursos curados por el administrador**. La primera persona en registrarse se convierte en el administrador y configura modelos, claves API y bases de conocimiento en nombre de todos los demás.
 
 **Inicio rápido (5 pasos):**
 
@@ -710,7 +710,7 @@ Activa la autenticación y DeepTutor se convierte en un despliegue multitenant c
 #    {"enabled": true, "token_expire_hours": 24, "cookie_secure": false}
 
 # 2. Reinicia el stack web.
-deeptutor start
+aidlearning start
 
 # 3. Abre http://localhost:3782/register y crea la primera cuenta.
 #    El primer registro es el único público; ese usuario se convierte en admin
@@ -762,7 +762,7 @@ multi-user/
 | `multi-user/_system/auth/auth_secret` | Recomendado | Secreto de firma JWT. Se genera automáticamente en el primer inicio autenticado si falta. |
 | `data/user/settings/auth.json: token_expire_hours` | No | Tiempo de vida del JWT; predeterminado `24`. |
 | `data/user/settings/auth.json: username/password_hash` | No | Credencial de arranque opcional para un solo usuario sin cabeza. |
-| `data/user/settings/system.json` | No | `deeptutor start` deriva las banderas de autenticación del frontend desde la configuración en tiempo de ejecución. |
+| `data/user/settings/system.json` | No | `aidlearning start` deriva las banderas de autenticación del frontend desde la configuración en tiempo de ejecución. |
 
 > ⚠️ **El modo PocketBase (`integrations.pocketbase_url` configurado) es solo para un único usuario.** Los despliegues multiusuario deben mantener `integrations.pocketbase_url` en blanco y usar el backend predeterminado JSON/SQLite.
 
@@ -771,9 +771,9 @@ multi-user/
 <a id="community"></a>
 ## 🌐 Comunidad y ecosistema
 
-DeepTutor está construido sobre los hombros de proyectos de código abierto excepcionales:
+AidLearning está construido sobre los hombros de proyectos de código abierto excepcionales:
 
-| Proyecto | Rol en DeepTutor |
+| Proyecto | Rol en AidLearning |
 |:---|:---|
 | [**nanobot**](https://github.com/HKUDS/nanobot) | Motor de agente ultraligero que impulsa TutorBot |
 | [**LlamaIndex**](https://github.com/run-llama/llama_index) | Pipeline RAG y columna vertebral de indexación de documentos |
@@ -790,10 +790,10 @@ DeepTutor está construido sobre los hombros de proyectos de código abierto exc
 
 <div align="center">
 
-Esperamos que DeepTutor sea un regalo para la comunidad. 🎁
+Esperamos que AidLearning sea un regalo para la comunidad. 🎁
 
-<a href="https://github.com/HKUDS/DeepTutor/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HKUDS/DeepTutor&max=999" alt="Contributors" />
+<a href="https://github.com/HKUDS/AidLearning/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=HKUDS/AidLearning&max=999" alt="Contributors" />
 </a>
 
 </div>
@@ -804,22 +804,22 @@ Consulta [CONTRIBUTING.md](../../CONTRIBUTING.md) para obtener pautas sobre cóm
 
 <div align="center">
 
-<a href="https://www.star-history.com/#HKUDS/DeepTutor&type=timeline&legend=top-left">
+<a href="https://www.star-history.com/#HKUDS/AidLearning&type=timeline&legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/DeepTutor&type=timeline&legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/AidLearning&type=timeline&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/AidLearning&type=timeline&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/AidLearning&type=timeline&legend=top-left" />
   </picture>
 </a>
 
 </div>
 
 <p align="center">
- <a href="https://www.star-history.com/hkuds/deeptutor">
+ <a href="https://www.star-history.com/hkuds/aidlearning">
   <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/badge?repo=HKUDS/DeepTutor&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/badge?repo=HKUDS/DeepTutor" />
-   <img alt="Star History Rank" src="https://api.star-history.com/badge?repo=HKUDS/DeepTutor" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/badge?repo=HKUDS/AidLearning&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/badge?repo=HKUDS/AidLearning" />
+   <img alt="Star History Rank" src="https://api.star-history.com/badge?repo=HKUDS/AidLearning" />
   </picture>
  </a>
 </p>
@@ -828,14 +828,14 @@ Consulta [CONTRIBUTING.md](../../CONTRIBUTING.md) para obtener pautas sobre cóm
 
 **[Data Intelligence Lab @ HKU](https://github.com/HKUDS)**
 
-[⭐ Danos una estrella](https://github.com/HKUDS/DeepTutor/stargazers) · [🐛 Reportar un error](https://github.com/HKUDS/DeepTutor/issues) · [💬 Discusiones](https://github.com/HKUDS/DeepTutor/discussions)
+[⭐ Danos una estrella](https://github.com/HKUDS/AidLearning/stargazers) · [🐛 Reportar un error](https://github.com/HKUDS/AidLearning/issues) · [💬 Discusiones](https://github.com/HKUDS/AidLearning/discussions)
 
 ---
 
 Licenciado bajo [Apache License 2.0](../../LICENSE).
 
 <p>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.DeepTutor&style=for-the-badge&color=00d4ff" alt="Views">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.AidLearning&style=for-the-badge&color=00d4ff" alt="Views">
 </p>
 
 </div>

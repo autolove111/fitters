@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :class="{ dark: isDark }">
     <view class="header-card">
       <text class="page-title">{{ pageTitle }}</text>
       <text class="page-sub">{{ pageSub }}</text>
@@ -71,7 +71,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useThemeStore } from '@/store/theme'
 import { statsApi } from '@/utils/api'
+
+const themeStore = useThemeStore()
+const { isDark } = themeStore
 
 const metric = ref('workout')
 const pageTitle = ref('')
@@ -204,7 +208,7 @@ onMounted(() => {
 .container {
   padding: 30rpx;
   min-height: 100vh;
-  background: #f7fbff;
+  background: var(--bg-primary);
 }
 .header-card {
   padding: 30rpx 30rpx 24rpx;
@@ -225,7 +229,7 @@ onMounted(() => {
   opacity: 0.9;
 }
 .summary-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 32rpx;
   padding: 30rpx;
   box-shadow: 0 16rpx 34rpx rgba(31, 81, 133, 0.08);
@@ -238,13 +242,13 @@ onMounted(() => {
   margin-bottom: 18rpx;
 }
 .summary-label {
-  color: #5c6f8a;
+  color: var(--text-secondary);
   font-size: 28rpx;
 }
 .summary-value {
   font-size: 34rpx;
   font-weight: 700;
-  color: #1f2e4a;
+  color: var(--text-primary);
 }
 .progress-bar {
   width: 100%;
@@ -269,13 +273,13 @@ onMounted(() => {
 .history-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #1f3a6f;
+  color: var(--text-primary);
 }
 .history-note {
   display: block;
   margin-top: 10rpx;
   font-size: 24rpx;
-  color: #5c718f;
+  color: var(--text-secondary);
 }
 .history-stats-grid {
   display: grid;
@@ -284,7 +288,7 @@ onMounted(() => {
   margin-bottom: 28rpx;
 }
 .history-item {
-  background: white;
+  background: var(--card-bg);
   border-radius: 24rpx;
   padding: 22rpx;
   box-shadow: 0 8rpx 18rpx rgba(0, 0, 0, 0.04);
@@ -292,16 +296,16 @@ onMounted(() => {
 .item-label {
   display: block;
   font-size: 24rpx;
-  color: #7b8ea0;
+  color: var(--text-tertiary);
   margin-bottom: 10rpx;
 }
 .item-value {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1f2e4a;
+  color: var(--text-primary);
 }
 .trend-section {
-  background: white;
+  background: var(--card-bg);
   border-radius: 28rpx;
   padding: 24rpx;
 }
@@ -314,11 +318,11 @@ onMounted(() => {
 .trend-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1a3a6f;
+  color: var(--text-primary);
 }
 .trend-sub {
   font-size: 24rpx;
-  color: #7b8ea0;
+  color: var(--text-tertiary);
 }
 .trend-bars {
   display: flex;
@@ -352,17 +356,17 @@ onMounted(() => {
 .bar-label {
   margin-top: 12rpx;
   font-size: 22rpx;
-  color: #7b8ea0;
+  color: var(--text-tertiary);
 }
 .bar-value {
   margin-top: 10rpx;
   font-size: 24rpx;
-  color: #1f2e4a;
+  color: var(--text-primary);
 }
 .loading-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,9 +374,9 @@ onMounted(() => {
 }
 .loading-content {
   padding: 30rpx 40rpx;
-  background: white;
+  background: var(--modal-bg);
   border-radius: 24rpx;
   font-size: 28rpx;
-  color: #1f2e4a;
+  color: var(--text-primary);
 }
 </style>

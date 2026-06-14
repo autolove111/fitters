@@ -16,8 +16,8 @@ const authSchema = z.object({
   nickname: z.string().trim().max(64).optional(),
 });
 
-function publicUser(user: { id: number; account: string; nickname: string | null }) {
-  return { id: user.id, account: user.account, username: user.account, nickname: user.nickname };
+function publicUser(user: { id: number; account: string; nickname: string | null; avatar: string | null }) {
+  return { id: user.id, account: user.account, username: user.account, nickname: user.nickname, avatar: user.avatar };
 }
 
 function signToken(userId: number) {
@@ -38,7 +38,7 @@ authRouter.post(
     try {
       const user = await prisma.user.create({
         data: { account, passwordHash, nickname: body.nickname || account },
-        select: { id: true, account: true, nickname: true },
+        select: { id: true, account: true, nickname: true, avatar: true },
       });
       const token = signToken(user.id);
       ok(res, { token, user: publicUser(user) }, "registered");
@@ -60,7 +60,10 @@ authRouter.post(
       throw new HttpError(400, "account is required");
     }
 
-    const user = await prisma.user.findUnique({ where: { account } });
+    const user = await prisma.user.findUnique({
+      where: { account },
+      select: { id: true, account: true, nickname: true, avatar: true, passwordHash: true },
+    });
     if (!user || !(await bcrypt.compare(body.password, user.passwordHash))) {
       throw new HttpError(401, "invalid account or password");
     }
